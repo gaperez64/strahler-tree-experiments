@@ -16,3 +16,8 @@ Labels refer to conditions in page 19 of [this paper](https://arxiv.org/pdf/2003
 * _Setting the remaining bits_
     * **G**: Set 00^j for some i>=0 so the total number of bits used is (k-1)+t
     * **H**: Add strings 0 so the number of non-empty bitstrings is k-1
+
+## Command Line Arguments
+The compiled binary can be used without or with one paramter:
+* No parameter: Check every leaf in the tree against its successor
+* One (integer) parameter: Check that specific leaf and output the result and expected result

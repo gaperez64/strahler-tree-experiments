@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cassert>
 
-int k = 3, t = 2, h = 2;
+int k = 4, t = 2, h = 3;
 std::vector<std::vector<int>> leaves_b {
     {0, 0, 0, 0},
     {0, 0, 0, 0},
@@ -43,6 +43,66 @@ std::vector<std::vector<int>> leaves_d {
     {0, 0, 0, 1}
 };
 
+std::vector<std::vector<int>> leaves2_b {
+    {0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0},
+    {0, 0, 0, 0},
+    {0, 0, 0, 0, 1},
+    {0, 0, 0, 1, 0},
+    {0, 0, 1, 0, 0},
+    {0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0},
+    {0, 0, 0, 0},
+    {0, 0, 0, 0, 1},
+    {0, 0, 0, 1, 0},
+    {0, 0, 0, 0},
+    {0, 0, 0},
+    {0, 0, 0, 1},
+    {0, 0, 1, 0, 0},
+    {0, 0, 1, 0, 0},
+    {0, 0, 1, 0},
+    {0, 0, 1, 0, 1},
+    {0, 0, 1, 1, 0},
+    {0, 1, 0, 0, 0},
+    {0, 1, 0, 0, 0},
+    {0, 1, 0, 0, 0},
+    {0, 1, 0, 0},
+    {0, 1, 0, 0, 1},
+    {0, 1, 0, 1, 0},
+    {0, 1, 1, 0, 0}
+};
+
+std::vector<std::vector<int>> leaves2_d {
+    {0, 0, 0, 1, 2},
+    {0, 0, 1, 1, 2},
+    {0, 0, 1, 2, 2},
+    {0, 0, 1, 2},
+    {0, 0, 1, 2, 2},
+    {0, 0, 1, 1, 2},
+    {0, 0, 0, 1, 2},
+    {0, 1, 1, 1, 2},
+    {0, 1, 1, 2, 2},
+    {0, 1, 1, 2},
+    {0, 1, 1, 2, 2},
+    {0, 1, 1, 1, 2},
+    {0, 1, 2, 2},
+    {0, 1, 2},
+    {0, 1, 2, 2},
+    {0, 1, 1, 1, 2},
+    {0, 1, 1, 2, 2},
+    {0, 1, 1, 2},
+    {0, 1, 1, 2, 2},
+    {0, 1, 1, 1, 2},
+    {0, 0, 0, 1, 2},
+    {0, 0, 1, 1, 2},
+    {0, 0, 1, 2, 2},
+    {0, 0, 1, 2},
+    {0, 0, 1, 2, 2},
+    {0, 0, 1, 1, 2},
+    {0, 0, 0, 1, 2}
+};
+
 std::vector<int> tmp_b;
 std::vector<int> tmp_d;
 
@@ -58,8 +118,8 @@ int skipUntilNextLevel (std::vector<int>& curr_d, int i)
 
 void getLevelPSuccessor (int idx, int p)
 {
-    tmp_b = leaves_b[idx];
-    tmp_d = leaves_d[idx];
+    tmp_b = leaves2_b[idx];
+    tmp_d = leaves2_d[idx];
 
     int i = tmp_d.size() - 1;
     std::cout << "Start i in " << i << std::endl;
@@ -188,39 +248,67 @@ void getLevelPSuccessor (int idx, int p)
         // Now assign the rest of the bits one level a piece
         while (i < tmp_b.size())
         {
+            set_index ++;
             tmp_d[i] = set_index;
             i ++;
-            set_index ++;
         }
     }
 
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    for (size_t idx = 0; idx < leaves_b.size(); idx++)
+    // Don't pass parameter = Go through all
+    if (argc == 1) 
     {
-        getLevelPSuccessor(idx, h-1);
-        if (tmp_b == leaves_b[idx+1] && tmp_d == leaves_d[idx+1] or (idx == leaves_b.size() - 1 and tmp_d[0] == -1))
+        for (size_t idx = 0; idx < leaves2_b.size(); idx++)
         {
-            std::cout << idx << ": \033[32mCorrect successor!\n\033[0m";
-        }
-        else 
-        {
-            std::cout << idx << ": \033[31mWrong successor!\n\033[0m";
+            getLevelPSuccessor(idx, h-1);
+            if (tmp_b == leaves2_b[idx+1] && tmp_d == leaves2_d[idx+1] or (idx == leaves2_b.size() - 1 and tmp_d[0] == -1))
+            {
+                std::cout << idx << ": \033[32mCorrect successor!\n\033[0m";
+            }
+            else 
+            {
+                std::cout << idx << ": \033[31mWrong successor!\n\033[0m";
+            }
         }
     }
-   /*getLevelPSuccessor(3, h-1);
-   std::cout << "Result: ";
-   for (auto &&i : tmp_b)
-   {
-        std::cout << i;
-   }
-   std::cout << " ";
-   for (auto &&i : tmp_d)
-   {
-        std::cout << i;
-   }
-   std::cout << std::endl;*/
+    // Pass one parameter = only check that one and print result
+    else if (argc == 2) 
+    {
+        int idx = atoi(argv[1]);
+
+        getLevelPSuccessor(idx, h-1);
+        std::cout << "Result: ";
+        for (auto &&i : tmp_b)
+        {
+                std::cout << i;
+        }
+        std::cout << " ";
+        for (auto &&i : tmp_d)
+        {
+                std::cout << i;
+        }
+        std::cout << std::endl;
+
+        std::cout << "Expected: ";
+        for (auto &&i : leaves2_b[idx + 1])
+        {
+                std::cout << i;
+        }
+        std::cout << " ";
+        for (auto &&i : leaves2_d[idx + 1])
+        {
+                std::cout << i;
+        }
+        std::cout << std::endl;
+    }
+    // Pass more params = invalid
+    else 
+    {
+        std::cout << "Too many params" << std::endl;
+        return 1;
+    }
    
 }
