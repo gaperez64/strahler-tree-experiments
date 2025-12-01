@@ -56,9 +56,13 @@ std::vector<std::vector<int>> leaves2_b {
     {0, 0, 0, 0},
     {0, 0, 0, 0, 1},
     {0, 0, 0, 1, 0},
+    {0, 0, 0, 0, 0},
     {0, 0, 0, 0},
+    {0, 0, 0, 0, 1},
     {0, 0, 0},
+    {0, 0, 0, 1, 0},
     {0, 0, 0, 1},
+    {0, 0, 0, 1, 1},
     {0, 0, 1, 0, 0},
     {0, 0, 1, 0, 0},
     {0, 0, 1, 0},
@@ -86,9 +90,13 @@ std::vector<std::vector<int>> leaves2_d {
     {0, 1, 1, 2},
     {0, 1, 1, 2, 2},
     {0, 1, 1, 1, 2},
+    {0, 1, 2, 2, 2},
     {0, 1, 2, 2},
+    {0, 1, 2, 2, 2},
     {0, 1, 2},
+    {0, 1, 2, 2, 2},
     {0, 1, 2, 2},
+    {0, 1, 2, 2, 2},
     {0, 1, 1, 1, 2},
     {0, 1, 1, 2, 2},
     {0, 1, 1, 2},
@@ -256,6 +264,47 @@ void getLevelPSuccessor (int idx, int p)
 
 }
 
+int compare(size_t idxA, size_t idxB, int pindex)
+{
+    auto& bitsA = leaves2_b[idxA];
+    auto& indicesA = leaves2_d[idxA];
+    auto& bitsB = leaves2_b[idxB];
+    auto& indicesB = leaves2_d[idxB];
+
+    // cases involving Top
+    if (indicesA[0] == -1 and indicesB[0] == -1) return 0;
+    if (indicesA[0] == -1) return 1;
+    if (indicesB[0] == -1) return -1;
+    
+    for (int i=0; i < std::max(bitsA.size(), bitsB.size()); i++) {
+        if (i >= bitsB.size())
+        {
+            return bitsA[i] == 0 ? -1: 1;
+        }
+        else if (i >= bitsA.size())
+        {
+            return bitsB[i] == 0 ? 1 : -1;
+        }
+        else if (indicesA[i] > pindex and indicesB[i] > pindex) {
+            // equal until pindex, return 0
+            return 0;
+        } else if (indicesA[i] < indicesB[i]) {
+            // equal until best has [eps]
+            return bitsA[i] == 0 ? -1: 1;
+        } else if (indicesA[i] > indicesB[i]) {
+            // equal until tmp has [eps]
+            return bitsB[i] == 0 ? 1 : -1;
+        } else if (bitsA[i] < bitsB[i]) {
+            // equal until tmp<best
+            return -1;
+        } else if (bitsA[i] > bitsB[i]) {
+            // equal until tmp>best
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     // Don't pass parameter = Go through all
@@ -271,6 +320,15 @@ int main(int argc, char *argv[])
             else 
             {
                 std::cout << idx << ": \033[31mWrong successor!\n\033[0m";
+            }
+
+            if (idx < leaves2_b.size() -1)
+            {
+                int fwd_res = compare (idx, idx+1, h-1);
+                std::cout << idx << ": " << fwd_res << ( fwd_res == -1 ? " \033[32mCorrect forward comparison!\n\033[0m" : " \033[31mWrong forward comparison!\n\033[0m");
+                
+                int bwd_res = compare (idx+1, idx, h-1);
+                std::cout << idx << ": " << bwd_res << (bwd_res == 1 ? " \033[32mCorrect backward comparison!\n\033[0m" : " \033[31mWrong backward comparison!\n\033[0m");
             }
         }
     }
