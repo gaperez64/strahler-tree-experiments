@@ -255,7 +255,7 @@ char *labels_leaves(int k, int t, int h) {
   // Epilogue
   free(stack);
 
-  char* ret = malloc(sizeof(char) * strlen(tree[UTREE][k][t][h]) + 1);
+  char *ret = malloc(sizeof(char) * strlen(tree[UTREE][k][t][h]) + 1);
   strcpy(ret, tree[UTREE][k][t][h]);
   // NOTE: This could be smarter if we kept track of everything being set not
   // to nullptr above
@@ -269,8 +269,8 @@ char *labels_leaves(int k, int t, int h) {
   return ret;
 }
 
-void print_list(const int* nums) {
-  const int* cur = nums;
+void print_list(const int *nums) {
+  const int *cur = nums;
   printf("{ ");
   bool first = true;
   while (*cur != -1) {
@@ -285,40 +285,40 @@ void print_list(const int* nums) {
   printf(" },\n");
 }
 
-void print_labels(unsigned nleaves, const char* labels) {
-  assert (labels != nullptr);
+void print_labels(unsigned nleaves, const char *labels) {
+  assert(labels != nullptr);
   size_t len = strlen(labels) + 2; // overshooting
   int (*toms_b)[len] = calloc(nleaves, sizeof(*toms_b));
   int (*toms_d)[len] = calloc(nleaves, sizeof(*toms_d));
   size_t leaf = 0;
   size_t i = 0;
   size_t b = 0;
-  for (const char* cur = labels; *cur != '\0'; cur++) {
-    assert (leaf < nleaves);
-    assert (i < len);
+  for (const char *cur = labels; *cur != '\0'; cur++) {
+    assert(leaf < nleaves);
+    assert(i < len);
     switch (*cur) {
-      case ZERO:
-        toms_b[leaf][i] = 0;
-        toms_d[leaf][i++] = b;
-        break;
-      case ONE:
-        toms_b[leaf][i] = 1;
-        toms_d[leaf][i++] = b;
-        break;
-      case EPSILON:
-        break;
-      case COMMA:
-        b++;
-        break;
-      case EOS:
-        toms_b[leaf][i] = -1;
-        toms_d[leaf][i] = -1;
-        leaf++;
-        i = 0;
-        b = 0;
-        break;
-      default:
-        assert (false);
+    case ZERO:
+      toms_b[leaf][i] = 0;
+      toms_d[leaf][i++] = b;
+      break;
+    case ONE:
+      toms_b[leaf][i] = 1;
+      toms_d[leaf][i++] = b;
+      break;
+    case EPSILON:
+      break;
+    case COMMA:
+      b++;
+      break;
+    case EOS:
+      toms_b[leaf][i] = -1;
+      toms_d[leaf][i] = -1;
+      leaf++;
+      i = 0;
+      b = 0;
+      break;
+    default:
+      assert(false);
     }
   }
   // Print bits
