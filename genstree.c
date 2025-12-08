@@ -6,19 +6,14 @@
 #include <string.h>
 #include <unistd.h>
 
-void print_usage(char *argv[]) {
-  fprintf(stderr, "Usage: %s -k K -t T -h H \n", argv[0]);
-}
+#define ONE '1'
+#define ZERO '0'
+#define EPSILON 'e'
+#define COMMA ','
+#define EOS '|'
 
-typedef struct _node {
-  int k;
-  int t;
-  int h;
-  char u;
-} Node;
-
-const char UTREE = 0;
-const char VTREE = 1;
+#define UTREE 0
+#define VTREE 1
 
 #define PUSH(UVAL, KVAL, TVAL, HVAL, LENQ, MAXQ, STACK)                        \
   do {                                                                         \
@@ -34,6 +29,17 @@ const char VTREE = 1;
     LENQ++;                                                                    \
     assert(LENQ <= MAXQ);                                                      \
   } while (0)
+
+typedef struct _node {
+  int k;
+  int t;
+  int h;
+  char u;
+} Node;
+
+void print_usage(char *argv[]) {
+  fprintf(stderr, "Usage: %s -k K -t T -h H \n", argv[0]);
+}
 
 unsigned count_leaves(int k, int t, int h) {
   assert(h >= k);
@@ -110,12 +116,6 @@ unsigned count_leaves(int k, int t, int h) {
   return total;
 }
 
-const char ONE = '1';
-const char ZERO = '0';
-const char EPSILON = 'e';
-const char COMMA = ',';
-const char EOS = '|';
-
 char *prepend(size_t n, const char *pref, const char *str) {
   // overshooting: if every character is a bitstring, we need to prepend the
   // prefix to each of them, and add an end-of-string symbol
@@ -159,8 +159,6 @@ char *concat3(const char *left, const char *midl, const char *right) {
 char *labels_leaves(int k, int t, int h) {
   assert(h >= k);
   char *(*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
-  const char UTREE = 0;
-  const char VTREE = 1;
   // NOTE: Technically, the pointers are not required to be null'd at this
   // point. However, all implementations of C currently take 0-bits as nullptr
   // and so calloc does null all pointers.
@@ -213,6 +211,9 @@ char *labels_leaves(int k, int t, int h) {
         pref[0] = ONE;
         char *right = prepend(1, pref, child1);
         tree[VTREE][tos.k][tos.t][tos.h] = concat3(left, midl, right);
+        free(left);
+        free(midl);
+        free(right);
         lenq--; // pop
       } else {
         PUSH(VTREE, tos.k, tos.t - 1, tos.h, lenq, maxq, stack);
@@ -238,6 +239,9 @@ char *labels_leaves(int k, int t, int h) {
         pref[0] = ONE;
         char *right = prepend(1, pref, child1);
         tree[UTREE][tos.k][tos.t][tos.h] = concat3(left, midl, right);
+        free(left);
+        free(midl);
+        free(right);
         lenq--; // pop
       } else {
         PUSH(VTREE, tos.k, tos.t, tos.h, lenq, maxq, stack);
@@ -251,7 +255,7 @@ char *labels_leaves(int k, int t, int h) {
   // Epilogue
   free(stack);
 
-  char* ret = malloc(sizeof(char) * strlen(tree[UTREE][k][t][h]) + 1);
+  char *ret = malloc(sizeof(char) * strlen(tree[UTREE][k][t][h]) + 1);
   strcpy(ret, tree[UTREE][k][t][h]);
   // NOTE: This could be smarter if we kept track of everything being set not
   // to nullptr above
@@ -265,8 +269,8 @@ char *labels_leaves(int k, int t, int h) {
   return ret;
 }
 
-void print_list(const int* nums) {
-  const int* cur = nums;
+void print_list(const int *nums) {
+  const int *cur = nums;
   printf("{ ");
   bool first = true;
   while (*cur != -1) {
@@ -281,38 +285,40 @@ void print_list(const int* nums) {
   printf(" },\n");
 }
 
-void print_labels(unsigned nleaves, const char* labels) {
-  assert (labels != nullptr);
+void print_labels(unsigned nleaves, const char *labels) {
+  assert(labels != nullptr);
   size_t len = strlen(labels) + 2; // overshooting
   int (*toms_b)[len] = malloc(nleaves * sizeof(*toms_b));
   int (*toms_d)[len] = malloc(nleaves * sizeof(*toms_d));
   size_t leaf = 0;
   size_t i = 0;
   size_t b = 0;
-  for (const char* cur = labels; *cur != '\0'; cur++) {
+  for (const char *cur = labels; *cur != '\0'; cur++) {
+    assert(leaf < nleaves);
+    assert(i < len);
     switch (*cur) {
-      case ZERO:
-        toms_b[leaf][i] = 0;
-        toms_d[leaf][i++] = b;
-        break;
-      case ONE:
-        toms_b[leaf][i] = 1;
-        toms_d[leaf][i++] = b;
-        break;
-      case EPSILON:
-        break;
-      case COMMA:
-        b++;
-        break;
-      case EOS:
-        toms_b[leaf][i] = -1;
-        toms_d[leaf][i] = -1;
-        leaf++;
-        i = 0;
-        b = 0;
-        break;
-      default:
-        assert (false);
+    case ZERO:
+      toms_b[leaf][i] = 0;
+      toms_d[leaf][i++] = b;
+      break;
+    case ONE:
+      toms_b[leaf][i] = 1;
+      toms_d[leaf][i++] = b;
+      break;
+    case EPSILON:
+      break;
+    case COMMA:
+      b++;
+      break;
+    case EOS:
+      toms_b[leaf][i] = -1;
+      toms_d[leaf][i] = -1;
+      leaf++;
+      i = 0;
+      b = 0;
+      break;
+    default:
+      assert(false);
     }
   }
   // Print bits
@@ -323,7 +329,12 @@ void print_labels(unsigned nleaves, const char* labels) {
   printf("Blocks:\n");
   for (size_t j = 0; j < nleaves; j++)
     print_list(toms_d[j]);
+<<<<<<< HEAD
   // Dump memory
+=======
+
+  // cleaning memory
+>>>>>>> ee5ff8b5f7fc0b877dc6c29205d884b0dbff0ef5
   free(toms_b);
   free(toms_d);
 }
