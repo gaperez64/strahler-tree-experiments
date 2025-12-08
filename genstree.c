@@ -284,8 +284,8 @@ void print_list(const int* nums) {
 void print_labels(unsigned nleaves, const char* labels) {
   assert (labels != nullptr);
   size_t len = strlen(labels) + 2; // overshooting
-  int toms_b[nleaves][len];
-  int toms_d[nleaves][len];
+  int (*toms_b)[len] = malloc(nleaves * sizeof(*toms_b));
+  int (*toms_d)[len] = malloc(nleaves * sizeof(*toms_d));
   size_t leaf = 0;
   size_t i = 0;
   size_t b = 0;
@@ -323,6 +323,9 @@ void print_labels(unsigned nleaves, const char* labels) {
   printf("Blocks:\n");
   for (size_t j = 0; j < nleaves; j++)
     print_list(toms_d[j]);
+  // Dump memory
+  free(toms_b);
+  free(toms_d);
 }
 
 int main(int argc, char *argv[]) {
