@@ -273,7 +273,7 @@ char *labels_leaves(int k, int t, int h) {
 void print_bits(const char *labels) {
   assert(labels != nullptr);
   bool first = true;
-  
+
   printf("Bits:\n");
   for (const char *cur = labels; *cur != '\0'; cur++) {
     switch (*cur) {
