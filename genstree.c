@@ -44,6 +44,7 @@ void print_usage(char *argv[]) {
 unsigned count_leaves(int k, int t, int h) {
   assert(h >= k);
   unsigned (*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
+  // NOTE: calloc sets all entries to zero
 
   size_t maxq = 0;
   size_t lenq = 0;
@@ -68,7 +69,7 @@ unsigned count_leaves(int k, int t, int h) {
     } else if (tos.h >= tos.k && tos.k >= 2 && tos.t == 0) {
       unsigned son = tree[UTREE][tos.k - 1][tos.t][tos.h - 1];
       if (son > 0) {
-        tree[tos.u][tos.k][tos.t][tos.h] = son;
+        tree[(int)tos.u][tos.k][tos.t][tos.h] = son;
         lenq--; // pop
       } else {
         PUSH(UTREE, tos.k - 1, tos.t, tos.h - 1, lenq, maxq, stack);
@@ -263,47 +264,66 @@ char *labels_leaves(int k, int t, int h) {
     for (unsigned epk = 0; epk <= k; epk++)
       for (unsigned ept = 0; ept <= t; ept++)
         for (unsigned eph = 0; eph <= h; eph++)
-          free(tree[epu][epk][ept][eph]);
+          free(tree[(int)epu][epk][ept][eph]);
   free(tree);
 
   return ret;
 }
 
-void print_list(const int *nums) {
-  const int *cur = nums;
-  printf("{ ");
-  bool first = true;
-  while (*cur != -1) {
-    if (first) {
-      first = false;
-    } else {
-      printf(", ");
-    }
-    printf("%d", *cur);
-    cur++;
-  }
-  printf(" },\n");
-}
-
-void print_labels(unsigned nleaves, const char *labels) {
+void print_bits(const char *labels) {
   assert(labels != nullptr);
-  size_t len = strlen(labels) + 2; // overshooting
-  int (*toms_b)[len] = malloc(nleaves * sizeof(*toms_b));
-  int (*toms_d)[len] = malloc(nleaves * sizeof(*toms_d));
-  size_t leaf = 0;
-  size_t i = 0;
-  size_t b = 0;
+  bool first = true;
+  
+  printf("Bits:\n");
   for (const char *cur = labels; *cur != '\0'; cur++) {
-    assert(leaf < nleaves);
-    assert(i < len);
     switch (*cur) {
     case ZERO:
-      toms_b[leaf][i] = 0;
-      toms_d[leaf][i++] = b;
+      if (first) {
+        printf("{0");
+        first = false;
+      } else {
+        printf(", 0");
+      }
       break;
     case ONE:
-      toms_b[leaf][i] = 1;
-      toms_d[leaf][i++] = b;
+      if (first) {
+        printf("{1");
+        first = false;
+      } else {
+        printf(", 1");
+      }
+      break;
+    case EPSILON:
+    case COMMA:
+      break;
+    case EOS:
+      if (first)
+        printf("{ ");
+      printf("}\n");
+      first = true;
+      break;
+    default:
+      assert(false);
+    }
+  }
+}
+
+void print_blocks(const char *labels) {
+  assert(labels != nullptr);
+  unsigned b = 0;
+  bool first = true;
+
+  printf("Blocks:\n");
+  for (const char *cur = labels; *cur != '\0'; cur++) {
+    switch (*cur) {
+    case ZERO:
+    case ONE:
+      if (first) {
+        printf("{%d", b);
+        first = false;
+      } else {
+        printf(", %d", b);
+      }
       break;
     case EPSILON:
       break;
@@ -311,27 +331,16 @@ void print_labels(unsigned nleaves, const char *labels) {
       b++;
       break;
     case EOS:
-      toms_b[leaf][i] = -1;
-      toms_d[leaf][i] = -1;
-      leaf++;
-      i = 0;
+      if (first)
+        printf("{ ");
+      printf("}\n");
       b = 0;
+      first = true;
       break;
     default:
       assert(false);
     }
   }
-  // Print bits
-  printf("Bits:\n");
-  for (size_t j = 0; j < nleaves; j++)
-    print_list(toms_b[j]);
-  // Print blocks
-  printf("Blocks:\n");
-  for (size_t j = 0; j < nleaves; j++)
-    print_list(toms_d[j]);
-  // cleaning memory
-  free(toms_b);
-  free(toms_d);
 }
 
 int main(int argc, char *argv[]) {
@@ -381,10 +390,10 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  unsigned nleaves = count_leaves(k, t, h);
-
+  count_leaves(k, t, h);
   char *labels = labels_leaves(k, t, h);
-  print_labels(nleaves, labels);
+  print_bits(labels);
+  print_blocks(labels);
   free(labels);
 
   return EXIT_SUCCESS;
