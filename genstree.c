@@ -112,7 +112,7 @@ unsigned count_leaves(int k, int t, int h) {
   return total;
 }
 
-char *prepend(size_t n, const char *pref, const char *str) {
+char *prepend(size_t n, char const *pref, char const *str) {
   // overshooting: if every character is a bitstring, we need to prepend the
   // prefix to each of them, and add an end-of-string symbol
   size_t len = 1 + strlen(str) * (n + 1);
@@ -120,7 +120,7 @@ char *prepend(size_t n, const char *pref, const char *str) {
   size_t reslen = 0;
   // Now we copy the prefix, then copy up until the next EOS,
   // and repeat until end of string marker
-  const char *next = str;
+  char const *next = str;
   assert(next != nullptr);
   while (*next != '\0') {
     // we first walk up until the next EOS
@@ -140,7 +140,7 @@ char *prepend(size_t n, const char *pref, const char *str) {
   return res;
 }
 
-char *concat3(const char *left, const char *midl, const char *right) {
+char *concat3(char const *left, char const *midl, char const *right) {
   assert(left != nullptr);
   assert(midl != nullptr);
   assert(right != nullptr);
@@ -265,12 +265,12 @@ char *labels_leaves(int k, int t, int h) {
   return ret;
 }
 
-void print_bits(const char *labels) {
+void print_bits(char const *labels) {
   assert(labels != nullptr);
   bool first = true;
 
   puts("Bits:");
-  for (const char *cur = labels; *cur != '\0'; cur++) {
+  for (char const *cur = labels; *cur != '\0'; cur++) {
     switch (*cur) {
     case ZERO:
       if (first) {
@@ -303,13 +303,13 @@ void print_bits(const char *labels) {
   }
 }
 
-void print_blocks(const char *labels) {
+void print_blocks(char const *labels) {
   assert(labels != nullptr);
   unsigned b = 0;
   bool first = true;
 
   puts("Blocks:");
-  for (const char *cur = labels; *cur != '\0'; cur++) {
+  for (char const *cur = labels; *cur != '\0'; cur++) {
     switch (*cur) {
     case ZERO:
     case ONE:
@@ -338,7 +338,7 @@ void print_blocks(const char *labels) {
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[argc + 1]) {
   int opt;
   int k;
   int t;
