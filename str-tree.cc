@@ -8,13 +8,13 @@
 #include "test.hpp"
 
 // For leaves2
-int k = 4, t = 2, h = 4;
+//int k = 4, t = 2, h = 4;
 // For generated
 // int k = 4, t = 3, h = 5;
 // For input.hpp
 //int k = 3, t = 8, h = 3;
 // For test.hpp
-//int k = 3, t = 2, h = 5;
+int k = 3, t = 2, h = 5;
 
 
 std::vector<std::vector<int>> leaves_b {
@@ -3362,8 +3362,8 @@ int compare(size_t idxA, size_t idxB, int pindex, std::vector<std::vector<bool>>
 int main(int argc, char *argv[])
 {
     // Switch out the tree to use here - don't forget to adjust the parameters k, t, h at the top as well
-    auto& use_b = leaves2_b;
-    auto& use_d = leaves2_d;
+    auto& use_b = tree_b;
+    auto& use_d = tree_d;
 
     // Don't pass parameter = Go through all
     if (argc == 1) 
@@ -3374,7 +3374,8 @@ int main(int argc, char *argv[])
             tmp_d = use_d[idx];
             prog_tmp(h-2);
             // getLevelPSuccessor(idx, h-1, use_b, use_d);
-            if ((tmp_b == use_b[idx+1] and tmp_d == use_d[idx+1]) or ((idx == use_b.size() - 1 and tmp_d[0] == -1)))
+            if (((idx == use_b.size() - 1 and tmp_d[0] == -1)) or
+                (tmp_b == use_b[idx+1] and tmp_d == use_d[idx+1]))
             {
                 std::cout << idx << ": \033[32mCorrect successor!\n\033[0m";
             }
