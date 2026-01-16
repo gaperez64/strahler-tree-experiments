@@ -6,14 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#define ONE '1'
-#define ZERO '0'
-#define EPSILON 'e'
-#define COMMA ','
-#define EOS '|'
-
-#define UTREE 0
-#define VTREE 1
+enum : char { ONE = '1', ZERO = '0', EPSILON = 'e', COMMA = ',', EOS = '|' };
+enum { UTREE = 0, VTREE = 1 };
 
 #define PUSH(UVAL, KVAL, TVAL, HVAL, LENQ, MAXQ, STACK)                        \
   do {                                                                         \
@@ -30,7 +24,8 @@
     assert(LENQ <= MAXQ);                                                      \
   } while (0)
 
-typedef struct _node {
+typedef struct Node Node;
+typedef struct Node {
   int k;
   int t;
   int h;
@@ -117,7 +112,7 @@ unsigned count_leaves(int k, int t, int h) {
   return total;
 }
 
-char *prepend(size_t n, const char *pref, const char *str) {
+char *prepend(size_t n, char const *pref, char const *str) {
   // overshooting: if every character is a bitstring, we need to prepend the
   // prefix to each of them, and add an end-of-string symbol
   size_t len = 1 + strlen(str) * (n + 1);
@@ -125,7 +120,7 @@ char *prepend(size_t n, const char *pref, const char *str) {
   size_t reslen = 0;
   // Now we copy the prefix, then copy up until the next EOS,
   // and repeat until end of string marker
-  const char *next = str;
+  char const *next = str;
   assert(next != nullptr);
   while (*next != '\0') {
     // we first walk up until the next EOS
@@ -145,7 +140,7 @@ char *prepend(size_t n, const char *pref, const char *str) {
   return res;
 }
 
-char *concat3(const char *left, const char *midl, const char *right) {
+char *concat3(char const *left, char const *midl, char const *right) {
   assert(left != nullptr);
   assert(midl != nullptr);
   assert(right != nullptr);
@@ -270,27 +265,27 @@ char *labels_leaves(int k, int t, int h) {
   return ret;
 }
 
-void print_bits(const char *labels) {
+void print_bits(char const *labels) {
   assert(labels != nullptr);
   bool first = true;
 
-  printf("Bits:\n");
-  for (const char *cur = labels; *cur != '\0'; cur++) {
+  puts("Bits:");
+  for (char const *cur = labels; *cur != '\0'; cur++) {
     switch (*cur) {
     case ZERO:
       if (first) {
-        printf("{0");
+        fputs("{0", stdout);
         first = false;
       } else {
-        printf(", 0");
+        fputs(", 0", stdout);
       }
       break;
     case ONE:
       if (first) {
-        printf("{1");
+        fputs("{1", stdout);
         first = false;
       } else {
-        printf(", 1");
+        fputs(", 1", stdout);
       }
       break;
     case EPSILON:
@@ -298,8 +293,8 @@ void print_bits(const char *labels) {
       break;
     case EOS:
       if (first)
-        printf("{ ");
-      printf("}\n");
+        fputs("{ ", stdout);
+      puts("}");
       first = true;
       break;
     default:
@@ -308,13 +303,13 @@ void print_bits(const char *labels) {
   }
 }
 
-void print_blocks(const char *labels) {
+void print_blocks(char const *labels) {
   assert(labels != nullptr);
   unsigned b = 0;
   bool first = true;
 
-  printf("Blocks:\n");
-  for (const char *cur = labels; *cur != '\0'; cur++) {
+  puts("Blocks:");
+  for (char const *cur = labels; *cur != '\0'; cur++) {
     switch (*cur) {
     case ZERO:
     case ONE:
@@ -332,8 +327,8 @@ void print_blocks(const char *labels) {
       break;
     case EOS:
       if (first)
-        printf("{ ");
-      printf("}\n");
+        fputs("{ ", stdout);
+      puts("}");
       b = 0;
       first = true;
       break;
@@ -343,7 +338,7 @@ void print_blocks(const char *labels) {
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[argc + 1]) {
   int opt;
   int k;
   int t;
@@ -351,13 +346,17 @@ int main(int argc, char *argv[]) {
   bool kset = false;
   bool tset = false;
   bool hset = false;
+  bool just_count = false;
 
-  while ((opt = getopt(argc, argv, "k:t:h:")) != -1) {
+  while ((opt = getopt(argc, argv, "k:t:h:j")) != -1) {
     switch (opt) {
+    case 'j':
+      just_count = true;
+      break;
     case 'k':
       k = atoi(optarg);
       if (k < 1) {
-        fprintf(stderr, "K must be a positive integer\n");
+        fputs("K must be a positive integer\n", stderr);
         return EXIT_FAILURE;
       }
       kset = true;
@@ -365,7 +364,7 @@ int main(int argc, char *argv[]) {
     case 't':
       t = atoi(optarg);
       if (t < 0) {
-        fprintf(stderr, "T must be a nonnegative integer\n");
+        fputs("T must be a nonnegative integer\n", stderr);
         return EXIT_FAILURE;
       }
       tset = true;
@@ -373,7 +372,7 @@ int main(int argc, char *argv[]) {
     case 'h':
       h = atoi(optarg);
       if (h < 1) {
-        fprintf(stderr, "H must be a positive integer\n");
+        fputs("H must be a positive integer\n", stderr);
         return EXIT_FAILURE;
       }
       hset = true;
@@ -385,16 +384,18 @@ int main(int argc, char *argv[]) {
   }
 
   if (!(kset && tset && hset)) {
-    fprintf(stderr, "Expected three arguments\n");
+    fputs("Expected three arguments\n", stderr);
     print_usage(argv);
     return EXIT_FAILURE;
   }
 
   count_leaves(k, t, h);
-  char *labels = labels_leaves(k, t, h);
-  print_bits(labels);
-  print_blocks(labels);
-  free(labels);
+  if (!just_count) {
+    char *labels = labels_leaves(k, t, h);
+    print_bits(labels);
+    print_blocks(labels);
+    free(labels);
+  }
 
   return EXIT_SUCCESS;
 }
