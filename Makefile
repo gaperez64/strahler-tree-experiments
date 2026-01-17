@@ -3,7 +3,7 @@ CC=gcc
 all: gstree 
 
 gstree: genstree.c
-	$(CC) -std=c23 -g genstree.c -o gstree
+	$(CC) -O3 -std=c23 genstree.c -o gstree
 
 clean:
 	rm gstree
