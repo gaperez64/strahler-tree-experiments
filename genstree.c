@@ -6,31 +6,30 @@
 #include <string.h>
 #include <unistd.h>
 
-#define ONE '1'
-#define ZERO '0'
-#define EPSILON 'e'
-#define COMMA ','
-#define EOS '|'
+enum : char { ONE = '1', ZERO = '0', EPSILON = 'e', COMMA = ',', EOS = '|' };
+enum { UTREE = 0, VTREE = 1 };
 
-#define UTREE 0
-#define VTREE 1
-
-#define PUSH(UVAL, KVAL, TVAL, HVAL, LENQ, MAXQ, STACK)                        \
+#define PUSH(STACK, LENQ, MAXQ)                                                \
   do {                                                                         \
     if (LENQ >= MAXQ) {                                                        \
       MAXQ = 2 * (MAXQ + 1);                                                   \
       STACK = realloc(STACK, MAXQ * sizeof(*STACK));                           \
       assert(LENQ < MAXQ);                                                     \
     }                                                                          \
-    STACK[LENQ].u = UVAL;                                                      \
-    STACK[LENQ].k = KVAL;                                                      \
-    STACK[LENQ].t = TVAL;                                                      \
-    STACK[LENQ].h = HVAL;                                                      \
     LENQ++;                                                                    \
     assert(LENQ <= MAXQ);                                                      \
   } while (0)
 
-typedef struct _node {
+#define SET_TOP_NODE(STACK, LENQ, UVAL, KVAL, TVAL, HVAL)                      \
+  do {                                                                         \
+    assert(LENQ > 0);                                                          \
+    STACK[LENQ - 1].u = UVAL;                                                  \
+    STACK[LENQ - 1].k = KVAL;                                                  \
+    STACK[LENQ - 1].t = TVAL;                                                  \
+    STACK[LENQ - 1].h = HVAL;                                                  \
+  } while (0)
+
+typedef struct Node {
   int k;
   int t;
   int h;
@@ -38,19 +37,25 @@ typedef struct _node {
 } Node;
 
 void print_usage(char *argv[]) {
-  fprintf(stderr, "Usage: %s -k K -t T -h H \n", argv[0]);
+  fprintf(stderr, "Usage: %s -k K -t T -h H [-j -d]\n", argv[0]);
+  fputs("-j\t Can be used to obtain just the leaf count\n", stderr);
+  fputs("-d\t Indicates the tree should be printed in dot format\n", stderr);
+  fputs("With no options, the labels of the leaves will be printed\n", stderr);
 }
 
+[[nodiscard]]
 unsigned count_leaves(int k, int t, int h) {
   assert(h >= k);
   unsigned (*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
+  // NOTE: calloc sets all entries to zero
 
   size_t maxq = 0;
   size_t lenq = 0;
   Node *stack = nullptr;
 
   // this is the node of interest
-  PUSH(UTREE, k, t, h, lenq, maxq, stack);
+  PUSH(stack, lenq, maxq);
+  SET_TOP_NODE(stack, lenq, UTREE, k, t, h);
 
   while (lenq > 0) {
     Node tos = stack[lenq - 1];
@@ -63,15 +68,17 @@ unsigned count_leaves(int k, int t, int h) {
         tree[UTREE][tos.k][tos.t][tos.h] = son;
         lenq--; // pop
       } else {
-        PUSH(UTREE, tos.k, tos.t, tos.h - 1, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, UTREE, tos.k, tos.t, tos.h - 1);
       }
     } else if (tos.h >= tos.k && tos.k >= 2 && tos.t == 0) {
       unsigned son = tree[UTREE][tos.k - 1][tos.t][tos.h - 1];
       if (son > 0) {
-        tree[tos.u][tos.k][tos.t][tos.h] = son;
+        tree[(int)tos.u][tos.k][tos.t][tos.h] = son;
         lenq--; // pop
       } else {
-        PUSH(UTREE, tos.k - 1, tos.t, tos.h - 1, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, UTREE, tos.k - 1, tos.t, tos.h - 1);
       }
     } else if (tos.u == VTREE && tos.h >= tos.k && tos.k >= 2 && tos.t >= 1) {
       unsigned child1 = tree[VTREE][tos.k][tos.t - 1][tos.h];
@@ -80,8 +87,10 @@ unsigned count_leaves(int k, int t, int h) {
         tree[VTREE][tos.k][tos.t][tos.h] = child1 * 2 + child2;
         lenq--; // pop
       } else {
-        PUSH(VTREE, tos.k, tos.t - 1, tos.h, lenq, maxq, stack);
-        PUSH(UTREE, tos.k - 1, tos.t, tos.h - 1, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, VTREE, tos.k, tos.t - 1, tos.h);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, UTREE, tos.k - 1, tos.t, tos.h - 1);
       }
     } else if (tos.u == UTREE && tos.h == tos.k && tos.k >= 2) {
       unsigned son = tree[VTREE][tos.k][tos.t][tos.h];
@@ -89,7 +98,8 @@ unsigned count_leaves(int k, int t, int h) {
         tree[UTREE][tos.k][tos.t][tos.h] = son;
         lenq--; // pop
       } else {
-        PUSH(VTREE, tos.k, tos.t, tos.h, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, VTREE, tos.k, tos.t, tos.h);
       }
     } else if (tos.u == UTREE && tos.h > tos.k && tos.k >= 2) {
       unsigned child1 = tree[VTREE][tos.k][tos.t][tos.h];
@@ -98,8 +108,10 @@ unsigned count_leaves(int k, int t, int h) {
         tree[UTREE][tos.k][tos.t][tos.h] = child1 * 2 + child2;
         lenq--; // pop
       } else {
-        PUSH(VTREE, tos.k, tos.t, tos.h, lenq, maxq, stack);
-        PUSH(UTREE, tos.k, tos.t, tos.h - 1, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, VTREE, tos.k, tos.t, tos.h);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, UTREE, tos.k, tos.t, tos.h - 1);
       }
     } else {
       assert(false);
@@ -107,7 +119,6 @@ unsigned count_leaves(int k, int t, int h) {
   }
 
   unsigned total = tree[UTREE][k][t][h];
-  printf("U^%d_{%d,%d} has %d leaves\n", k, t, h, total);
 
   // Epilogue
   free(stack);
@@ -116,7 +127,8 @@ unsigned count_leaves(int k, int t, int h) {
   return total;
 }
 
-char *prepend(size_t n, const char *pref, const char *str) {
+[[nodiscard]]
+char *prepend(size_t n, char const *pref, char const *str) {
   // overshooting: if every character is a bitstring, we need to prepend the
   // prefix to each of them, and add an end-of-string symbol
   size_t len = 1 + strlen(str) * (n + 1);
@@ -124,7 +136,7 @@ char *prepend(size_t n, const char *pref, const char *str) {
   size_t reslen = 0;
   // Now we copy the prefix, then copy up until the next EOS,
   // and repeat until end of string marker
-  const char *next = str;
+  char const *next = str;
   assert(next != nullptr);
   while (*next != '\0') {
     // we first walk up until the next EOS
@@ -144,7 +156,8 @@ char *prepend(size_t n, const char *pref, const char *str) {
   return res;
 }
 
-char *concat3(const char *left, const char *midl, const char *right) {
+[[nodiscard]]
+char *concat3(char const *left, char const *midl, char const *right) {
   assert(left != nullptr);
   assert(midl != nullptr);
   assert(right != nullptr);
@@ -156,6 +169,7 @@ char *concat3(const char *left, const char *midl, const char *right) {
   return res;
 }
 
+[[nodiscard]]
 char *labels_leaves(int k, int t, int h) {
   assert(h >= k);
   char *(*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
@@ -168,7 +182,8 @@ char *labels_leaves(int k, int t, int h) {
   Node *stack = nullptr;
 
   // this is the node of interest
-  PUSH(UTREE, k, t, h, lenq, maxq, stack);
+  PUSH(stack, lenq, maxq);
+  SET_TOP_NODE(stack, lenq, UTREE, k, t, h);
 
   while (lenq > 0) {
     Node tos = stack[lenq - 1];
@@ -184,7 +199,8 @@ char *labels_leaves(int k, int t, int h) {
         tree[UTREE][tos.k][tos.t][tos.h] = prepend(2, pref, son);
         lenq--; // pop
       } else {
-        PUSH(UTREE, tos.k, tos.t, tos.h - 1, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, UTREE, tos.k, tos.t, tos.h - 1);
       }
     } else if (tos.h >= tos.k && tos.k >= 2 && tos.t == 0) {
       char *son = tree[UTREE][tos.k - 1][tos.t][tos.h - 1];
@@ -198,7 +214,8 @@ char *labels_leaves(int k, int t, int h) {
         }
         lenq--; // pop
       } else {
-        PUSH(UTREE, tos.k - 1, tos.t, tos.h - 1, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, UTREE, tos.k - 1, tos.t, tos.h - 1);
       }
     } else if (tos.u == VTREE && tos.h >= tos.k && tos.k >= 2 && tos.t >= 1) {
       char *child1 = tree[VTREE][tos.k][tos.t - 1][tos.h];
@@ -216,8 +233,10 @@ char *labels_leaves(int k, int t, int h) {
         free(right);
         lenq--; // pop
       } else {
-        PUSH(VTREE, tos.k, tos.t - 1, tos.h, lenq, maxq, stack);
-        PUSH(UTREE, tos.k - 1, tos.t, tos.h - 1, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, VTREE, tos.k, tos.t - 1, tos.h);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, UTREE, tos.k - 1, tos.t, tos.h - 1);
       }
     } else if (tos.u == UTREE && tos.h == tos.k && tos.k >= 2) {
       char *son = tree[VTREE][tos.k][tos.t][tos.h];
@@ -226,7 +245,8 @@ char *labels_leaves(int k, int t, int h) {
         tree[UTREE][tos.k][tos.t][tos.h] = prepend(1, pref, son);
         lenq--; // pop
       } else {
-        PUSH(VTREE, tos.k, tos.t, tos.h, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, VTREE, tos.k, tos.t, tos.h);
       }
     } else if (tos.u == UTREE && tos.h > tos.k && tos.k >= 2) {
       char *child1 = tree[VTREE][tos.k][tos.t][tos.h];
@@ -244,8 +264,10 @@ char *labels_leaves(int k, int t, int h) {
         free(right);
         lenq--; // pop
       } else {
-        PUSH(VTREE, tos.k, tos.t, tos.h, lenq, maxq, stack);
-        PUSH(UTREE, tos.k, tos.t, tos.h - 1, lenq, maxq, stack);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, VTREE, tos.k, tos.t, tos.h);
+        PUSH(stack, lenq, maxq);
+        SET_TOP_NODE(stack, lenq, UTREE, tos.k, tos.t, tos.h - 1);
       }
     } else {
       assert(false);
@@ -263,47 +285,66 @@ char *labels_leaves(int k, int t, int h) {
     for (unsigned epk = 0; epk <= k; epk++)
       for (unsigned ept = 0; ept <= t; ept++)
         for (unsigned eph = 0; eph <= h; eph++)
-          free(tree[epu][epk][ept][eph]);
+          free(tree[(int)epu][epk][ept][eph]);
   free(tree);
 
   return ret;
 }
 
-void print_list(const int *nums) {
-  const int *cur = nums;
-  printf("{ ");
-  bool first = true;
-  while (*cur != -1) {
-    if (first) {
-      first = false;
-    } else {
-      printf(", ");
-    }
-    printf("%d", *cur);
-    cur++;
-  }
-  printf(" },\n");
-}
-
-void print_labels(unsigned nleaves, const char *labels) {
+void print_bits(char const *labels) {
   assert(labels != nullptr);
-  size_t len = strlen(labels) + 2; // overshooting
-  int (*toms_b)[len] = malloc(nleaves * sizeof(*toms_b));
-  int (*toms_d)[len] = malloc(nleaves * sizeof(*toms_d));
-  size_t leaf = 0;
-  size_t i = 0;
-  size_t b = 0;
-  for (const char *cur = labels; *cur != '\0'; cur++) {
-    assert(leaf < nleaves);
-    assert(i < len);
+  bool first = true;
+
+  puts("Bits:");
+  for (char const *cur = labels; *cur != '\0'; cur++) {
     switch (*cur) {
     case ZERO:
-      toms_b[leaf][i] = 0;
-      toms_d[leaf][i++] = b;
+      if (first) {
+        fputs("{0", stdout);
+        first = false;
+      } else {
+        fputs(", 0", stdout);
+      }
       break;
     case ONE:
-      toms_b[leaf][i] = 1;
-      toms_d[leaf][i++] = b;
+      if (first) {
+        fputs("{1", stdout);
+        first = false;
+      } else {
+        fputs(", 1", stdout);
+      }
+      break;
+    case EPSILON:
+    case COMMA:
+      break;
+    case EOS:
+      if (first)
+        fputs("{ ", stdout);
+      puts("}");
+      first = true;
+      break;
+    default:
+      assert(false);
+    }
+  }
+}
+
+void print_blocks(char const *labels) {
+  assert(labels != nullptr);
+  unsigned b = 0;
+  bool first = true;
+
+  puts("Blocks:");
+  for (char const *cur = labels; *cur != '\0'; cur++) {
+    switch (*cur) {
+    case ZERO:
+    case ONE:
+      if (first) {
+        printf("{%d", b);
+        first = false;
+      } else {
+        printf(", %d", b);
+      }
       break;
     case EPSILON:
       break;
@@ -311,30 +352,54 @@ void print_labels(unsigned nleaves, const char *labels) {
       b++;
       break;
     case EOS:
-      toms_b[leaf][i] = -1;
-      toms_d[leaf][i] = -1;
-      leaf++;
-      i = 0;
+      if (first)
+        fputs("{ ", stdout);
+      puts("}");
       b = 0;
+      first = true;
       break;
     default:
       assert(false);
     }
   }
-  // Print bits
-  printf("Bits:\n");
-  for (size_t j = 0; j < nleaves; j++)
-    print_list(toms_b[j]);
-  // Print blocks
-  printf("Blocks:\n");
-  for (size_t j = 0; j < nleaves; j++)
-    print_list(toms_d[j]);
-  // cleaning memory
-  free(toms_b);
-  free(toms_d);
 }
 
-int main(int argc, char *argv[]) {
+void print_tree(char const *labels) {
+  assert(labels != nullptr);
+  unsigned b = 0;
+  bool first = true;
+
+  puts("Blocks:");
+  for (char const *cur = labels; *cur != '\0'; cur++) {
+    switch (*cur) {
+    case ZERO:
+    case ONE:
+      if (first) {
+        printf("{%d", b);
+        first = false;
+      } else {
+        printf(", %d", b);
+      }
+      break;
+    case EPSILON:
+      break;
+    case COMMA:
+      b++;
+      break;
+    case EOS:
+      if (first)
+        fputs("{ ", stdout);
+      puts("}");
+      b = 0;
+      first = true;
+      break;
+    default:
+      assert(false);
+    }
+  }
+}
+
+int main(int argc, char *argv[argc + 1]) {
   int opt;
   int k;
   int t;
@@ -342,13 +407,21 @@ int main(int argc, char *argv[]) {
   bool kset = false;
   bool tset = false;
   bool hset = false;
+  bool just_count = false;
+  bool print_dot = false;
 
-  while ((opt = getopt(argc, argv, "k:t:h:")) != -1) {
+  while ((opt = getopt(argc, argv, "k:t:h:jd")) != -1) {
     switch (opt) {
+    case 'j':
+      just_count = true;
+      break;
+    case 'd':
+      print_dot = true;
+      break;
     case 'k':
       k = atoi(optarg);
       if (k < 1) {
-        fprintf(stderr, "K must be a positive integer\n");
+        fputs("K must be a positive integer\n", stderr);
         return EXIT_FAILURE;
       }
       kset = true;
@@ -356,7 +429,7 @@ int main(int argc, char *argv[]) {
     case 't':
       t = atoi(optarg);
       if (t < 0) {
-        fprintf(stderr, "T must be a nonnegative integer\n");
+        fputs("T must be a nonnegative integer\n", stderr);
         return EXIT_FAILURE;
       }
       tset = true;
@@ -364,7 +437,7 @@ int main(int argc, char *argv[]) {
     case 'h':
       h = atoi(optarg);
       if (h < 1) {
-        fprintf(stderr, "H must be a positive integer\n");
+        fputs("H must be a positive integer\n", stderr);
         return EXIT_FAILURE;
       }
       hset = true;
@@ -376,15 +449,25 @@ int main(int argc, char *argv[]) {
   }
 
   if (!(kset && tset && hset)) {
-    fprintf(stderr, "Expected three arguments\n");
+    fputs("Some arguments are missing!\n", stderr);
     print_usage(argv);
     return EXIT_FAILURE;
   }
 
-  unsigned nleaves = count_leaves(k, t, h);
+  if (just_count) {
+    unsigned total = count_leaves(k, t, h);
+    printf("U^%d_{%d,%d} has %d leaves\n", k, t, h, total);
+    return EXIT_SUCCESS;
+  }
 
   char *labels = labels_leaves(k, t, h);
-  print_labels(nleaves, labels);
+  if (print_dot) {
+    print_tree(labels);
+    return EXIT_SUCCESS;
+  } else { // Default: print labels of leaves
+    print_bits(labels);
+    print_blocks(labels);
+  }
   free(labels);
 
   return EXIT_SUCCESS;

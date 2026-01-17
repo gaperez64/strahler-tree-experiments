@@ -1,9 +1,13 @@
 CC=gcc
+CXX=g++
 
-all: gstree 
+all: gstree lenstree
 
 gstree: genstree.c
-	$(CC) -O3 -std=c23 genstree.c -o gstree
+	$(CC) -O3 -std=c23 genstree.c -o gstree -Wall
+
+lenstree: lenstree.cpp
+	$(CXX) -Wall -O3 lenstree.cpp -o lstree -Wall
 
 clean:
-	rm gstree
+	rm gstree lstree
