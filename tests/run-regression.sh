@@ -4,15 +4,6 @@
 #   tests/run-regression.sh                # run tests (requires tests/golden/*)
 #   tests/run-regression.sh --generate-goldens
 #   or: make regtest
-set -euo pipefail
-
-#here="$(cd "":"$0")" && pwd
-#root="$here/.."
-#cd "$root"
-
-# Build project first
-#echo "Building project..."
-#make
 
 # Locate binary (try common names/locations)
 BIN=""
