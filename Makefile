@@ -1,6 +1,3 @@
-CC=gcc
-CXX=g++
-
 all: gstree lenstree
 
 gstree: genstree.c
@@ -11,3 +8,7 @@ lenstree: lenstree.cpp
 
 clean:
 	rm gstree lstree
+
+regtest:
+	echo "Running regression tests..." 
+	./tests/run-regression.sh
