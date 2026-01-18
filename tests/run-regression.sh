@@ -6,13 +6,13 @@
 #   or: make regtest
 set -euo pipefail
 
-here="$(cd "":"$0")" && pwd)
-root="$here/.."
-cd "$root"
+#here="$(cd "":"$0")" && pwd
+#root="$here/.."
+#cd "$root"
 
 # Build project first
-echo "Building project..."
-make
+#echo "Building project..."
+#make
 
 # Locate binary (try common names/locations)
 BIN=""
@@ -34,9 +34,13 @@ echo "Using binary: $BIN"
 
 # Test cases: list of "k t h" triples (adjust/add as desired)
 CASES=(
-  "2 0 0"
-  "3 1 0"
-  "4 2 1"
+  "2 1 2"
+  "3 1 3"
+  "4 2 4"
+  "3 2 4"
+  "1 2 4"
+  "1 2 2"
+  "2 2 2"
 )
 
 mkdir -p tests/actual tests/golden
@@ -56,8 +60,8 @@ if [ "$GENERATE" -eq 1 ]; then
     set -- $ct
     k=$1; t=$2; h=$3
     name="k${k}_t${t}_h${h}.out"
-    echo "  $BIN --k $k --t $t --h $h > tests/golden/$name"
-    "$BIN" --k "$k" --t "$t" --h "$h" > "tests/golden/$name"
+    echo "  $BIN -k $k -t $t -h $h > tests/golden/$name"
+    "$BIN" -k "$k" -t "$t" -h "$h" > "tests/golden/$name"
   done
   echo "Done. Review and commit tests/golden/* if outputs are correct."
   exit 0

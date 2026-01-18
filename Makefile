@@ -11,3 +11,7 @@ lenstree: lenstree.cpp
 
 clean:
 	rm gstree lstree
+
+regtest:
+	echo "Running regression tests..." 
+	./tests/run-regression.sh
