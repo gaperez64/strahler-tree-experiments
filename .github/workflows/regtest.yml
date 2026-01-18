@@ -19,12 +19,13 @@ jobs:
       - name: Install build essentials
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential
+          sudo apt-get install -y build-essential g++-14 gcc-14
 
       - name: Run regression tests
         env:
           # Do NOT generate goldens in CI by default.
           GENERATE_GOLDENS: "0"
         run: |
+          export CC=gcc-14
           make gstree
           make regtest

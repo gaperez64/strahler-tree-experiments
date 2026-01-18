@@ -1,6 +1,3 @@
-CC=gcc
-CXX=g++
-
 all: gstree lenstree
 
 gstree: genstree.c
