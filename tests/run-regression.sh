@@ -9,12 +9,8 @@
 BIN=""
 if [ -x "./genstree" ]; then
   BIN="./genstree"
-elif [ -x "./gstree" ]; then
-  BIN="./gstree"
 elif command -v genstree >/dev/null 2>&1; then
   BIN="$(command -v genstree)"
-elif command -v gstree >/dev/null 2>&1; then
-  BIN="$(command -v gstree)"
 else
   echo "Error: genstree binary not found in project root or PATH."
   echo "Please build the project so that './genstree' exists, or adjust this script."

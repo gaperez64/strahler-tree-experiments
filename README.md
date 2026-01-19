@@ -3,9 +3,9 @@ Repository to hold some files to play around with Strahler trees.
 
 ## Tools
 Run `make` to compile some tools.
-* `gstree` can be used to count leaves of a tree (for given values of `k`, `t`
+* `genstree` can be used to count leaves of a tree (for given values of `k`, `t`
   and `h`; it can also print to `stdout` the labels of the leaves of the tree;
-  and it can even print the tree in dot format so you can run, e.g. `./gstree
+  and it can even print the tree in dot format so you can run, e.g. `./genstree
   -k 4 -t 2 -h 4 -d | dot -Tpng > tree.png`
 
 ## Labels in Code
