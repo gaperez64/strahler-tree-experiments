@@ -1,3 +1,6 @@
+// We will be using getopt, and it is NOT part of the C standard, so we
+// use the feature test macro for the 2008 edition of the POSIX standard
+
 #define _POSIX_C_SOURCE 200809L
 
 #include <assert.h>
