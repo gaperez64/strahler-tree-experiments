@@ -6,7 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 
-enum : char { ONE = '1', ZERO = '0', EPSILON = 'e', COMMA = ',', EOS = '|' };
+#include "prtstree.h"
+
 enum { UTREE = 0, VTREE = 1 };
 
 #define PUSH(STACK, LENQ, MAXQ)                                                \
@@ -29,7 +30,7 @@ enum { UTREE = 0, VTREE = 1 };
     STACK[LENQ - 1].h = HVAL;                                                  \
   } while (0)
 
-void print_usage(char *argv[]) {
+static void print_usage(char *argv[]) {
   fprintf(stderr, "Usage: %s -k K -t T -h H [-j -d]\n", argv[0]);
   fputs("-j\t Can be used to obtain just the leaf count\n", stderr);
   fputs("-d\t Indicates the tree should be printed in dot format\n", stderr);
@@ -43,8 +44,7 @@ typedef struct Node {
   char u;
 } Node;
 
-[[nodiscard]]
-unsigned count_leaves(int k, int t, int h) {
+[[nodiscard]] static unsigned count_leaves(int k, int t, int h) {
   assert(h >= k);
   unsigned (*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
   // NOTE: calloc sets all entries to zero
@@ -58,7 +58,7 @@ unsigned count_leaves(int k, int t, int h) {
   SET_TOP_NODE(stack, lenq, UTREE, k, t, h);
 
   while (lenq > 0) {
-    Node tos = stack[lenq - 1];
+    Node const tos = stack[lenq - 1];
     if (tos.u == UTREE && tos.h == 1 && tos.k == 1) {
       tree[UTREE][tos.k][tos.t][tos.h] = 1;
       lenq--; // pop
@@ -127,8 +127,8 @@ unsigned count_leaves(int k, int t, int h) {
   return total;
 }
 
-[[nodiscard]]
-char *prepend(size_t n, char const *pref, char const *str) {
+[[nodiscard]] static char *prepend(size_t n, char const *pref,
+                                   char const *str) {
   // overshooting: if every character is a bitstring, we need to prepend the
   // prefix to each of them, and add an end-of-string symbol
   size_t len = 1 + strlen(str) * (n + 1);
@@ -156,8 +156,8 @@ char *prepend(size_t n, char const *pref, char const *str) {
   return res;
 }
 
-[[nodiscard]]
-char *concat3(char const *left, char const *midl, char const *right) {
+[[nodiscard]] static char *concat3(char const *left, char const *midl,
+                                   char const *right) {
   assert(left != nullptr);
   assert(midl != nullptr);
   assert(right != nullptr);
@@ -169,8 +169,7 @@ char *concat3(char const *left, char const *midl, char const *right) {
   return res;
 }
 
-[[nodiscard]]
-char *labels_leaves(int k, int t, int h) {
+[[nodiscard]] static char *labels_leaves(int k, int t, int h) {
   assert(h >= k);
   char *(*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
   // NOTE: Technically, the pointers are not required to be null'd at this
@@ -186,7 +185,7 @@ char *labels_leaves(int k, int t, int h) {
   SET_TOP_NODE(stack, lenq, UTREE, k, t, h);
 
   while (lenq > 0) {
-    Node tos = stack[lenq - 1];
+    Node const tos = stack[lenq - 1];
     if (tos.u == UTREE && tos.h == 1 && tos.k == 1) {
       char *lab = malloc(2);
       lab[0] = EOS;
@@ -293,7 +292,7 @@ char *labels_leaves(int k, int t, int h) {
   return ret;
 }
 
-void print_bits(char const *labels) {
+static void print_bits(char const *labels) {
   assert(labels != nullptr);
   bool first = true;
 
@@ -331,7 +330,7 @@ void print_bits(char const *labels) {
   }
 }
 
-void print_blocks(char const *labels) {
+static void print_blocks(char const *labels) {
   assert(labels != nullptr);
   unsigned b = 0;
   bool first = true;
@@ -364,33 +363,6 @@ void print_blocks(char const *labels) {
       assert(false);
     }
   }
-}
-
-void print_tree(unsigned const nlabs, char const labels[nlabs]) {
-  assert(labels != nullptr);
-  unsigned id = 1;
-  char const **lab_ptrs = malloc(sizeof(char *[nlabs]));
-
-  // This will be a DFS-like procedure, we need a stack of arrays of pointers
-  char const ***stack = nullptr;
-  size_t maxq = 0;
-  size_t lenq = 0;
-
-  // And we put in it the array of pointers to all labels to being with
-  lab_ptrs[0] = labels;
-  unsigned cur_label_idx = 1;
-  for (char const *cur = labels; *cur != '\0'; cur++) {
-    assert(cur_label_idx < nlabs);
-    if (*cur == EOS) {
-      lab_ptrs[cur_label_idx] = cur + 1;
-      cur_label_idx++;
-    }
-  }
-  PUSH(stack, lenq, maxq);
-  stack[lenq - 1] = lab_ptrs;
-
-  free(stack);
-  free(lab_ptrs);
 }
 
 int main(int argc, char *argv[argc + 1]) {

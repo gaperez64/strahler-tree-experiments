@@ -1,0 +1,182 @@
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "prtstree.h"
+
+#define PUSH(STACK, LENQ, MAXQ)                                                \
+  do {                                                                         \
+    if (LENQ >= MAXQ) {                                                        \
+      MAXQ = 2 * (MAXQ + 1);                                                   \
+      STACK = realloc(STACK, MAXQ * sizeof(*STACK));                           \
+      assert(LENQ < MAXQ);                                                     \
+    }                                                                          \
+    LENQ++;                                                                    \
+    assert(LENQ <= MAXQ);                                                      \
+  } while (0)
+
+#define SET_TOP_LABDTREE(STACK, LENQ, NLABS, LABPTRS, FRESHID)                 \
+  do {                                                                         \
+    assert(LENQ > 0);                                                          \
+    STACK[LENQ - 1].size = NLABS;                                              \
+    STACK[LENQ - 1].labs = LABPTRS;                                            \
+    STACK[LENQ - 1].id = FRESHID;                                              \
+  } while (0)
+
+typedef struct LabdTree {
+  size_t size;
+  char const **labs;
+  unsigned id;
+} LabdTree;
+
+[[nodiscard]] static char const *after_next_comma(char const *str) {
+  assert(str != nullptr);
+  char const *cur = str;
+  while (*cur != COMMA && *cur != EOS) {
+    assert(*cur != '\0');
+    cur++;
+  }
+  // We use EOS as the end of string marker, so keep it if we reached it
+  // already
+  if (*cur == COMMA)
+    cur++;
+  return cur;
+}
+
+[[nodiscard]] static bool same_before_comma(char const *first,
+                                            char const *second) {
+  assert(first != nullptr && second != nullptr);
+  char const *cur1 = first;
+  char const *cur2 = second;
+
+  // We match every non-epsilon character from first to the same in second
+  while (*cur1 != COMMA && *cur1 != EOS) {
+    assert(*cur1 != '\0');
+    if (*cur1 == ONE || *cur1 == ZERO) {
+      while (true) {
+        assert(*cur2 != '\0');
+        if (*cur2 == COMMA || *cur2 == EOS) {
+          return false;
+        } else if (*cur2 == EPSILON) {
+          cur2++; // ignore it
+          continue;
+        } else if (*cur2 != *cur1) {
+          return false; // no match? then not equal
+        } else {
+          cur2++; // match!
+          break;
+        }
+      }
+    }
+    cur1++;
+  }
+
+  // Now it remains to check that cur2 is also done, we can skip over epsilons
+  while (*cur2 != COMMA && *cur2 != EOS) {
+    assert(*cur2 != '\0');
+    if (*cur2 == ONE || *cur2 == ZERO)
+      return false;
+    cur2++;
+  }
+
+  return true;
+}
+
+void print_tree(unsigned const nlabs, char const labels[nlabs]) {
+  assert(labels != nullptr);
+  char const **lab_ptrs = malloc(sizeof(char *[nlabs]));
+
+  // This will be a DFS-like procedure, we need a stack of arrays of pointers
+  LabdTree *stack = nullptr;
+  size_t maxq = 0;
+  size_t lenq = 0;
+
+  // And we put in it the array of pointers to all labels to being with
+  unsigned next_id = 1;
+  lab_ptrs[0] = labels;
+  unsigned cur_label_idx = 1;
+  for (char const *cur = labels; *cur != '\0'; cur++) {
+    assert(cur_label_idx <= nlabs);
+    if (cur_label_idx < nlabs && *cur == EOS) {
+      lab_ptrs[cur_label_idx] = cur + 1;
+      cur_label_idx++;
+    }
+  }
+  PUSH(stack, lenq, maxq);
+  SET_TOP_LABDTREE(stack, lenq, nlabs, lab_ptrs, next_id);
+  printf("node(%d);\n", next_id++);
+
+  // Recall we're going to try and handle this DFS-fashion. Each time we
+  // "treat" a labelled tree we consider its leaf labels so that:
+  // 1. We move all labels that coincide with the first part of the first
+  // label towards the start of the array.
+  // 2. We advance the pointer to those labels close to the start to the next
+  // part of the label (so after the next COMMA)
+  // 3. We push a labelled tree that focuses on those labels close to the
+  // start (so we need to reduce the length) in the new labelled tree.
+  //
+  // Parents are responsible for printing nodes of their newly created
+  // children (when pushing a new labelled tree) and edges to them.
+  while (lenq > 0) {
+    LabdTree const tree = stack[lenq - 1];
+    if (tree.size == 0 ||
+        (tree.size == 1 && tree.labs[0][0] == EOS)) { // base cases, just pop
+      lenq--;
+      continue;
+    }
+
+    // 1. We have at least one leaf label, we can start moving labels around
+    size_t bucket_size = 1;
+    for (size_t idx = 1; idx < tree.size; idx++) {
+      char const *cur = tree.labs[idx];
+      if (same_before_comma(tree.labs[bucket_size - 1], cur)) {
+        if (tree.labs[bucket_size] != tree.labs[idx]) { // only swap if
+                                                        // needed
+          char const *temp = tree.labs[bucket_size];
+          tree.labs[bucket_size] = tree.labs[idx];
+          tree.labs[idx] = temp;
+        }
+        bucket_size++;
+      }
+    }
+    printf("Bucket size = %zu \n", bucket_size);
+
+    // 2. Now that we have a bucket of labels that have the same initial part,
+    // we need to advance their pointers to the next part of the label. Before
+    // we do that, we print the new node id and we print the edge to it.
+    printf("edge(%d, %d, ", tree.id, next_id);
+    for (char const *cur = tree.labs[0]; *cur != COMMA && *cur != EOS; cur++) {
+      switch (*cur) {
+      case ZERO:
+        fputs("0", stdout);
+        break;
+      case ONE:
+        fputs("1", stdout);
+        break;
+      case EPSILON:
+        break;
+      default:
+        assert(false);
+      }
+    }
+    puts(");");
+    for (size_t idx = 0; idx < bucket_size; idx++)
+      tree.labs[idx] = after_next_comma(tree.labs[idx]);
+
+    // 3. Now we need to push a tree into the stack that points at the initial
+    // segment of tree.labs. But first, we update tree.labs to ignore that
+    // initial part
+    char const **latter_labs = tree.labs + bucket_size;
+    size_t new_size = tree.size - bucket_size;
+    SET_TOP_LABDTREE(stack, lenq, new_size, latter_labs, tree.id);
+    PUSH(stack, lenq, maxq);
+    SET_TOP_LABDTREE(stack, lenq, bucket_size, tree.labs, next_id);
+    printf("node(%d);\n", next_id);
+    next_id++;
+  }
+
+  free(stack);
+  free(lab_ptrs);
+}
