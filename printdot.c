@@ -106,6 +106,8 @@ void print_tree(unsigned const nlabs, char const labels[nlabs]) {
   }
   PUSH(stack, lenq, maxq);
   SET_TOP_LABDTREE(stack, lenq, nlabs, lab_ptrs, next_id);
+
+  // start the tree in the output
   printf("node(%d);\n", next_id++);
 
   // Recall we're going to try and handle this DFS-fashion. Each time we
@@ -141,11 +143,11 @@ void print_tree(unsigned const nlabs, char const labels[nlabs]) {
         bucket_size++;
       }
     }
-    printf("Bucket size = %zu \n", bucket_size);
 
     // 2. Now that we have a bucket of labels that have the same initial part,
     // we need to advance their pointers to the next part of the label. Before
     // we do that, we print the new node id and we print the edge to it.
+    printf("node(%d);\n", next_id);
     printf("edge(%d, %d, ", tree.id, next_id);
     for (char const *cur = tree.labs[0]; *cur != COMMA && *cur != EOS; cur++) {
       switch (*cur) {
@@ -162,6 +164,7 @@ void print_tree(unsigned const nlabs, char const labels[nlabs]) {
       }
     }
     puts(");");
+    // here's the actual fast forward
     for (size_t idx = 0; idx < bucket_size; idx++)
       tree.labs[idx] = after_next_comma(tree.labs[idx]);
 
@@ -173,7 +176,6 @@ void print_tree(unsigned const nlabs, char const labels[nlabs]) {
     SET_TOP_LABDTREE(stack, lenq, new_size, latter_labs, tree.id);
     PUSH(stack, lenq, maxq);
     SET_TOP_LABDTREE(stack, lenq, bucket_size, tree.labs, next_id);
-    printf("node(%d);\n", next_id);
     next_id++;
   }
 
