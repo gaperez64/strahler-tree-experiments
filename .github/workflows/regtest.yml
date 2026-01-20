@@ -27,5 +27,5 @@ jobs:
           GENERATE_GOLDENS: "0"
         run: |
           export CC=gcc-14
-          make gstree
+          make genstree
           make regtest
