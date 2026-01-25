@@ -33,7 +33,7 @@ enum { UTREE = 0, VTREE = 1 };
     STACK[LENQ - 1].h = HVAL;                                                  \
   } while (0)
 
-static void print_usage(char *argv[]) {
+static void print_usage(char *argv[static 1]) {
   fprintf(stderr, "Usage: %s -k K -t T -h H [-j -d]\n", argv[0]);
   fputs("-j\t Can be used to obtain just the leaf count\n", stderr);
   fputs("-d\t Indicates the tree should be printed in dot format\n", stderr);
@@ -130,7 +130,7 @@ typedef struct Node {
   return total;
 }
 
-[[nodiscard]] static char *prepend(size_t n, char const *pref,
+[[nodiscard]] static char *prepend(size_t n, char const pref[static n],
                                    char const *str) {
   // overshooting: if every character is a bitstring, we need to prepend the
   // prefix to each of them, and add an end-of-string symbol
