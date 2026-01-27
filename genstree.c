@@ -47,7 +47,8 @@ typedef struct Node {
   char u;
 } Node;
 
-[[nodiscard]] static unsigned count_leaves(int k, int t, int h) {
+[[nodiscard]]
+static unsigned count_leaves(int k, int t, int h) [[unsequenced]] {
   assert(h >= k);
   unsigned (*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
   // NOTE: calloc sets all entries to zero
@@ -130,10 +131,12 @@ typedef struct Node {
   return total;
 }
 
-[[nodiscard]] static char *prepend(size_t n, char const pref[static n],
-                                   char const *str) {
+[[nodiscard]]
+static char *prepend(size_t n, char const pref[restrict static n],
+                     char const *restrict str) [[unsequenced]] {
   // overshooting: if every character is a bitstring, we need to prepend the
-  // prefix to each of them, and add an end-of-string symbol
+  // prefix to each of them, and add an end-of-string symbol, i.e.
+  // len(str) + len(str) * n + 1 = 1 + len(str) * (n + 1)
   size_t len = 1 + strlen(str) * (n + 1);
   char *res = malloc(len);
   size_t reslen = 0;
@@ -159,9 +162,10 @@ typedef struct Node {
   return res;
 }
 
-[[nodiscard]] static inline char *concat3(char const *left,
-                                          char const *midl,
-                                          char const *right) {
+[[nodiscard]]
+static char *concat3(char const left[restrict static 1],
+                     char const midl[restrict static 1],
+                     char const right[restrict static 1]) [[unsequenced]] {
   assert(left != nullptr);
   assert(midl != nullptr);
   assert(right != nullptr);
@@ -173,7 +177,8 @@ typedef struct Node {
   return res;
 }
 
-[[nodiscard]] static char *labels_leaves(int k, int t, int h) {
+[[nodiscard]]
+static char *labels_leaves(int k, int t, int h) [[unsequenced]] {
   assert(h >= k);
   char *(*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
   // NOTE: Technically, the pointers are not required to be null'd at this
@@ -287,16 +292,16 @@ typedef struct Node {
   // FIXME: This could be smarter if we kept track of everything being set not
   // to nullptr above
   for (char epu = 0; epu <= 1; epu++)
-    for (unsigned epk = 0; epk <= k; epk++)
-      for (unsigned ept = 0; ept <= t; ept++)
-        for (unsigned eph = 0; eph <= h; eph++)
+    for (int epk = 0; epk <= k; epk++)
+      for (int ept = 0; ept <= t; ept++)
+        for (int eph = 0; eph <= h; eph++)
           free(tree[(int)epu][epk][ept][eph]);
   free(tree);
 
   return ret;
 }
 
-static void print_bits(char const *labels) {
+static void print_bits(char const labels[static 1]) [[unsequenced]] {
   assert(labels != nullptr);
   bool first = true;
 
@@ -334,7 +339,7 @@ static void print_bits(char const *labels) {
   }
 }
 
-static void print_blocks(char const *labels) {
+static void print_blocks(char const labels[static 1]) [[unsequenced]] {
   assert(labels != nullptr);
   unsigned b = 0;
   bool first = true;

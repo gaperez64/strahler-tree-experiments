@@ -31,7 +31,8 @@ typedef struct LabdTree {
   unsigned id;
 } LabdTree;
 
-[[nodiscard]] static inline char const *after_next_comma(char const *str) {
+[[nodiscard]] static char const *after_next_comma(char const str[static 1])
+    [[unsequenced]] {
   assert(str != nullptr);
   char const *cur = str;
   while (*cur != COMMA && *cur != EOS) {
@@ -45,9 +46,9 @@ typedef struct LabdTree {
   return cur;
 }
 
-[[nodiscard]] static bool same_before_comma(char const *first,
-                                            char const *second) {
-  assert(first != nullptr && second != nullptr);
+[[nodiscard]] static bool same_before_comma(char const first[static 1],
+                                            char const second[static 1])
+    [[unsequenced]] {
   char const *cur1 = first;
   char const *cur2 = second;
 
@@ -84,7 +85,8 @@ typedef struct LabdTree {
   return true;
 }
 
-void print_tree(unsigned const nlabs, char const labels[nlabs]) {
+void print_tree(unsigned const nlabs, char const labels[nlabs])
+    [[unsequenced]] {
   assert(labels != nullptr);
   char const **lab_ptrs = malloc(sizeof(char *[nlabs]));
 
