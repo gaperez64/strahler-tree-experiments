@@ -1,13 +1,16 @@
+CFLAGS=-O3 -std=c23 -Wall -Wextra -Wpedantic -DNDEBUG
+CXXFLAGS=-O3 -Wall -Wextra -Wpedantic
+
 all: genstree lenstree pms2dot
 
-genstree: genstree.c printdot.c prtstree.h
-	$(CC) -O3 -std=c23 genstree.c printdot.c -o genstree -Wall -Wextra -Wpedantic
+genstree: genstree.c prtstree.c prtstree.h
+	$(CC) $(CFLAGS) genstree.c prtstree.c -o genstree
 
-pms2dot: pms2dot.c prtstree.h printdot.c
-	$(CC) -O3 -std=c23 pms2dot.c printdot.c -o pms2dot -Wall -Wextra -Wpedantic
+pms2dot: pms2dot.c prtstree.h prtstree.c
+	$(CC) $(CFLAGS) pms2dot.c prtstree.c -o pms2dot
 
 lenstree: lenstree.cpp
-	$(CXX) -Wall -O3 lenstree.cpp -o lenstree -Wall -Wextra -Wpedantic
+	$(CXX) $(CXXFLAGS) lenstree.cpp -o lenstree
 
 clean:
 	rm genstree lenstree pms2dot

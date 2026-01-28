@@ -17,11 +17,12 @@
     assert(LENQ <= MAXQ);                                                      \
   } while (0)
 
-#define SET_TOP_LABDTREE(STACK, LENQ, NLABS, LABPTRS, FRESHID)                 \
+#define SET_TOP_LABDTREE(STACK, LENQ, NLABS, LABPTRS, HEIGHT, FRESHID)         \
   do {                                                                         \
     assert(LENQ > 0);                                                          \
     STACK[LENQ - 1].size = NLABS;                                              \
     STACK[LENQ - 1].labs = LABPTRS;                                            \
+    STACK[LENQ - 1].height = HEIGHT;                                           \
     STACK[LENQ - 1].id = FRESHID;                                              \
   } while (0)
 
@@ -29,6 +30,7 @@ typedef struct LabdTree {
   size_t size;
   char const **labs;
   unsigned id;
+  int height;
 } LabdTree;
 
 [[nodiscard]] static char const *after_next_comma(char const str[static 1])
@@ -85,8 +87,9 @@ typedef struct LabdTree {
   return true;
 }
 
-void print_tree(unsigned const nlabs, char const labels[nlabs])
-    [[unsequenced]] {
+void print_tree_ppart(unsigned const nlabs,
+                      char const labels[nlabs],
+                      int const p) [[unsequenced]] {
   assert(labels != nullptr);
   char const **lab_ptrs = malloc(sizeof(char *[nlabs]));
 
@@ -107,7 +110,97 @@ void print_tree(unsigned const nlabs, char const labels[nlabs])
     }
   }
   PUSH(stack, lenq, maxq);
-  SET_TOP_LABDTREE(stack, lenq, nlabs, lab_ptrs, next_id);
+  SET_TOP_LABDTREE(stack, lenq, nlabs, lab_ptrs, 0, next_id);
+  next_id++;
+
+  // Recall we're going to try and handle this DFS-fashion. Each time we
+  // "treat" a labelled tree we consider its leaf labels so that:
+  // 1. We move all labels that coincide with the first part of the first
+  // label towards the start of the array.
+  // 2. We advance the pointer to those labels close to the start to the next
+  // part of the label (so after the next COMMA)
+  // 3. We push a labelled tree that focuses on those labels close to the
+  // start (so we need to reduce the length) in the new labelled tree.
+  //
+  // Level p nodes are base cases print their size.
+  while (lenq > 0) {
+    LabdTree const tree = stack[lenq - 1];
+    if (tree.height == p) {  // base cases, print and pop
+      lenq--;
+      printf("Part %ld\n", tree.size);
+      continue;
+    }
+    if (tree.size == 0) {  // we're done!
+      lenq--;
+      assert(lenq == 0);
+      continue;
+    }
+    if (tree.size == 1 && tree.labs[0][0] == EOS) {
+      lenq--;
+      fprintf(stderr, "Got to a leaf or size %ld, something is going wrong!\n",
+              tree.size);
+      break;
+    }
+
+    // 1. We have at least one leaf label, we can start moving labels around
+    size_t bucket_size = 1;
+    for (size_t idx = 1; idx < tree.size; idx++) {
+      char const *cur = tree.labs[idx];
+      if (same_before_comma(tree.labs[bucket_size - 1], cur)) {
+        if (tree.labs[bucket_size] != tree.labs[idx]) { // only swap if
+                                                        // needed
+          char const *temp = tree.labs[bucket_size];
+          tree.labs[bucket_size] = tree.labs[idx];
+          tree.labs[idx] = temp;
+        }
+        bucket_size++;
+      }
+    }
+
+    // 2. Now that we have a bucket of labels that have the same initial part,
+    // we need to advance their pointers to the next part of the label.
+    for (size_t idx = 0; idx < bucket_size; idx++)
+      tree.labs[idx] = after_next_comma(tree.labs[idx]);
+
+    // 3. Now we need to push a tree into the stack that points at the initial
+    // segment of tree.labs. But first, we update tree.labs to ignore that
+    // initial part
+    char const **latter_labs = tree.labs + bucket_size;
+    size_t new_size = tree.size - bucket_size;
+    unsigned new_height = tree.height + 1;
+    SET_TOP_LABDTREE(stack, lenq, new_size, latter_labs, tree.height, tree.id);
+    PUSH(stack, lenq, maxq);
+    SET_TOP_LABDTREE(stack, lenq, bucket_size, tree.labs, new_height, next_id);
+    next_id++;
+  }
+
+  free(stack);
+  free(lab_ptrs);
+}
+
+void print_tree_dot(unsigned const nlabs,
+                    char const labels[nlabs]) [[unsequenced]] {
+  assert(labels != nullptr);
+  char const **lab_ptrs = malloc(sizeof(char *[nlabs]));
+
+  // This will be a DFS-like procedure, we need a stack of arrays of pointers
+  LabdTree *stack = nullptr;
+  size_t maxq = 0;
+  size_t lenq = 0;
+
+  // And we put in it the array of pointers to all labels to being with
+  unsigned next_id = 1;
+  lab_ptrs[0] = labels;
+  unsigned cur_label_idx = 1;
+  for (char const *cur = labels; *cur != '\0'; cur++) {
+    assert(cur_label_idx <= nlabs);
+    if (cur_label_idx < nlabs && *cur == EOS) {
+      lab_ptrs[cur_label_idx] = cur + 1;
+      cur_label_idx++;
+    }
+  }
+  PUSH(stack, lenq, maxq);
+  SET_TOP_LABDTREE(stack, lenq, nlabs, lab_ptrs, 0, next_id);
   next_id++;
 
   // start the tree in the output
@@ -127,7 +220,7 @@ void print_tree(unsigned const nlabs, char const labels[nlabs])
   while (lenq > 0) {
     LabdTree const tree = stack[lenq - 1];
     if (tree.size == 0 ||
-        (tree.size == 1 && tree.labs[0][0] == EOS)) { // base cases, just pop
+        (tree.size == 1 && tree.labs[0][0] == EOS)) {  // base cases, just pop
       lenq--;
       continue;
     }
@@ -175,9 +268,9 @@ void print_tree(unsigned const nlabs, char const labels[nlabs])
     // initial part
     char const **latter_labs = tree.labs + bucket_size;
     size_t new_size = tree.size - bucket_size;
-    SET_TOP_LABDTREE(stack, lenq, new_size, latter_labs, tree.id);
+    SET_TOP_LABDTREE(stack, lenq, new_size, latter_labs, 0, tree.id);
     PUSH(stack, lenq, maxq);
-    SET_TOP_LABDTREE(stack, lenq, bucket_size, tree.labs, next_id);
+    SET_TOP_LABDTREE(stack, lenq, bucket_size, tree.labs, 0, next_id);
     next_id++;
   }
   puts("}");

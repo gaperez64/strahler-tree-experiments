@@ -33,8 +33,9 @@ int main(int argc, char *argv[argc + 1]) {
     }
   }
 
-  char *buffer = malloc(1024);
-  if (!fgets(buffer, 1024, stdin)) {
+  size_t buf_size = 2048;
+  char *buffer = malloc(buf_size);
+  if (!fgets(buffer, buf_size, stdin)) {
     free(buffer);
     return EXIT_FAILURE;
   }
@@ -43,7 +44,7 @@ int main(int argc, char *argv[argc + 1]) {
   for (unsigned i = 0; buffer[i] != '\0'; i++)
     if (buffer[i] == EOS)
       total++;
-  print_tree(total, buffer);
+  print_tree_dot(total, buffer);
   free(buffer);
 
   return EXIT_SUCCESS;

@@ -34,10 +34,11 @@ enum { UTREE = 0, VTREE = 1 };
   } while (0)
 
 static void print_usage(char *argv[static 1]) {
-  fprintf(stderr, "Usage: %s -k K -t T -h H [-j -d]\n", argv[0]);
+  fprintf(stderr, "Usage: %s -k K -t T -h H [-j -d -p P]\n", argv[0]);
   fputs("-j\t Can be used to obtain just the leaf count\n", stderr);
   fputs("-d\t Indicates the tree should be printed in dot format\n", stderr);
-  fputs("With no options, the labels of the leaves will be printed\n", stderr);
+  fputs("-p\t P can be used to indicate a p-value of interest\n", stderr);
+  fputs("With -p or no options, the labels of the leaves will be printed\n", stderr);
 }
 
 typedef struct Node {
@@ -379,19 +380,27 @@ int main(int argc, char *argv[argc + 1]) {
   int k;
   int t;
   int h;
+  int p = 0;
   bool kset = false;
   bool tset = false;
   bool hset = false;
   bool just_count = false;
   bool print_dot = false;
 
-  while ((opt = getopt(argc, argv, "k:t:h:jd")) != -1) {
+  while ((opt = getopt(argc, argv, "k:t:h:jdp:")) != -1) {
     switch (opt) {
     case 'j':
       just_count = true;
       break;
     case 'd':
       print_dot = true;
+      break;
+    case 'p':
+      p = atoi(optarg);
+      if (p < 1) {
+        fputs("P must be a positive integer\n", stderr);
+        return EXIT_FAILURE;
+      }
       break;
     case 'k':
       k = atoi(optarg);
@@ -437,11 +446,13 @@ int main(int argc, char *argv[argc + 1]) {
 
   char *labels = labels_leaves(k, t, h);
   if (print_dot) {
-    print_tree(total, labels);
-    return EXIT_SUCCESS;
+    print_tree_dot(total, labels);
   } else {  // Default: print labels of leaves
     print_bits(labels);
     print_blocks(labels);
+    if (p > 0) {
+      print_tree_ppart(total, labels, p);
+    }
   }
   free(labels);
 
