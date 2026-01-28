@@ -439,7 +439,7 @@ int main(int argc, char *argv[argc + 1]) {
   if (print_dot) {
     print_tree(total, labels);
     return EXIT_SUCCESS;
-  } else { // Default: print labels of leaves
+  } else {  // Default: print labels of leaves
     print_bits(labels);
     print_blocks(labels);
   }

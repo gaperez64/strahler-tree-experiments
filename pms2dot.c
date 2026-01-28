@@ -12,9 +12,13 @@
 #include "prtstree.h"
 
 static void print_usage(char *argv[]) {
-  fprintf(stderr, "Usage: %s reads progress measures from stdin\n", argv[0]);
-  fputs("The program receives progress measures ending with '|'\n", stderr);
-  fputs("Each progress measure is a comma-separated sequence of bits\n", stderr);
+  fprintf(stderr,
+          "Usage: %s reads progress measures and prints their prefix tree.\n",
+          argv[0]);
+  fputs("The program receives progress measures ending with '|' via stdin.\n",
+        stderr);
+  fputs("Each progress measure is a comma-separated sequence of bits.\n",
+        stderr);
 }
 
 int main(int argc, char *argv[argc + 1]) {
