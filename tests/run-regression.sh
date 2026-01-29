@@ -120,7 +120,9 @@ if [ "$GENERATE" -eq 1 ]; then
   "$GENSTREE_BIN" -k 0 -t 1 -h 2 > /dev/null 2> tests/golden/gen_err_k_val.out || true
   sed -i "s|$GENSTREE_BIN|genstree|g" tests/golden/gen_err_k_val.out
   "$PMS2DOT_BIN" -x > /dev/null 2> tests/golden/pms_err_flag.out || true
-  sed -i "s|^[^:]*:|pms2dot:|; s|$PMS2DOT_BIN|pms2dot|g" tests/golden/pms_err_flag.out
+  # Some systems might prefix the error with the binary name, some might not.
+  # We'll just replace the binary name if it appears.
+  sed -i "s|$PMS2DOT_BIN|pms2dot|g" tests/golden/pms_err_flag.out
   "$LENSTREE_BIN" -k 1 > /dev/null 2> tests/golden/len_err_args.out || true
   sed -i "s|$LENSTREE_BIN|lenstree|g" tests/golden/len_err_args.out
   "$LENSTREE_BIN" -k 0 -t 1 -h 2 > /dev/null 2> tests/golden/len_err_k.out || true
@@ -240,7 +242,7 @@ sed -i "s|$GENSTREE_BIN|genstree|g" tests/actual/gen_err_k.out
 sed -i "s|$GENSTREE_BIN|genstree|g" tests/actual/gen_err_k_val.out
 # pms2dot invalid flag
 "$PMS2DOT_BIN" -x > /dev/null 2> tests/actual/pms_err_flag.out || true
-sed -i "s|^[^:]*:|pms2dot:|; s|$PMS2DOT_BIN|pms2dot|g" tests/actual/pms_err_flag.out
+sed -i "s|$PMS2DOT_BIN|pms2dot|g" tests/actual/pms_err_flag.out
 # lenstree missing args
 "$LENSTREE_BIN" -k 1 > /dev/null 2> tests/actual/len_err_args.out || true
 sed -i "s|$LENSTREE_BIN|lenstree|g" tests/actual/len_err_args.out
