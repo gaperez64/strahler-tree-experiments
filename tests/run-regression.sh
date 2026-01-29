@@ -89,25 +89,30 @@ if [ "$GENERATE" -eq 1 ]; then
     k=$1; t=$2; h=$3
     name="k${k}_t${t}_h${h}.out"
     echo "  $GENSTREE_BIN -k $k -t $t -h $h > tests/golden/$name"
-    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" > "tests/golden/$name"
+    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" > "tests/golden/$name" 2>&1
+    sanitize_output "tests/golden/$name"
 
     # Test -j (just count)
     echo "  $GENSTREE_BIN -k $k -t $t -h $h -j > tests/golden/j_$name"
-    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -j > "tests/golden/j_$name"
+    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -j > "tests/golden/j_$name" 2>&1
+    sanitize_output "tests/golden/j_$name"
 
     # Test -d (dot format)
     echo "  $GENSTREE_BIN -k $k -t $t -h $h -d > tests/golden/d_$name"
-    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -d > "tests/golden/d_$name"
+    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -d > "tests/golden/d_$name" 2>&1
+    sanitize_output "tests/golden/d_$name"
 
     # Test -p 1 (partitioning)
     echo "  $GENSTREE_BIN -k $k -t $t -h $h -p 1 > tests/golden/p1_$name"
-    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -p 1 > "tests/golden/p1_$name"
+    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -p 1 > "tests/golden/p1_$name" 2>&1
+    sanitize_output "tests/golden/p1_$name"
   done
   for i in "${!PMS2DOT_CASES[@]}"; do
     case="${PMS2DOT_CASES[$i]}"
     name="pms_${i}.out"
     echo "  echo \"$case\" | $PMS2DOT_BIN > tests/golden/$name"
-    echo "$case" | "$PMS2DOT_BIN" > "tests/golden/$name"
+    echo "$case" | "$PMS2DOT_BIN" > "tests/golden/$name" 2>&1
+    sanitize_output "tests/golden/$name"
   done
   # Test pms2dot -h
   echo "  $PMS2DOT_BIN -h 2> tests/golden/pms_h.out"
@@ -119,7 +124,8 @@ if [ "$GENERATE" -eq 1 ]; then
     k=$1; t=$2; h=$3
     name="len_k${k}_t${t}_h${h}.out"
     echo "  $LENSTREE_BIN -k $k -t $t -h $h > tests/golden/$name"
-    "$LENSTREE_BIN" -k "$k" -t "$t" -h "$h" > "tests/golden/$name"
+    "$LENSTREE_BIN" -k "$k" -t "$t" -h "$h" > "tests/golden/$name" 2>&1
+    sanitize_output "tests/golden/$name"
   done
 
   echo "Generating error case goldens..."
@@ -155,7 +161,8 @@ for ct in "${GENSTREE_CASES[@]}"; do
     golden="tests/golden/$name"
 
     echo "  Running: $GENSTREE_BIN -k $k -t $t -h $h $flags"
-    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" $flags > "$actual"
+    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" $flags > "$actual" 2>&1
+    sanitize_output "$actual"
 
     if [ ! -f "$golden" ]; then
       echo "  MISSING GOLDEN: $golden"
@@ -195,7 +202,8 @@ for ct in "${GENSTREE_CASES[@]}"; do
   golden="tests/golden/$name"
 
   echo "  Running: $LENSTREE_BIN -k $k -t $t -h $h"
-  "$LENSTREE_BIN" -k "$k" -t "$t" -h "$h" > "$actual"
+  "$LENSTREE_BIN" -k "$k" -t "$t" -h "$h" > "$actual" 2>&1
+  sanitize_output "$actual"
 
   if [ ! -f "$golden" ]; then
     echo "  MISSING GOLDEN: $golden"
@@ -220,7 +228,8 @@ for i in "${!PMS2DOT_CASES[@]}"; do
   golden="tests/golden/$name"
 
   echo "  Running: echo \"$case\" | $PMS2DOT_BIN"
-  echo "$case" | "$PMS2DOT_BIN" > "$actual"
+  echo "$case" | "$PMS2DOT_BIN" > "$actual" 2>&1
+  sanitize_output "$actual"
 
   if [ ! -f "$golden" ]; then
     echo "  MISSING GOLDEN: $golden"
