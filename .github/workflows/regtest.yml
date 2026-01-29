@@ -11,7 +11,7 @@ on:
 jobs:
   regtest:
     name: Run make regtest
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
@@ -38,13 +38,27 @@ jobs:
           export CC=gcc-14
           export CXX=g++-14
           export GCOV=gcov-14
-          COVERAGE=$(make coverage | grep "Lines executed" | tail -n 1 | awk '{print $2}' | sed 's/%//')
-          echo "Coverage is $COVERAGE%"
-          COLOR="red"
-          if [ $(echo "$COVERAGE > 90" | awk "{print ($COVERAGE >= 90)}") -eq 1 ]; then COLOR="brightgreen";
-          elif [ $(echo "$COVERAGE > 70" | awk "{print ($COVERAGE >= 70)}") -eq 1 ]; then COLOR="green";
-          elif [ $(echo "$COVERAGE > 50" | awk "{print ($COVERAGE >= 50)}") -eq 1 ]; then COLOR="yellow";
+          # Run coverage and capture output. We grep for the total summary line.
+          COVERAGE_OUTPUT=$(make coverage)
+          echo "$COVERAGE_OUTPUT"
+          COVERAGE=$(echo "$COVERAGE_OUTPUT" | grep "Lines executed" | tail -n 1 | awk '{print $2}' | sed 's/%//')
+
+          if [ -z "$COVERAGE" ]; then
+            echo "Failed to extract coverage percentage"
+            exit 1
           fi
+
+          echo "Coverage is $COVERAGE%"
+
+          # Determine color based on coverage percentage
+          COLOR="red"
+          # Use awk for floating point comparison
+          if [ $(awk "BEGIN {print ($COVERAGE >= 90)}") -eq 1 ]; then COLOR="brightgreen";
+          elif [ $(awk "BEGIN {print ($COVERAGE >= 70)}") -eq 1 ]; then COLOR="green";
+          elif [ $(awk "BEGIN {print ($COVERAGE >= 50)}") -eq 1 ]; then COLOR="yellow";
+          fi
+
+          # Update the badge in README.md
           sed -i "s/coverage-[0-9.]*%-[a-z]*/coverage-${COVERAGE}%-${COLOR}/" README.md
 
       - name: Commit and push changes

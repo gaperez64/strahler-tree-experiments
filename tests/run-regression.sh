@@ -104,6 +104,7 @@ if [ "$GENERATE" -eq 1 ]; then
   # Test pms2dot -h
   echo "  $PMS2DOT_BIN -h 2> tests/golden/pms_h.out"
   "$PMS2DOT_BIN" -h 2> "tests/golden/pms_h.out" || true
+  sed -i "s|$PMS2DOT_BIN|pms2dot|g" "tests/golden/pms_h.out"
 
   for ct in "${GENSTREE_CASES[@]}"; do
     set -- $ct
@@ -115,10 +116,15 @@ if [ "$GENERATE" -eq 1 ]; then
 
   echo "Generating error case goldens..."
   "$GENSTREE_BIN" -t 1 -h 2 > /dev/null 2> tests/golden/gen_err_k.out || true
+  sed -i "s|$GENSTREE_BIN|genstree|g" tests/golden/gen_err_k.out
   "$GENSTREE_BIN" -k 0 -t 1 -h 2 > /dev/null 2> tests/golden/gen_err_k_val.out || true
+  sed -i "s|$GENSTREE_BIN|genstree|g" tests/golden/gen_err_k_val.out
   "$PMS2DOT_BIN" -x > /dev/null 2> tests/golden/pms_err_flag.out || true
+  sed -i "s|^[^:]*:|pms2dot:|; s|$PMS2DOT_BIN|pms2dot|g" tests/golden/pms_err_flag.out
   "$LENSTREE_BIN" -k 1 > /dev/null 2> tests/golden/len_err_args.out || true
+  sed -i "s|$LENSTREE_BIN|lenstree|g" tests/golden/len_err_args.out
   "$LENSTREE_BIN" -k 0 -t 1 -h 2 > /dev/null 2> tests/golden/len_err_k.out || true
+  sed -i "s|$LENSTREE_BIN|lenstree|g" tests/golden/len_err_k.out
 
   echo "Done. Review and commit tests/golden/* if outputs are correct."
   exit 0
@@ -165,6 +171,8 @@ name="pms_h.out"
 actual="tests/actual/$name"
 golden="tests/golden/$name"
 "$PMS2DOT_BIN" -h 2> "$actual" || true
+# Sanitize program name in usage message
+sed -i "s|$PMS2DOT_BIN|pms2dot|g" "$actual"
 if ! diff -u "$golden" "$actual"; then
   echo "  FAIL: output differs for $name"
   FAIL=1
@@ -226,14 +234,19 @@ done
 echo "Testing error cases..."
 # genstree missing k
 "$GENSTREE_BIN" -t 1 -h 2 > /dev/null 2> tests/actual/gen_err_k.out || true
+sed -i "s|$GENSTREE_BIN|genstree|g" tests/actual/gen_err_k.out
 # genstree invalid k
 "$GENSTREE_BIN" -k 0 -t 1 -h 2 > /dev/null 2> tests/actual/gen_err_k_val.out || true
+sed -i "s|$GENSTREE_BIN|genstree|g" tests/actual/gen_err_k_val.out
 # pms2dot invalid flag
 "$PMS2DOT_BIN" -x > /dev/null 2> tests/actual/pms_err_flag.out || true
+sed -i "s|^[^:]*:|pms2dot:|; s|$PMS2DOT_BIN|pms2dot|g" tests/actual/pms_err_flag.out
 # lenstree missing args
 "$LENSTREE_BIN" -k 1 > /dev/null 2> tests/actual/len_err_args.out || true
+sed -i "s|$LENSTREE_BIN|lenstree|g" tests/actual/len_err_args.out
 # lenstree invalid k
 "$LENSTREE_BIN" -k 0 -t 1 -h 2 > /dev/null 2> tests/actual/len_err_k.out || true
+sed -i "s|$LENSTREE_BIN|lenstree|g" tests/actual/len_err_k.out
 
 for err in gen_err_k.out gen_err_k_val.out pms_err_flag.out len_err_args.out len_err_k.out; do
   if [ ! -f "tests/golden/$err" ]; then
