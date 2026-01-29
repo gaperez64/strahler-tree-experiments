@@ -1,4 +1,4 @@
-name: regtest
+name: regression_tests
 
 on:
   push:
