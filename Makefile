@@ -12,7 +12,7 @@ pms2dot: pms2dot.o prtstree.o
 lenstree: lenstree.o
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-%.o: %.c prtstree.h
+%.o: %.c prtstree.h utrees.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o: %.cpp

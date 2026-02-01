@@ -9,20 +9,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "utrees.h"
 #include "prtstree.h"
 
 enum { UTREE = 0, VTREE = 1 };
-
-#define PUSH(STACK, LENS, MAXS, ELEM)                                          \
-  do {                                                                         \
-    if ((LENS) == (MAXS)) {                                                    \
-      (MAXS) = 2 * ((MAXS) + 1);                                               \
-      (STACK) = realloc((STACK), (MAXS) * sizeof((STACK)[0]));                 \
-      assert((LENS) < (MAXS));                                                 \
-    }                                                                          \
-    (STACK)[(LENS)] = (ELEM);                                                  \
-    (LENS)++;                                                                  \
-  } while (0)
 
 static void print_usage(char *argv[static 1]) {
   fprintf(stderr, "Usage: %s -k K -t T -h H [-j -d -p P]\n", argv[0]);
@@ -40,6 +30,14 @@ typedef struct Node {
   char u;
 } Node;
 
+
+/**
+ * FIXME: The DFS traversal/generation in this function is used again, almost
+ * identically, in a function later on (hence the repeated comments, etc.) If
+ * another function comes along that requires the same, it would be best to
+ * factor it out and take a callback function as argument to call on the
+ * leaves.
+ */
 [[nodiscard]]
 static unsigned count_leaves(int k, int t, int h) [[unsequenced]] {
   assert(h >= k);
