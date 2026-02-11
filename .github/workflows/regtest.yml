@@ -74,15 +74,24 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH=${{ github.head_ref }}
+          else
+            BRANCH=${{ github.ref_name }}
+          fi
+
           git add README.md
           if ! git diff --staged --quiet; then
-            git commit -m "Update coverage badge"
-            if [ "${{ github.event_name }}" == "pull_request" ]; then
-              BRANCH=${{ github.head_ref }}
-            else
-              BRANCH=${{ github.ref_name }}
-            fi
+            # Save the modified README.md and switch to the target branch
+            # to avoid rebasing the entire merge commit on PRs
+            cp README.md README.md.bak
             git fetch origin $BRANCH
+            git checkout $BRANCH
+            mv README.md.bak README.md
+
+            git add README.md
+            git commit -m "Update coverage badge"
             git rebase origin/$BRANCH
             git push origin HEAD:$BRANCH
           fi
