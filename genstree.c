@@ -12,7 +12,7 @@
 #include "prtstree.h"
 #include "utrees.h"
 
-enum { UTREE = 0, VTREE = 1 };
+typedef enum { UTREE = 0, VTREE = 1 } TType;
 
 static void print_usage(char *argv[static 1]) {
   fprintf(stderr, "Usage: %s -k K -t T -h H [-j -l L -d -p P]\n", argv[0]);
@@ -39,7 +39,8 @@ typedef struct Node {
  * leaves.
  */
 [[nodiscard]]
-static unsigned count_leaves_with_cache(int k, int t, int h,
+static unsigned count_leaves_with_cache(TType tree_type, int const k,
+                                        int const t, int const h,
                                         unsigned (*tree)[k + 1][t + 1][h + 1])
     [[unsequenced]] {
   size_t maxs = 0;
@@ -47,7 +48,7 @@ static unsigned count_leaves_with_cache(int k, int t, int h,
   Node *stack = nullptr;
 
   // this is the node of interest
-  Node node = {.u = UTREE, .k = k, .t = t, .h = h};
+  Node node = {.u = tree_type, .k = k, .t = t, .h = h};
   PUSH(stack, lens, maxs, node);
 
   while (lens > 0) {
@@ -139,19 +140,20 @@ static unsigned count_leaves_with_cache(int k, int t, int h,
 }
 
 [[nodiscard]]
-static unsigned count_leaves(int k, int t, int h) [[unsequenced]] {
+static unsigned count_leaves(int const k, int const t, int const h)
+    [[unsequenced]] {
   assert(h >= k);
   unsigned (*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
   // NOTE: calloc sets all entries to zero
 
-  unsigned total = count_leaves_with_cache(k, t, h, tree);
+  unsigned total = count_leaves_with_cache(UTREE, k, t, h, tree);
 
   free(tree);
   return total;
 }
 
 [[nodiscard]]
-static char *prepend(size_t n, char const pref[restrict static n],
+static char *prepend(size_t const n, char const pref[restrict static n],
                      char const *restrict str) [[unsequenced]] {
   // overshooting: if every character is a bitstring, we need to prepend the
   // prefix to each of them, and add an end-of-string symbol, i.e.
@@ -196,8 +198,134 @@ static char *concat3(char const left[restrict static 1],
   return res;
 }
 
+static char *label_lth_leaf(int const k, int const t, int const h,
+                            int const lth) [[unsequenced]] {
+  assert(h >= k);
+  unsigned (*count_cache)[k + 1][t + 1][h + 1] =
+      calloc(2, sizeof(*count_cache));
+  unsigned slack = t * 3 + 1;
+  char *lab = malloc(slack);
+  char *cur = lab;
+  unsigned nth = lth;
+
+  // this is the node of interest
+  Node node = {.u = UTREE, .k = k, .t = t, .h = h};
+
+  while (true) {
+    assert(slack != 0);
+    if (node.u == UTREE && node.h == 1 && node.k == 1) {
+      assert(nth == 1);
+      cur[0] = EOS;
+      cur[1] = '\0';
+      break;
+    } else if (node.u == UTREE && node.h > 1 && node.k == 1) {
+      cur[0] = EPSILON;
+      cur[1] = COMMA;
+      cur += 2;
+      slack -= 2;
+      // move to successor now
+      node.u = UTREE;
+      node.k = node.k;
+      node.t = node.t;
+      node.h = node.h - 1;
+    } else if (node.h >= node.k && node.k >= 2 && node.t == 0) {
+      if (node.u == VTREE) {
+        cur[0] = EPSILON;
+      } else {
+        cur[0] = ZERO;
+      }
+      cur[1] = COMMA;
+      cur += 2;
+      slack -= 2;
+      // move to successor now
+      node.u = UTREE;
+      node.k = node.k - 1;
+      node.t = node.t;
+      node.h = node.h - 1;
+    } else if (node.u == VTREE && node.h >= node.k && node.k >= 2 &&
+               node.t >= 1) {
+      unsigned size_child1 = count_leaves_with_cache(VTREE, node.k, node.t - 1,
+                                                     node.h, count_cache);
+      unsigned size_child2 = count_leaves_with_cache(UTREE, node.k - 1, node.t,
+                                                     node.h - 1, count_cache);
+      // which subtree to follow?
+      if (size_child1 >= nth) {
+        cur[0] = ZERO;
+        node.u = VTREE;
+        node.k = node.k;
+        node.t = node.t - 1;
+        node.h = node.h;
+      } else if (size_child1 + size_child2 >= nth) {
+        nth -= size_child1;
+        cur[0] = EPSILON;
+        node.u = UTREE;
+        node.k = node.k - 1;
+        node.t = node.t;
+        node.h = node.h - 1;
+      } else {
+        nth -= size_child1 + size_child2;
+        cur[0] = ONE;
+        node.u = VTREE;
+        node.k = node.k;
+        node.t = node.t - 1;
+        node.h = node.h;
+      }
+      cur[1] = COMMA;
+      cur += 2;
+      slack -= 2;
+    } else if (node.u == UTREE && node.h == node.k && node.k >= 2) {
+      cur[0] = ZERO;
+      cur += 1;
+      slack -= 1;
+      // move to successor
+      node.u = VTREE;
+      node.k = node.k;
+      node.t = node.t;
+      node.h = node.h;
+    } else if (node.u == UTREE && node.h > node.k && node.k >= 2) {
+      unsigned size_child1 =
+          count_leaves_with_cache(VTREE, node.k, node.t, node.h, count_cache);
+      unsigned size_child2 = count_leaves_with_cache(UTREE, node.k, node.t,
+                                                     node.h - 1, count_cache);
+      // which subtree to follow?
+      if (size_child1 >= nth) {
+        cur[0] = ZERO;
+        node.u = VTREE;
+        node.k = node.k;
+        node.t = node.t;
+        node.h = node.h;
+      } else if (size_child1 + size_child2 >= nth) {
+        nth -= size_child1;
+        cur[0] = EPSILON;
+        node.u = UTREE;
+        node.k = node.k;
+        node.t = node.t;
+        node.h = node.h - 1;
+      } else {
+        nth -= size_child1 + size_child2;
+        cur[0] = ONE;
+        node.u = VTREE;
+        node.k = node.k;
+        node.t = node.t;
+        node.h = node.h;
+      }
+      cur[1] = COMMA;
+      cur += 2;
+      slack -= 2;
+    } else {
+      assert(false);
+    }
+  }
+
+  // Epilogue
+  free(count_cache);
+
+  return lab;
+}
+
 [[nodiscard]]
-static char *labels_leaves(int k, int t, int h) [[unsequenced]] {
+static char *labels_leaves(int const k, int const t, int const h)
+    [[unsequenced]] {
   assert(h >= k);
   char *(*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
   // NOTE: Technically, the pointers are not required to be null'd at this
@@ -487,8 +615,10 @@ int main(int argc, char *argv[argc + 1]) {
   }
 
   if (lth > 0) {
-    puts("Print lth leaf");
-    // print_lth_leaf(k, t, h);
+    char *label = label_lth_leaf(k, t, h, lth);
+    print_bits(label);
+    print_blocks(label);
+    free(label);
     return EXIT_SUCCESS;
   }
 
