@@ -83,16 +83,16 @@ jobs:
 
           git add README.md
           if ! git diff --staged --quiet; then
-            # Save the modified README.md and switch to the target branch
-            # to avoid rebasing the entire merge commit on PRs.
-            # We use checkout -f to discard the local README.md change before switching.
+            # Save the modified README.md and switch to the target branch.
+            # We use checkout -f and reset --hard to ensure we are on the latest origin state
+            # before applying our small badge change. This avoids rebase conflicts.
             cp README.md README.md.bak
             git fetch origin $BRANCH
             git checkout -f $BRANCH
+            git reset --hard origin/$BRANCH
             mv README.md.bak README.md
 
             git add README.md
             git commit -m "Update coverage badge"
-            git rebase origin/$BRANCH
             git push origin HEAD:$BRANCH
           fi
