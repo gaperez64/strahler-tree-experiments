@@ -43,6 +43,11 @@ static unsigned count_leaves_with_cache(TType tree_type, int const k,
                                         int const t, int const h,
                                         unsigned (*tree)[k + 1][t + 1][h + 1])
     [[unsequenced]] {
+  // early exit?
+  unsigned cached = tree[tree_type][k][t][h];
+  if (cached > 0)
+    return cached;
+
   size_t maxs = 0;
   size_t lens = 0;
   Node *stack = nullptr;
@@ -133,7 +138,8 @@ static unsigned count_leaves_with_cache(TType tree_type, int const k,
     }
   }
 
-  unsigned total = tree[UTREE][k][t][h];
+  unsigned total = tree[tree_type][k][t][h];
+  assert(total > 0);
 
   free(stack);
   return total;
@@ -203,7 +209,10 @@ static char *label_lth_leaf(int const k, int const t, int const h,
   assert(h >= k);
   unsigned (*count_cache)[k + 1][t + 1][h + 1] =
       calloc(2, sizeof(*count_cache));
-  unsigned slack = t * 3 + 1;
+  // From Def. 21 in "The Strahler Number of a Parity Game"
+  // plus the fact that we need the end-of-string character and we explicitly
+  // keep EPSILON as a character; then times 2 because we keep explicit commas
+  unsigned slack = 2 * ((k - 1 + t) + h + 1);
   char *lab = malloc(slack);
   char *cur = lab;
   unsigned nth = lth;
@@ -258,6 +267,9 @@ static char *label_lth_leaf(int const k, int const t, int const h,
       } else if (size_child1 + size_child2 >= nth) {
         nth -= size_child1;
         cur[0] = EPSILON;
+        cur[1] = COMMA;
+        cur += 1;
+        slack -= 1;
         node.u = UTREE;
         node.k = node.k - 1;
         node.t = node.t;
@@ -270,9 +282,8 @@ static char *label_lth_leaf(int const k, int const t, int const h,
         node.t = node.t - 1;
         node.h = node.h;
       }
-      cur[1] = COMMA;
-      cur += 2;
-      slack -= 2;
+      cur += 1;
+      slack -= 1;
     } else if (node.u == UTREE && node.h == node.k && node.k >= 2) {
       cur[0] = ZERO;
       cur += 1;
@@ -297,6 +308,9 @@ static char *label_lth_leaf(int const k, int const t, int const h,
       } else if (size_child1 + size_child2 >= nth) {
         nth -= size_child1;
         cur[0] = EPSILON;
+        cur[1] = COMMA;
+        cur += 1;
+        slack -= 1;
         node.u = UTREE;
         node.k = node.k;
         node.t = node.t;
@@ -309,9 +323,8 @@ static char *label_lth_leaf(int const k, int const t, int const h,
         node.t = node.t;
         node.h = node.h;
       }
-      cur[1] = COMMA;
-      cur += 2;
-      slack -= 2;
+      cur += 1;
+      slack -= 1;
     } else {
       assert(false);
     }
