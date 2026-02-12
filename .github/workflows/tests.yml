@@ -1,4 +1,4 @@
-name: regression_tests
+name: tests
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
           export CC=gcc-14
           export CXX=g++-14
           make all
-          make regtest
+          make test
 
       - name: Update coverage badge
         run: |
