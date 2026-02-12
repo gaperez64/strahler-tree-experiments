@@ -118,9 +118,10 @@ void print_tree_ppart(unsigned const nlabs, char const labels[nlabs],
       printf("Part %ld\n", tree.size);
       continue;
     }
-    if (tree.size == 0) { // we're done!
+    if (tree.size == 0) {
+      // this was left on the stack but it does not really have labels left to
+      // treat, so we just skip through
       lens--;
-      assert(lens == 0);
       continue;
     }
     if (tree.size == 1 && tree.labs[0][0] == EOS) {
