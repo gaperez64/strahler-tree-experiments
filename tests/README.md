@@ -67,9 +67,9 @@ by Graphviz during the Meson suite. In the tree-relative view, each node is
 checked as the partition `V = H + T + R_1 + ... + R_k + S`, with every `R_i`
 a trap for the other player in the current residual game. The Jurdziński view
 uses the same checked partition to expand the witness into `leafy(T)`, with
-visible level ranks. The solver and verifier use compact priorities; the DOT
-writer can show the corresponding source bounds without changing the verified
-witness.
+visible level ranks and empty added leaves omitted. The solver and verifier
+use compact priorities; the DOT writer can show the corresponding source
+bounds without changing the verified witness.
 
 ## Running the suite
 
