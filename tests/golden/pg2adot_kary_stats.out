@@ -1,0 +1,14 @@
+lifting: vertices=5 t_full=2 result=complete
+lifting even: root_level=4 H=3 k_full=3 host=kary arity=2 host_nodes=7 host_leaves=4 positions=21 rounds=8 lifts=14 top=0 region=5 tree_nodes=4 tree_leaves=2 tree_height=3 strahler=2
+lifting odd: root_level=3 H=2 k_full=2 host=kary arity=2 host_nodes=3 host_leaves=2 positions=9 rounds=11 lifts=17 top=5 region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+digraph attractor_decompositions {
+  graph [rankdir=TB, ordering=out];
+  node [shape=box];
+  even [label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1"><TR><TD COLSPAN="2"><B>Even</B> <I>d</I> = 4</TD></TR></TABLE>>];
+  even -> even_0;
+  even_0 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1"><TR><TD COLSPAN="2"><B>Even</B> <I>d</I> = 2</TD></TR></TABLE>>];
+  even_0 -> even_0_0;
+  even_0_0 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1"><TR><TD COLSPAN="2"><B>Even</B> <I>d</I> = 0</TD></TR></TABLE>>];
+  even -> even_1;
+  even_1 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1"><TR><TD COLSPAN="2"><B>Even</B> <I>d</I> = 2</TD></TR></TABLE>>];
+}
