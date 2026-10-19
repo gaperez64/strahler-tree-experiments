@@ -148,7 +148,11 @@ To regenerate golden files after an intentional output change:
 tests/run-regression.sh --generate-goldens
 ```
 
-If any diffs are reported, the script exits non-zero. To update goldens, run with `GENERATE_GOLDENS=1` (or `--generate-goldens`) and commit the resulting `tests/golden/*` files if the changes are intentional.
+This regenerates the CLI goldens, including both `pg2pmdot` backends and the
+symmetric `pg2adot` statistics cases. Build the tools first; the script looks
+in `build/`, the project root, and `PATH`. `GENERATE_GOLDENS=1` is equivalent
+to `--generate-goldens`. Review `git diff -- tests/golden/` before committing
+intentional output changes.
 
 ## Progress-measure backends
 
