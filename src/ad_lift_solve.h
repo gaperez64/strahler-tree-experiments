@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "ad_lift.h"
+#include "ad_sym.h"
 #include "ordered_tree.h"
 
 /* Both players are lifted independently over the same host shape. Player P's
@@ -54,6 +54,8 @@ typedef struct {
   bool verify;
   /* ADAPTIVE: seed TOP with the previously certified opponent dominion. */
   bool incremental;
+  /* Algorithm 9; adaptive hosts are not supported. */
+  bool symmetric;
 } ADLiftOptions;
 
 typedef struct {
@@ -81,6 +83,7 @@ typedef struct {
 
 typedef struct {
   ADLiftPlayerStats player[2];
+  ADSymStats symmetric;
   size_t vertices;
   /* floor(log2 n) for n domain vertices. */
   size_t t_full;

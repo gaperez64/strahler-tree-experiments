@@ -127,7 +127,7 @@ ad_lift_tree_dep = declare_dependency(
 
 ad_lift_lib = static_library(
   'ad_lift',
-  ['src/ad_lift.c', 'src/ad_lift_solve.c'],
+  ['src/ad_lift.c', 'src/ad_lift_solve.c', 'src/ad_sym.c'],
   dependencies : [ad_lift_tree_dep, ad_tree_dep, stree_dep],
 )
 ad_lift_dep = declare_dependency(
@@ -317,6 +317,14 @@ test(
   timeout : 120,
 )
 
+test_ad_sym_exe = executable(
+  'test_ad_sym',
+  ['tests/test_ad_sym.c', 'tests/reference_solver.c'],
+  dependencies : [ad_lift_dep, zielonka_dep, pg_preprocess_dep],
+)
+test('test_ad_sym', test_ad_sym_exe, timeout : 120,
+  workdir : meson.project_source_root())
+
 test_ad_tree_dot_exe = executable(
   'test_ad_tree_dot',
   'tests/test_ad_tree_dot.c',
@@ -459,6 +467,52 @@ test(
 # Regression Tests
 run_single_test = find_program('tests/run-single-test.sh')
 
+foreach algorithm : ['zielonka-sym', 'lifting-sym']
+  foreach name, arguments : {
+    'sets' : ['pg2adot_sets', ['--labels=sets', '--max-set-items=1']],
+    'relative' : ['pg2adot_tree_relative_sets', [
+      '--view=tree-relative', '--labels=sets', '--max-set-items=1']],
+    'jurdzinski' : ['pg2adot_jurdzinski_sets', [
+      '--view=jurdzinski', '--labels=sets', '--max-set-items=1']],
+    'counts' : ['pg2adot_counts', []],
+    'no_verify' : ['pg2adot_counts', ['--no-verify']],
+  }
+    test('pg2adot_' + algorithm + '_' + name, run_single_test,
+      args : [pg2adot, 'tests/golden/' + arguments[0] + '.out',
+        'tests/actual/pg2adot_' + algorithm + '_' + name + '.out',
+        '@tests/games/ordered_two_children.pg', '--algorithm=' + algorithm] + arguments[1],
+      workdir : meson.project_source_root())
+  endforeach
+endforeach
+foreach host_option : ['--tree-k=1', '--kary=1']
+  test('pg2adot_lifting_sym_partial_' + host_option, run_single_test,
+    args : [pg2adot, 'tests/golden/pg2adot_kary_partial_sets.out',
+      'tests/actual/pg2adot_lifting_sym_partial_' + host_option + '.out',
+      '@tests/games/strahler_two.pg', '--algorithm=lifting-sym',
+      '--labels=sets', host_option], workdir : meson.project_source_root())
+endforeach
+foreach name, arguments : {
+  'sym_adaptive' : ['--algorithm=lifting-sym', '--adaptive-t'],
+  'sym_incremental' : ['--algorithm=lifting-sym', '--adaptive-t=incremental'],
+  'sym_zielonka_host' : ['--algorithm=zielonka-sym', '--kary=2'],
+  'sym_zielonka_incremental' : ['--algorithm=zielonka-sym', '--adaptive-t=incremental'],
+}
+  test('pg2adot_rejects_' + name, pg2adot,
+    args : arguments, should_fail : true)
+endforeach
+foreach name, arguments : {
+  'sym_h4' : ['thesis_h4', ['--algorithm=zielonka-sym']],
+  'sym_f4' : ['thesis_f4', ['--algorithm=zielonka-sym']],
+  'sym_lifting_stats' : ['strahler_two', ['--algorithm=lifting-sym', '--kary=1']],
+}
+  test('pg2adot_' + name, run_single_test,
+    args : [pg2adot, 'tests/golden/pg2adot_' + name + '.out',
+      'tests/actual/pg2adot_' + name + '.out',
+      '@tests/games/' + arguments[0] + '.pg', '--stats',
+      '--player=even', '--labels=none'] + arguments[1],
+    workdir : meson.project_source_root())
+endforeach
+
 preprocess_cases = {
   'shave_loops' : ['shave_loops', ['--shave=loops', '--labels=sets']],
   'shave_wcwc' : ['shave_wcwc', ['--shave=wcwc', '--labels=sets']],
@@ -473,7 +527,7 @@ preprocess_cases = {
   'compress_jurdzinski' : ['compress', ['--compress', '--view=jurdzinski']],
 }
 foreach name, arguments : preprocess_cases
-  foreach algorithm : ['lifting', 'zielonka']
+  foreach algorithm : ['lifting', 'zielonka', 'zielonka-sym', 'lifting-sym']
     test('pg2adot_' + name + '_' + algorithm, run_single_test,
       args : [pg2adot, 'tests/golden/pg2adot_' + name + '.out',
         'tests/actual/pg2adot_' + name + '_' + algorithm + '.out',

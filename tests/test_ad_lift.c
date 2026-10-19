@@ -398,6 +398,10 @@ static void test_seeded_labels(void) {
       assert(warm.stats.lifts <= cold.stats.lifts);
       ADVerifyError verify_error = {0};
       assert(ad_lift_verify(&game, &domain, &host, &warm, &verify_error));
+      assert(ad_lift_continue(&game, &domain, &host, &warm, &error));
+      assert(warm.stats.lifts == 0);
+      assert(memcmp(cold.labels, warm.labels,
+                    game.vertex_count * sizeof(cold.labels[0])) == 0);
       ad_lift_labelling_destroy(&cold);
       ad_lift_labelling_destroy(&warm);
       ADLiftLabelling unused = {0};

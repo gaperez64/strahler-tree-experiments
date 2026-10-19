@@ -106,9 +106,10 @@ name; the latter two read from standard input.
 - `--max-set-items=N` limits the number of vertices shown in a set label.
 - `--priority-mode=original|compact` selects the priority bounds shown in the
   tree. The default is `original`.
-- `--algorithm=lifting|zielonka` selects how the decompositions are built. The
-  default is `lifting`; `zielonka` runs the enhanced Zielonka algorithm for
-  comparison. Both algorithms support preprocessing, statistics and verification.
+- `--algorithm=lifting|zielonka|zielonka-sym|lifting-sym` selects the solver;
+  the default is `lifting`. `zielonka` runs enhanced Zielonka. All four share
+  preprocessing, statistics and verification; symmetric variants are described
+  below.
 - `--shave=LIST` solves and removes dominions before building either tree.
   Use a comma list of `single` (all remaining priorities have one parity),
   `loops` (winning self-loops, including forced losing-owner loops), and
@@ -128,6 +129,7 @@ name; the latter two read from standard input.
   smallest such `t` on standard error, together with the smallest `t` at which
   each player's whole winning region was found. `--start-t=T` starts the
   search at `T`, and `--tree-k=K` caps `K`; a capped search can end partial.
+  Both adaptive modes require `--algorithm=lifting`.
 - `--adaptive-t=incremental` uses certified opponent wins as TOP seeds. It
   produces exactly the same least labellings and trees at every tried host as
   `--adaptive-t`, usually with fewer lifts. Bare `--adaptive-t` keeps the cold
@@ -143,14 +145,30 @@ name; the latter two read from standard input.
   than `N` leaves. The default is 1000000. With `--adaptive-t`, reaching the
   limit stops the search and prints a warning; the result found so far is kept
   and labelled as partial.
-- `--stats` prints statistics to standard error. For lifting, these are the
-  host of each player and its size, rounds, vertex lifts, vertices left at the
-  top, and the size and Strahler number of each decomposition. For Zielonka,
-  they are the region sizes and the decomposition metrics. With preprocessing,
-  it also reports residual and shaved sizes and counts per rule, including
+- `--stats` prints statistics to standard error. Ordinary lifting reports each
+  player's host and its size, rounds, vertex lifts, vertices left at the top,
+  and the size and Strahler number of each decomposition. Zielonka adds
+  nonempty calls and attractor counts to region sizes and tree metrics.
+  Symmetric variants report calls, attractors, Move/Set counts, certification
+  lifts and the Even separator size; `lifting-sym` also reports host sizes.
+  With preprocessing, it also reports residual and shaved sizes and counts per
+  rule, including
   attracted vertices; a vertex is counted only against the rule that removed it.
 - `--no-verify` skips the decomposition and shaved-region closure checks and
   is intended for debugging.
+
+`--algorithm=zielonka-sym` runs McNaughton–Zielonka with memory (Algorithm 8
+of Thejaswini Raghavan's thesis). It keeps both players' decomposition labellings
+across recursive calls and starts with trivial decompositions. Complete n-ary
+hosts are represented lazily, so only visited nodes consume space. It always
+returns both winning regions with decompositions and accepts no host options.
+
+`--algorithm=lifting-sym` is **Algorithm 9 + asymmetric certification (thesis
+§8.3)**. It uses the default, `--tree-k`, `--kary` or `--tree-file` hosts and
+leaf limit. Both `--adaptive-t` and `--adaptive-t=incremental` are rejected:
+Algorithm 9 runs on a fixed pair of hosts. With restricted hosts, Theorem F's
+returned set is only a separator: final short lifts certify the two dominions,
+leaving other vertices Unresolved. Universal hosts give complete results.
 
 By default, `pg2adot` lifts in a Strahler tree that is guaranteed to contain a
 decomposition of each winning region, so the result is complete. That host
@@ -179,11 +197,11 @@ code for cycle searches rather than copying oink's SCC implementation.
 
 #### Complete and partial results
 
-The default host and `--algorithm=zielonka` always give a complete result: the
-Even and Odd roots decompose the two winning regions. A restricted host from
-`--tree-k`, `--kary`, `--tree-file`, or a capped or interrupted
-`--adaptive-t` search still
-certifies that each root region is won by its player, but it may leave some
+The default host, `--algorithm=zielonka`, and `--algorithm=zielonka-sym` always
+give a complete result: the Even and Odd roots decompose the two winning
+regions. A restricted host from `--tree-k`, `--kary`, `--tree-file`, or a capped
+or interrupted `--adaptive-t` search still certifies that each root region is
+won by its player, but it may leave some
 vertices unresolved. The result is complete exactly when the two regions cover
 the game, even with a restricted host.
 
@@ -492,6 +510,14 @@ before `c`. This makes each `S_i` an opponent trap in the remaining vertices
 and each `A_i` its attractor. `ad_lift_solve` checks the labelling directly
 with `ad_lift_verify` and the materialized trees with both `ad_tree_verify`
 and `ad_tree_relative_verify`.
+
+### Symmetric algorithms and thesis correspondence
+
+`src/ad_sym.c` shares the player-swapped recursion for thesis Algorithms 8
+and 9. Algorithm 8 uses lazy complete hosts; Algorithm 9 uses supplied hosts
+and `ad_lift_continue` to certify its final labels without resetting progress.
+See [the thesis correspondence and corrected entry invariant](docs/symmetric.md)
+for errata, the added trap-closure operation, proofs and debug checks.
 
 ## NOTICE
 

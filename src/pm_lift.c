@@ -22,6 +22,7 @@
  * Changes: ported to C23 and modified for tree output.
  */
 
+#include <assert.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -292,6 +293,8 @@ bool pm_lift(PGGame const *game, PGSet const *active,
       size_t const from = predecessors[edge];
       if (pg_set_contains(active, from) && lift_vertex(&work, from, vertex) &&
           !pg_set_contains(&dirty, from)) {
+        /* dirty keeps at most one queue entry per vertex. */
+        assert(queued < count);
         queue[queued++] = from;
         pg_set_add(&dirty, from);
       }

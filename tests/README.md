@@ -110,6 +110,21 @@ and `docs/incremental-t.md` for the experiments and proofs. Incremental C
 tests compare complete label arrays and trees with cold lifting, including
 partial results, start values, caps and host budgets.
 
+`test_ad_sym` compares all four solvers against the enumerating reference on
+600 deterministic random games (up to 12 vertices and priorities 0–6), with
+and without shaving/compression. Restricted unary, binary, and uneven file
+hosts must agree with ordinary lifting's certified dominions; every classic
+and tree-relative decomposition verifies. `thesis_h4/h8.pg` and `thesis_f4/f8.pg`
+implement the families in thesis §8.1 (layers numbered from 1 for H and 0 for F).
+The unit test asserts exact nonempty call counts for both Zielonka variants:
+H₄ 50/23, H₈ 898/83, F₄ 28/24, F₈ 241/112, using literal fixture priorities.
+CLI goldens also cover the shared preprocessing, all views, restricted partial
+results, statistics, and rejected symmetric option combinations.
+The two-vertex `higher_side_entry` regression checks the recursive call with a
+higher-player TOP label for both symmetric algorithms. Debug builds also compare
+raw labels with independent least labellings before certification on small games;
+see [the corrected invariant](../docs/symmetric.md) for the bounds and proof sketch.
+
 ## Running the suite
 
 Build and run from the repository root:

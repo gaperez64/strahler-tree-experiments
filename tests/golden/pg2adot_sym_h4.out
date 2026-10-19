@@ -1,0 +1,16 @@
+zielonka-sym: vertices=20 result=complete calls=23 attractors=115 moves=45 sets=89 certification_lifts=0 separator=10
+zielonka-sym even: region=10 tree_nodes=5 tree_leaves=3 tree_height=3 strahler=2
+zielonka-sym odd: region=10 tree_nodes=5 tree_leaves=3 tree_height=3 strahler=2
+digraph attractor_decompositions {
+  graph [rankdir=TB, ordering=out];
+  node [shape=box];
+  even [label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1"><TR><TD COLSPAN="2"><B>Even</B> <I>d</I> = 6</TD></TR></TABLE>>];
+  even -> even_0;
+  even_0 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1"><TR><TD COLSPAN="2"><B>Even</B> <I>d</I> = 4</TD></TR></TABLE>>];
+  even -> even_1;
+  even_1 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1"><TR><TD COLSPAN="2"><B>Even</B> <I>d</I> = 4</TD></TR></TABLE>>];
+  even_1 -> even_1_0;
+  even_1_0 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1"><TR><TD COLSPAN="2"><B>Even</B> <I>d</I> = 2</TD></TR></TABLE>>];
+  even_1 -> even_1_1;
+  even_1_1 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1"><TR><TD COLSPAN="2"><B>Even</B> <I>d</I> = 2</TD></TR></TABLE>>];
+}

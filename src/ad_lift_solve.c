@@ -42,12 +42,21 @@ typedef struct {
   ADLiftSolveStats *stats;
   ADLiftError *error;
   PlayerOutcome outcome[2];
+  ADLiftTree hosts[2];
 } Solver;
 
 /* Lift, check, and materialize one player's run, replacing its outcome. */
-[[nodiscard]] static bool run_on_host(Solver *solver, ADLiftTree const *host) {
+[[nodiscard]] static bool run_on_host(Solver *solver, ADLiftTree *host) {
   PGPlayer const player = host->player;
   ADLiftPlayerStats *stats = solver->stats->player + player;
+  if (solver->options->symmetric) {
+    stats->host_nodes = host->node_count;
+    stats->host_leaves = host->leaf_count;
+    stats->host_positions = host->position_count;
+    solver->hosts[player] = *host;
+    *host = (ADLiftTree){0};
+    return true;
+  }
   ADLiftLabelling labelling = {0};
   ADLiftError lift_error = {0};
   ADVerifyError verify_error = {0};
@@ -337,6 +346,7 @@ bool ad_lift_solve(PGGame const *game, PGSet const *domain,
   if (game == nullptr || domain == nullptr || options == nullptr ||
       result == nullptr || domain->bit_count != game->vertex_count ||
       options->mode > AD_LIFT_HOST_TREE ||
+      (options->symmetric && options->mode == AD_LIFT_HOST_ADAPTIVE) ||
       options->schedule > AD_LIFT_SCHEDULE_SINGLE ||
       (options->incremental && options->mode != AD_LIFT_HOST_ADAPTIVE) ||
       (options->mode == AD_LIFT_HOST_STRAHLER && options->k == 0) ||
@@ -416,7 +426,22 @@ bool ad_lift_solve(PGGame const *game, PGSet const *domain,
     break;
   }
 
-  if (succeeded) {
+  if (succeeded && options->symmetric) {
+    ad_result_destroy(result);
+    succeeded = ad_sym_solve(game, domain, solver.hosts, options->verify,
+                             result, &stats->symmetric, error);
+    if (succeeded) {
+      for (size_t player = 0; player < 2; player++) {
+        stats->player[player].tree =
+            ad_tree_metrics(result->decomposition[player]);
+      }
+      if (result->kind != AD_RESULT_COMPLETE &&
+          universal_hosts(stats, options->mode)) {
+        solve_error(error, "the universal hosts left vertices unresolved");
+        succeeded = false;
+      }
+    }
+  } else if (succeeded) {
     for (size_t player = 0; player < 2; player++) {
       PlayerOutcome *outcome = solver.outcome + player;
       pg_set_move(&result->region[player], &outcome->dominion);
@@ -445,6 +470,8 @@ bool ad_lift_solve(PGGame const *game, PGSet const *domain,
     }
     pg_set_destroy(&overlap);
   }
+  ad_lift_tree_destroy(solver.hosts + PG_EVEN);
+  ad_lift_tree_destroy(solver.hosts + PG_ODD);
   outcome_destroy(solver.outcome + PG_EVEN);
   outcome_destroy(solver.outcome + PG_ODD);
   if (!succeeded) {
