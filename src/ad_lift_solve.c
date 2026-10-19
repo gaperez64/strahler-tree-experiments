@@ -52,8 +52,13 @@ typedef struct {
   ADLiftError lift_error = {0};
   ADVerifyError verify_error = {0};
   ADNode *root = nullptr;
-  if (!ad_lift_run(solver->game, solver->domain, host,
-                   solver->options->schedule, &labelling, &lift_error)) {
+  PGSet const *known_losing = &solver->outcome[1 - player].dominion;
+  if (!solver->options->incremental || known_losing->bit_count == 0) {
+    known_losing = nullptr;
+  }
+  if (!ad_lift_run_seeded(solver->game, solver->domain, host,
+                          solver->options->schedule, known_losing, &labelling,
+                          &lift_error)) {
     solve_error(solver->error, "%s lifting failed: %s", player_name(player),
                 lift_error.message);
     return false;
@@ -85,6 +90,7 @@ typedef struct {
   stats->host_leaves = host->leaf_count;
   stats->host_positions = host->position_count;
   stats->lift = labelling.stats;
+  stats->total_lifts += labelling.stats.lifts;
   stats->tree = ad_tree_metrics(root);
   PlayerOutcome *outcome = solver->outcome + player;
   outcome_destroy(outcome);
@@ -245,9 +251,10 @@ typedef enum {
  * a host exceeds the leaf limit after every player has run once, keep the
  * dominions found so far; they remain sound.
  *
- * Dominions need not grow monotonically with t, but each is contained in the
- * player's winning region, which the final dominion equals when the result is
- * complete. So the first t reaching the largest dominion seen is the least t
+ * When K changes the hosts need not embed in their successors (see
+ * docs/incremental-t.md). Each dominion is nevertheless contained in its
+ * player's winning region, which the final dominion equals when complete.
+ * The first t reaching the largest dominion seen is therefore the least t
  * that already found the whole winning region. */
 [[nodiscard]] static bool run_adaptive(Solver *solver) {
   ADLiftSolveStats *stats = solver->stats;
@@ -331,6 +338,7 @@ bool ad_lift_solve(PGGame const *game, PGSet const *domain,
       result == nullptr || domain->bit_count != game->vertex_count ||
       options->mode > AD_LIFT_HOST_TREE ||
       options->schedule > AD_LIFT_SCHEDULE_SINGLE ||
+      (options->incremental && options->mode != AD_LIFT_HOST_ADAPTIVE) ||
       (options->mode == AD_LIFT_HOST_STRAHLER && options->k == 0) ||
       (options->mode == AD_LIFT_HOST_KARY && options->arity == 0) ||
       (options->mode == AD_LIFT_HOST_TREE && options->tree == nullptr) ||

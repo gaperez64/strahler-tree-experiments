@@ -55,6 +55,7 @@ static void usage(FILE *out, char *argv[static 1]) {
       "  --tree-k=K                   lift in U^K_{t,H}; may be partial\n"
       "  --adaptive-t                 raise t until the result is complete;\n"
       "                               --tree-k=K caps K\n"
+      "  --adaptive-t=incremental     reuse certified opponent wins as TOP\n"
       "  --start-t=T                  first t for --adaptive-t; default: 0\n"
       "  --kary=A                     lift in the full A-ary tree of height "
       "H;\n"
@@ -180,6 +181,9 @@ static void write_lifting_stats(ADLiftSolveStats const *stats,
             "lifts=%zu top=%zu ",
             current->host_nodes, current->host_leaves, current->host_positions,
             current->lift.rounds, current->lift.lifts, current->lift.top_count);
+    if (options->mode == AD_LIFT_HOST_ADAPTIVE) {
+      fprintf(stderr, "total_lifts=%zu ", current->total_lifts);
+    }
     write_tree_stats(result, player, current->tree);
   }
 }
@@ -219,7 +223,7 @@ int main(int argc, char *argv[argc + 1]) {
       {"no-verify", no_argument, nullptr, OPTION_NO_VERIFY},
       {"algorithm", required_argument, nullptr, OPTION_ALGORITHM},
       {"tree-k", required_argument, nullptr, OPTION_TREE_K},
-      {"adaptive-t", no_argument, nullptr, OPTION_ADAPTIVE_T},
+      {"adaptive-t", optional_argument, nullptr, OPTION_ADAPTIVE_T},
       {"start-t", required_argument, nullptr, OPTION_START_T},
       {"kary", required_argument, nullptr, OPTION_KARY},
       {"tree-file", required_argument, nullptr, OPTION_TREE_FILE},
@@ -331,7 +335,12 @@ int main(int argc, char *argv[argc + 1]) {
       }
       break;
     case OPTION_ADAPTIVE_T:
+      if (optarg != nullptr && strcmp(optarg, "incremental") != 0) {
+        fputs("Invalid --adaptive-t value\n", stderr);
+        return EXIT_USAGE;
+      }
       adaptive_t = true;
+      lift_options.incremental = optarg != nullptr;
       break;
     case OPTION_START_T:
       if (!parse_size(optarg, &start_t)) {

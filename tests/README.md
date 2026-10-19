@@ -101,6 +101,15 @@ Zielonka regression. `lifted_shape.pg` shows a game where the least lifted
 decomposition differs from the Zielonka one. `strahler_two.pg` needs a
 Strahler-2 decomposition for Even, so `--tree-k=1` gives a partial result.
 
+`disagree_*.pg` and their paired JSON goldens compare the complete ordered
+trees, all classic sets, leaf counts, heights, and Strahler numbers of both
+algorithms. `test_research.py` checks these witnesses, the host-relative
+labelling order, the independent Python lifting model, and an adaptive host
+transition where a certified dominion shrinks. See `docs/disagreements.md`
+and `docs/incremental-t.md` for the experiments and proofs. Incremental C
+tests compare complete label arrays and trees with cold lifting, including
+partial results, start values, caps and host budgets.
+
 ## Running the suite
 
 Build and run from the repository root:

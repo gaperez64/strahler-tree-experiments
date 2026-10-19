@@ -221,6 +221,9 @@ sanitize_output "tests/golden/pg2adot_partial_jurdzinski_tree_file.out" "$PG2ADO
 echo "  $PG2ADOT_BIN --adaptive-t --stats --player=even --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_adaptive_stats.out"
 "$PG2ADOT_BIN" --adaptive-t --stats --player=even --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_adaptive_stats.out 2>&1
 sanitize_output "tests/golden/pg2adot_adaptive_stats.out" "$PG2ADOT_BIN"
+echo "  $PG2ADOT_BIN --adaptive-t=incremental --stats --player=even --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_incremental_stats.out"
+"$PG2ADOT_BIN" --adaptive-t=incremental --stats --player=even --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_incremental_stats.out 2>&1
+sanitize_output "tests/golden/pg2adot_incremental_stats.out" "$PG2ADOT_BIN"
 echo "  $PG2ADOT_BIN --adaptive-t --max-host-leaves=1 --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_adaptive_limit.out"
 "$PG2ADOT_BIN" --adaptive-t --max-host-leaves=1 --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_adaptive_limit.out 2>&1
 sanitize_output "tests/golden/pg2adot_adaptive_limit.out" "$PG2ADOT_BIN"

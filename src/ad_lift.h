@@ -59,6 +59,16 @@ bool ad_lift_run(PGGame const *game, PGSet const *active,
                  ADLiftTree const *host, ADLiftSchedule schedule,
                  ADLiftLabelling *result, ADLiftError *error);
 
+/* Start known_losing at TOP and every other vertex at its least compatible
+ * position. The caller must certify that known_losing is a subset of active
+ * won by the opponent; then this computes the same least labelling as a cold
+ * run. nullptr means no known losing vertices. */
+[[nodiscard]]
+bool ad_lift_run_seeded(PGGame const *game, PGSet const *active,
+                        ADLiftTree const *host, ADLiftSchedule schedule,
+                        PGSet const *known_losing, ADLiftLabelling *result,
+                        ADLiftError *error);
+
 void ad_lift_labelling_destroy(ADLiftLabelling *labelling);
 
 /* Check a labelling from scratch: ranges, priority compatibility, every
