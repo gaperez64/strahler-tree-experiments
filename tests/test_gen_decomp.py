@@ -2,6 +2,7 @@
 """Small wrapper checks, including a real two-pass generation when built."""
 
 from contextlib import redirect_stdout
+from hashlib import sha256
 import io
 from pathlib import Path
 import shutil
@@ -10,6 +11,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -18,6 +20,183 @@ import gen_decomp as decomp  # noqa: E402
 BUILD_DIR = (Path(sys.argv.pop(1)).resolve()
              if len(sys.argv) > 1 and not sys.argv[1].startswith("-")
              else ROOT / "build")
+PNG = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108000000003a7e9b55"
+    "0000000a49444154789c636000000002000148afa4710000000049454e44ae426082")
+
+
+def fake_dot(directory):
+    program = directory / "dot"
+    program.write_text(
+        f"#!{sys.executable}\n"
+        "import sys\n"
+        "from pathlib import Path\n"
+        "assert sys.argv[1:] == ['-Tpng']\n"
+        "with Path(__file__).with_suffix('.calls').open('ab') as calls:\n"
+        "    calls.write(sys.stdin.buffer.read() + b'\\0')\n"
+        f"sys.stdout.buffer.write({PNG!r})\n")
+    program.chmod(0o755)
+    return program
+
+
+class PngTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.directory = Path(directory.name)
+        self.root = self.directory / "repo"
+        self.generated = self.directory / "generated"
+        self.path = Path("decomp/game/tree.dot")
+        (self.generated / self.path.parent).mkdir(parents=True)
+        self.dot = b"digraph { a -> b }\n"
+        (self.generated / self.path).write_bytes(self.dot)
+        self.program = fake_dot(self.directory)
+        self.calls = self.program.with_suffix(".calls")
+        self.png = self.root / self.path.with_suffix(".png")
+        self.stdout = redirect_stdout(io.StringIO())
+        self.stdout.__enter__()
+        self.addCleanup(self.stdout.__exit__, None, None, None)
+
+    def test_stamp_and_reuse_without_comparing_png_bytes(self):
+        decomp.sync_outputs(self.root, self.generated, False, self.program)
+        png = self.png.read_bytes()
+        digest = sha256(self.dot).hexdigest()
+        chunk = b"tEXtdot-sha256\0" + digest.encode("ascii")
+        end = 37 + len(chunk)
+        self.assertEqual(png[:33], PNG[:33])
+        self.assertEqual(int.from_bytes(png[33:37], "big"), len(chunk) - 4)
+        self.assertEqual(png[37:end], chunk)
+        self.assertEqual(int.from_bytes(png[end:end + 4], "big"),
+                         zlib.crc32(chunk))
+        self.assertEqual(png[end + 4:], PNG[33:])
+        self.assertEqual(decomp.png_dot_hash(png), digest)
+        self.assertEqual(self.calls.read_bytes(), self.dot + b"\0")
+
+        extra = b"tEXtComment\0another Graphviz version"
+        png = (png[:-12] + (len(extra) - 4).to_bytes(4, "big") + extra
+               + zlib.crc32(extra).to_bytes(4, "big") + png[-12:])
+        self.png.write_bytes(png)
+        modified = self.png.stat().st_mtime_ns
+        missing_dot = self.directory / "missing-dot"
+        self.assertFalse(decomp.sync_outputs(
+            self.root, self.generated, True, missing_dot))
+        decomp.sync_outputs(self.root, self.generated, False, missing_dot)
+        self.assertEqual(self.png.read_bytes(), png)
+        self.assertEqual(self.png.stat().st_mtime_ns, modified)
+        self.assertEqual(self.calls.read_bytes(), self.dot + b"\0")
+
+    def test_dot_change_rerenders(self):
+        decomp.sync_outputs(self.root, self.generated, False, self.program)
+        changed = b"digraph { a -> c }\n"
+        (self.generated / self.path).write_bytes(changed)
+        decomp.sync_outputs(self.root, self.generated, False, self.program)
+        self.assertEqual(self.calls.read_bytes(),
+                         self.dot + b"\0" + changed + b"\0")
+        self.assertEqual(decomp.png_dot_hash(self.png.read_bytes()),
+                         sha256(changed).hexdigest())
+        self.assertEqual((self.root / self.path).read_bytes(), changed)
+
+    def test_truncated_png_is_stale_and_rerendered(self):
+        decomp.sync_outputs(self.root, self.generated, False, self.program)
+        png = self.png.read_bytes()
+        for length in (120, len(png) - 12, len(png) - 1):
+            with self.subTest(length=length):
+                self.png.write_bytes(png[:length])
+                self.assertIsNone(decomp.png_dot_hash(png[:length]))
+                with patch.object(decomp, "render_png") as render:
+                    self.assertTrue(decomp.sync_outputs(
+                        self.root, self.generated, True, self.program))
+                    render.assert_not_called()
+                self.assertEqual(self.png.read_bytes(), png[:length])
+                decomp.sync_outputs(self.root, self.generated, False,
+                                    self.program)
+                self.assertEqual(self.png.read_bytes(), png)
+        self.assertEqual(self.calls.read_bytes(), (self.dot + b"\0") * 4)
+
+    def test_hash_rejects_corrupt_chunks_and_missing_required_chunks(self):
+        png = decomp.render_png(self.dot, sha256(self.dot).hexdigest(),
+                                self.program)
+        for offset in (29, 116, len(png) - 13, len(png) - 1):
+            with self.subTest(offset=offset):
+                corrupt = bytearray(png)
+                corrupt[offset] ^= 1
+                self.assertIsNone(decomp.png_dot_hash(corrupt))
+        for corrupt in (png[:8] + png[33:], png[:120] + png[-12:],
+                        png + b"trailing data"):
+            with self.subTest(content=corrupt):
+                self.assertIsNone(decomp.png_dot_hash(corrupt))
+
+    def test_check_reports_stale_pngs_without_rendering_or_writing(self):
+        decomp.sync_outputs(self.root, self.generated, False, self.program)
+        mismatched = decomp.render_png(self.dot, "0" * 64, self.program)
+        for content in (None, PNG, mismatched, mismatched[:50], b"bad PNG"):
+            with self.subTest(content=content):
+                if content is None:
+                    self.png.unlink()
+                else:
+                    self.png.write_bytes(content)
+                before = decomp.output_files(self.root)
+                report = io.StringIO()
+                with (redirect_stdout(report),
+                      patch.object(decomp, "render_png") as render):
+                    self.assertTrue(decomp.sync_outputs(
+                        self.root, self.generated, True,
+                        self.directory / "missing-dot"))
+                    render.assert_not_called()
+                self.assertIn("stale: decomp/game/tree.png", report.getvalue())
+                self.assertEqual(decomp.output_files(self.root), before)
+
+    def test_stale_png_removal(self):
+        decomp.sync_outputs(self.root, self.generated, False, self.program)
+        (self.generated / self.path).unlink()
+        report = io.StringIO()
+        with redirect_stdout(report):
+            self.assertTrue(decomp.sync_outputs(
+                self.root, self.generated, True, self.program))
+        self.assertIn("stale: decomp/game/tree.png", report.getvalue())
+        decomp.sync_outputs(self.root, self.generated, False,
+                            self.directory / "missing-dot")
+        self.assertFalse(self.png.exists())
+        self.assertFalse((self.root / self.path).exists())
+
+    def test_render_errors_preserve_outputs(self):
+        decomp.sync_outputs(self.root, self.generated, False, self.program)
+        (self.generated / self.path).write_bytes(b"digraph { changed }\n")
+        before = decomp.output_files(self.root)
+        with self.assertRaisesRegex(SystemExit, r"Graphviz.*--dot PATH"):
+            decomp.sync_outputs(self.root, self.generated, False,
+                                self.directory / "missing-dot")
+        for result, message in (
+            (subprocess.CalledProcessError(1, "dot", stderr=b"bad graph"),
+             "Graphviz.*failed: bad graph"),
+            (subprocess.CompletedProcess([], 0, b"not a PNG", b""),
+             "invalid PNG"),
+        ):
+            with self.subTest(message=message):
+                with patch.object(decomp.subprocess, "run") as run:
+                    if isinstance(result, Exception):
+                        run.side_effect = result
+                    else:
+                        run.return_value = result
+                    with self.assertRaisesRegex(SystemExit, message):
+                        decomp.sync_outputs(self.root, self.generated, False,
+                                            self.program)
+                self.assertEqual(decomp.output_files(self.root), before)
+
+    def test_dot_argument_and_environment(self):
+        for options, environment, expected in (
+            ([], {}, "dot"),
+            ([], {"STRAHLER_DOT": "env-dot"}, "env-dot"),
+            (["--dot", "custom-dot"], {"STRAHLER_DOT": "env-dot"}, "custom-dot"),
+        ):
+            with (self.subTest(options=options, environment=environment),
+                  patch.dict(decomp.os.environ, environment, clear=True),
+                  patch.object(sys, "argv", ["gen_decomp.py", *options]),
+                  patch.object(decomp.os, "access", return_value=True),
+                  patch.object(decomp, "generate"),
+                  patch.object(decomp, "sync_outputs", return_value=False) as sync):
+                self.assertFalse(decomp.main())
+                self.assertEqual(sync.call_args.args[-1], expected)
 
 
 class DecompTests(unittest.TestCase):
@@ -146,6 +325,7 @@ class DecompTests(unittest.TestCase):
             shutil.copyfile(ROOT / "scripts/decomp_methods.md",
                             root / "scripts/decomp_methods.md")
             outputs = [Path(directory) / name for name in ("one", "two")]
+            program = fake_dot(Path(directory))
             for output in outputs:
                 output.mkdir()
                 decomp.generate(root, output, BUILD_DIR, 5, 10_000)
@@ -153,12 +333,17 @@ class DecompTests(unittest.TestCase):
                              decomp.output_files(outputs[1]))
             self.assertEqual(len(list(outputs[0].rglob("*.dot"))), 28)
             self.assertEqual(len(list(outputs[0].rglob("*.leaves"))), 8)
+            inventory = (outputs[0] / "DECOMP.md").read_text()
+            self.assertIn("Graphviz", inventory)
+            self.assertIn("dot-sha256", inventory)
+            self.assertEqual(inventory.count("[PNG](decomp/"), 28)
             for dot in (outputs[0] / "decomp/all-shaved").glob("*+pre.dot"):
                 info = decomp.tree_info(dot.read_text(),
                                         dot.name.startswith("pm-"))
                 self.assertEqual(info, [((0, 0, 0, 0), ())] * 2)
             self.assertTrue(decomp.sync_outputs(root, outputs[0], True))
-            decomp.sync_outputs(root, outputs[0], False)
+            decomp.sync_outputs(root, outputs[0], False, program)
+            self.assertEqual(len(list(root.rglob("*.png"))), 28)
             self.assertFalse(decomp.sync_outputs(root, outputs[1], True))
             stale = root / "decomp/small/obsolete.dot"
             stale.write_text("old")
@@ -171,7 +356,7 @@ class DecompTests(unittest.TestCase):
             for name in ("DECOMP.md", "obsolete.dot", "lifting.dot"):
                 self.assertIn(name, report.getvalue())
             self.assertEqual(before, decomp.output_files(root))
-            decomp.sync_outputs(root, outputs[1], False)
+            decomp.sync_outputs(root, outputs[1], False, program)
             self.assertFalse(decomp.sync_outputs(root, outputs[1], True))
 
 

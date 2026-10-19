@@ -61,7 +61,7 @@ jobs:
         run: |
           echo "TMPDIR=$RUNNER_TEMP" >> "$GITHUB_ENV"
           sudo apt-get update
-          sudo apt-get install -y clang-18 ninja-build pipx
+          sudo apt-get install -y clang-18 graphviz ninja-build pipx
           pipx install meson==1.8.5
 
       - name: Build release tools and check wrapper
