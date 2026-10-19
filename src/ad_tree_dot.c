@@ -4,30 +4,8 @@
 #include <string.h>
 
 #include "ad_tree_dot.h"
+#include "pg_dot.h"
 #include "utils.h"
-
-[[nodiscard]] static bool write_set(FILE *stream, PGGame const *game,
-                                    PGSet const *set, size_t const max_items) {
-  if (fputc('{', stream) == EOF) {
-    return false;
-  }
-  size_t shown = 0;
-  size_t const total = pg_set_count(set);
-  for (size_t vertex = pg_set_next(set, 0);
-       vertex != SIZE_MAX && shown < max_items;
-       vertex = pg_set_next(set, vertex + 1)) {
-    if ((shown != 0 && fputc(',', stream) == EOF) ||
-        fprintf(stream, "%" PRIu64, game->vertices[vertex].external_id) < 0) {
-      return false;
-    }
-    shown++;
-  }
-  if (shown < total && fprintf(stream, "%s..., +%zu more",
-                               shown == 0 ? "" : ",", total - shown) < 0) {
-    return false;
-  }
-  return fputc('}', stream) != EOF;
-}
 
 [[nodiscard]] static bool begin_html_table(FILE *out) {
   return fputs("<<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"4\" "
@@ -228,11 +206,11 @@ write_classic_node_label(FILE *out, PGGame const *game, PGSet const *domain,
         fprintf(out,
                 "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>%s</I> = ", region) >=
             0 &&
-        write_set(out, game, domain, max_items) &&
+        pg_dot_write_set(out, game, domain, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>A</I> = ",
               out) >= 0 &&
-        write_set(out, game, &node->top_attractor, max_items) &&
+        pg_dot_write_set(out, game, &node->top_attractor, max_items) &&
         fputs("</TD></TR>", out) >= 0;
   }
   return succeeded && end_html_table(out);
@@ -283,19 +261,19 @@ write_classic_node_label(FILE *out, PGGame const *game, PGSet const *domain,
         fprintf(out,
                 "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>%s</I> = ", region) >=
             0 &&
-        write_set(out, game, outer, max_items) &&
+        pg_dot_write_set(out, game, outer, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>H</I> = ",
               out) >= 0 &&
-        write_set(out, game, &parts.highest, max_items) &&
+        pg_dot_write_set(out, game, &parts.highest, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>T</I> = ",
               out) >= 0 &&
-        write_set(out, game, &parts.top, max_items) &&
+        pg_dot_write_set(out, game, &parts.top, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>S</I> = ",
               out) >= 0 &&
-        write_set(out, game, &parts.side, max_items) &&
+        pg_dot_write_set(out, game, &parts.side, max_items) &&
         fputs("</TD></TR>", out) >= 0;
   }
   ad_tree_relative_parts_destroy(&parts);
@@ -318,12 +296,12 @@ write_classic_edge_label(FILE *out, PGGame const *game, ADChild const *child,
         fputs("<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>S</I><SUB><I>i</I>"
               "</SUB> = ",
               out) >= 0 &&
-        write_set(out, game, &child->trap, max_items) &&
+        pg_dot_write_set(out, game, &child->trap, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>A</I><SUB><I>i</I>"
               "</SUB> = ",
               out) >= 0 &&
-        write_set(out, game, &child->attractor, max_items) &&
+        pg_dot_write_set(out, game, &child->attractor, max_items) &&
         fputs("</TD></TR>", out) >= 0;
   }
   return succeeded && end_html_table(out);
@@ -344,7 +322,7 @@ write_tree_relative_edge_label(FILE *out, PGGame const *game,
   if (succeeded && labels == AD_DOT_LABEL_SETS) {
     succeeded = fputs("<TR><TD ALIGN=\"LEFT\"><I>R</I><SUB><I>i</I></SUB> = ",
                       out) >= 0 &&
-                write_set(out, game, &child->attractor, max_items) &&
+                pg_dot_write_set(out, game, &child->attractor, max_items) &&
                 fputs("</TD></TR>", out) >= 0;
   }
   return succeeded && end_html_table(out);
@@ -404,7 +382,7 @@ write_jurdzinski_part_label(FILE *out, PGGame const *game, PGSet const *set,
     return false;
   }
   if (labels == AD_DOT_LABEL_SETS &&
-      (fputs(" = ", out) < 0 || !write_set(out, game, set, max_items))) {
+      (fputs(" = ", out) < 0 || !pg_dot_write_set(out, game, set, max_items))) {
     return false;
   }
   if (metrics_root != nullptr && labels != AD_DOT_LABEL_NONE) {
@@ -589,12 +567,14 @@ write_node(FILE *out, PGGame const *game, PGSet const *domain,
 }
 
 [[nodiscard]] static bool write_empty(FILE *out, PGPlayer const player,
-                                      bool const attach, bool const partial) {
+                                      bool const attach, bool const partial,
+                                      bool const shaved) {
   char const *name = player == PG_EVEN ? "Even" : "Odd";
   char const *identifier = player == PG_EVEN ? "even_empty" : "odd_empty";
   if (fprintf(out, "  %s [label=<<B>%s</B>: %s>];\n", identifier, name,
-              partial ? "<I>D</I> = empty; no certified dominion"
-                      : "<I>W</I> = empty; no decomposition") < 0) {
+              shaved    ? "no residual decomposition; see shaved vertices"
+              : partial ? "<I>D</I> = empty; no certified dominion"
+                        : "<I>W</I> = empty; no decomposition") < 0) {
     return false;
   }
   return !attach || fprintf(out, "  result -> %s;\n", identifier) >= 0;
@@ -620,111 +600,85 @@ write_node(FILE *out, PGGame const *game, PGSet const *domain,
            0) ||
       (labels == AD_DOT_LABEL_SETS &&
        (fputs(": <I>U</I> = ", out) < 0 ||
-        !write_set(out, game, &result->unresolved, max_items)))) {
+        !pg_dot_write_set(out, game, &result->unresolved, max_items)))) {
     return false;
   }
   return fputs(">];\n  result -> unresolved [style=dashed];\n", out) >= 0;
 }
 
 [[nodiscard]] static bool
-write_jurdzinski_dot(FILE *out, PGGame const *game, ADResult const *result,
-                     ADDotPlayer const player, ADDotLabels const labels,
-                     size_t const max_set_items,
-                     PGPriorityMap const *priority_map) {
-  if (fputs("digraph attractor_decompositions {\n"
-            "  graph [rankdir=TB, ordering=out, newrank=true];\n"
-            "  node [shape=box];\n",
-            out) < 0) {
-    return false;
+write_shaved(FILE *out, PGGame const *game, PGSet const *shaved,
+             char const *identifier, bool const empty_root,
+             ADDotLabels const labels, size_t const max_items) {
+  if (shaved == nullptr || pg_set_empty(shaved)) {
+    return true;
   }
-
-  bool const partial = result->kind == AD_RESULT_PARTIAL;
-  ADDotRanks ranks = {0};
-  bool succeeded = true;
-  if (player == AD_DOT_PLAYER_BOTH) {
-    succeeded = write_result_node(out, result);
-    for (size_t candidate = 0; succeeded && candidate < 2; candidate++) {
-      char const *identifier = candidate == PG_EVEN ? "even" : "odd";
-      if (result->decomposition[candidate] == nullptr) {
-        succeeded = write_empty(out, (PGPlayer)candidate, true, partial);
-      } else {
-        succeeded =
-            fprintf(out, "  result -> %s;\n", identifier) >= 0 &&
-            write_jurdzinski_node(out, game, &result->region[candidate],
-                                  &result->region[candidate],
-                                  result->decomposition[candidate], identifier,
-                                  labels, max_set_items, true, partial, &ranks);
-      }
-    }
-    succeeded =
-        succeeded && write_unresolved(out, game, result, labels, max_set_items);
-  } else {
-    PGPlayer const selected = player == AD_DOT_PLAYER_EVEN ? PG_EVEN : PG_ODD;
-    char const *identifier = selected == PG_EVEN ? "even" : "odd";
-    succeeded =
-        result->decomposition[selected] == nullptr
-            ? write_empty(out, selected, false, partial)
-            : write_jurdzinski_node(
-                  out, game, &result->region[selected],
-                  &result->region[selected], result->decomposition[selected],
-                  identifier, labels, max_set_items, true, partial, &ranks);
-  }
-  if (succeeded) {
-    succeeded = write_jurdzinski_ranks(out, &ranks, priority_map);
-  }
-  ranks_destroy(&ranks);
-  return succeeded && fputs("}\n", out) >= 0;
+  return fprintf(out,
+                 "  %s_shaved [style=\"dashed,filled\", fillcolor=lightgray, "
+                 "label=<<B>shaved (%s)</B>: %zu vertices",
+                 identifier, strcmp(identifier, "even") == 0 ? "Even" : "Odd",
+                 pg_set_count(shaved)) >= 0 &&
+         (labels != AD_DOT_LABEL_SETS ||
+          (fputs("<BR/>", out) >= 0 &&
+           pg_dot_write_set(out, game, shaved, max_items))) &&
+         fprintf(out, ">];\n  %s%s -> %s_shaved [style=dashed];\n", identifier,
+                 empty_root ? "_empty" : "", identifier) >= 0;
 }
 
 bool ad_tree_write_dot(FILE *out, PGGame const *game, ADResult const *result,
                        ADDotPlayer const player, ADDotView const view,
                        ADDotLabels const labels, size_t const max_set_items,
-                       PGPriorityMap const *priority_map) {
+                       PGPriorityMap const *priority_map,
+                       PGSet const shaved[2]) {
   if (out == nullptr || game == nullptr || result == nullptr ||
       player > AD_DOT_PLAYER_ODD || view > AD_DOT_VIEW_JURDZINSKI ||
       labels > AD_DOT_LABEL_NONE || result->kind > AD_RESULT_PARTIAL) {
     return false;
   }
-  if (view == AD_DOT_VIEW_JURDZINSKI) {
-    return write_jurdzinski_dot(out, game, result, player, labels,
-                                max_set_items, priority_map);
-  }
-  if (fputs("digraph attractor_decompositions {\n"
-            "  graph [rankdir=TB, ordering=out];\n"
-            "  node [shape=box];\n",
-            out) < 0) {
+  bool const jurdzinski = view == AD_DOT_VIEW_JURDZINSKI;
+  if (fprintf(out,
+              "digraph attractor_decompositions {\n"
+              "  graph [rankdir=TB, ordering=out%s];\n"
+              "  node [shape=box];\n",
+              jurdzinski ? ", newrank=true" : "") < 0) {
     return false;
   }
 
+  bool const both = player == AD_DOT_PLAYER_BOTH;
   bool const partial = result->kind == AD_RESULT_PARTIAL;
-  bool succeeded = true;
-  if (player == AD_DOT_PLAYER_BOTH) {
-    succeeded = write_result_node(out, result);
-    for (size_t candidate = 0; succeeded && candidate < 2; candidate++) {
-      char const *identifier = candidate == PG_EVEN ? "even" : "odd";
-      if (result->decomposition[candidate] == nullptr) {
-        succeeded = write_empty(out, (PGPlayer)candidate, true, partial);
-      } else {
-        succeeded =
-            fprintf(out, "  result -> %s;\n", identifier) >= 0 &&
-            write_node(out, game, &result->region[candidate],
-                       &result->region[candidate],
-                       result->decomposition[candidate], identifier, view,
-                       labels, max_set_items, true, partial, priority_map);
-      }
+  ADDotRanks ranks = {0};
+  bool succeeded = !both || write_result_node(out, result);
+  for (size_t candidate = 0; succeeded && candidate < 2; candidate++) {
+    if ((player == AD_DOT_PLAYER_EVEN && candidate != PG_EVEN) ||
+        (player == AD_DOT_PLAYER_ODD && candidate != PG_ODD)) {
+      continue;
     }
-    succeeded =
-        succeeded && write_unresolved(out, game, result, labels, max_set_items);
-  } else {
-    PGPlayer const selected = player == AD_DOT_PLAYER_EVEN ? PG_EVEN : PG_ODD;
-    char const *identifier = selected == PG_EVEN ? "even" : "odd";
-    succeeded =
-        result->decomposition[selected] == nullptr
-            ? write_empty(out, selected, false, partial)
-            : write_node(out, game, &result->region[selected],
-                         &result->region[selected],
-                         result->decomposition[selected], identifier, view,
-                         labels, max_set_items, true, partial, priority_map);
+    char const *identifier = candidate == PG_EVEN ? "even" : "odd";
+    ADNode const *root = result->decomposition[candidate];
+    PGSet const *region = &result->region[candidate];
+    if (root == nullptr) {
+      succeeded =
+          write_empty(out, (PGPlayer)candidate, both, partial,
+                      shaved != nullptr && !pg_set_empty(&shaved[candidate]));
+    } else {
+      succeeded =
+          (!both || fprintf(out, "  result -> %s;\n", identifier) >= 0) &&
+          (jurdzinski ? write_jurdzinski_node(out, game, region, region, root,
+                                              identifier, labels, max_set_items,
+                                              true, partial, &ranks)
+                      : write_node(out, game, region, region, root, identifier,
+                                   view, labels, max_set_items, true, partial,
+                                   priority_map));
+    }
+    succeeded = succeeded &&
+                write_shaved(
+                    out, game, shaved == nullptr ? nullptr : &shaved[candidate],
+                    identifier, root == nullptr, labels, max_set_items);
   }
+  succeeded =
+      succeeded &&
+      (!both || write_unresolved(out, game, result, labels, max_set_items)) &&
+      (!jurdzinski || write_jurdzinski_ranks(out, &ranks, priority_map));
+  ranks_destroy(&ranks);
   return succeeded && fputs("}\n", out) >= 0;
 }

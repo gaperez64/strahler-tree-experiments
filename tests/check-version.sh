@@ -8,7 +8,8 @@ fi
 
 binary=$1
 expected_version=$2
-actual=$("$binary" --version)
+read -r -a wrapper <<< "${STRAHLER_TEST_WRAPPER:-}"
+actual=$(${wrapper[@]+"${wrapper[@]}"} "$binary" --version)
 expected="${binary##*/} ${expected_version}"
 
 if [[ "$actual" != "$expected" ]]; then

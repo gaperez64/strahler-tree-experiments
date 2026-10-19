@@ -1,18 +1,16 @@
 #include <boost/functional/hash.hpp>
 #include <cassert>
-#include <charconv>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <stack>
-#include <string_view>
-#include <system_error>
 #include <tuple>
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "cli_parse.hpp"
 #include "cli_version.h"
 
 struct Node {
@@ -21,19 +19,6 @@ struct Node {
   int h;
   bool isU;
 };
-
-bool parse_int(char const *text, int minimum, int &result) {
-  std::string_view const input{text};
-  int parsed = 0;
-  auto const conversion =
-      std::from_chars(input.data(), input.data() + input.size(), parsed);
-  if (conversion.ec != std::errc{} ||
-      conversion.ptr != input.data() + input.size() || parsed < minimum) {
-    return false;
-  }
-  result = parsed;
-  return true;
-}
 
 // Keep track of already computed sizes, this is cached beyond single calls of
 // tree_size below

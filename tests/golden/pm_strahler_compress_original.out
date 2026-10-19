@@ -1,0 +1,15 @@
+digraph progress_measures {
+  ordering=out;
+  node [shape=box];
+  result [label="result (synthetic)"];
+  result -> n1;
+  n1 [label="Even (complete)\nstrahler k=2 t=1 depth=1\np=107"];
+  n1 -> n2 [label="00"];
+  n2 [label="\nV={0,1,2,5}"];
+  n1 -> n3 [label="0"];
+  n3 [label="\nV={4}"];
+  n1 -> n4 [label="01"];
+  n4 [label="\nV={3}"];
+  result -> n5;
+  n5 [label="Odd (complete)\nstrahler k=2 t=1 depth=2\nno non-top measures\nV={}"];
+}

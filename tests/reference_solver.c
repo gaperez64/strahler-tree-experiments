@@ -34,7 +34,7 @@ static void select_strategy(PGGame const *game, PGPlayer const player,
 }
 
 [[nodiscard]] static PGPlayer play_winner(PGGame const *game, size_t start,
-                                          size_t *selected, size_t *seen,
+                                          size_t const *selected, size_t *seen,
                                           size_t *path) {
   for (size_t vertex = 0; vertex < game->vertex_count; vertex++) {
     seen[vertex] = SIZE_MAX;

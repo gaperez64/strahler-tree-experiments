@@ -230,8 +230,9 @@ static char *concat3(char const left[restrict static 1],
   return res;
 }
 
-char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
-  if (k < 1 || t < 0 || h < k || lth < 1) {
+char *stree_leaf_label(int const k, int const t, int const h,
+                       int const leaf_number) {
+  if (k < 1 || t < 0 || h < k || leaf_number < 1) {
     return nullptr;
   }
   unsigned(*count_cache)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*count_cache));
@@ -240,7 +241,7 @@ char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
   }
   unsigned const total =
       count_leaves_with_cache(UTREE, k, t, h, k, t, h, count_cache);
-  if (total == 0 || total == UINT_MAX || (unsigned)lth > total) {
+  if (total == 0 || total == UINT_MAX || (unsigned)leaf_number > total) {
     free(count_cache);
     return nullptr;
   }
@@ -254,7 +255,7 @@ char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
     return nullptr;
   }
   char *cur = lab;
-  unsigned nth = lth;
+  unsigned nth = leaf_number;
 
   // this is the node of interest
   Node node = {.u = UTREE, .k = k, .t = t, .h = h};
@@ -273,8 +274,6 @@ char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
       slack -= 2;
       // move to successor now
       node.u = UTREE;
-      node.k = node.k;
-      node.t = node.t;
       node.h = node.h - 1;
     } else if (node.h >= node.k && node.k >= 2 && node.t == 0) {
       if (node.u == VTREE) {
@@ -288,7 +287,6 @@ char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
       // move to successor now
       node.u = UTREE;
       node.k = node.k - 1;
-      node.t = node.t;
       node.h = node.h - 1;
     } else if (node.u == VTREE && node.h >= node.k && node.k >= 2 &&
                node.t >= 1) {
@@ -305,9 +303,7 @@ char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
       if (size_child1 >= nth) {
         cur[0] = ZERO;
         node.u = VTREE;
-        node.k = node.k;
         node.t = node.t - 1;
-        node.h = node.h;
       } else if (size_child1 + size_child2 >= nth) {
         nth -= size_child1;
         cur[0] = EPSILON;
@@ -316,15 +312,12 @@ char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
         slack -= 1;
         node.u = UTREE;
         node.k = node.k - 1;
-        node.t = node.t;
         node.h = node.h - 1;
       } else {
         nth -= size_child1 + size_child2;
         cur[0] = ONE;
         node.u = VTREE;
-        node.k = node.k;
         node.t = node.t - 1;
-        node.h = node.h;
       }
       cur += 1;
       slack -= 1;
@@ -334,9 +327,6 @@ char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
       slack -= 1;
       // move to successor
       node.u = VTREE;
-      node.k = node.k;
-      node.t = node.t;
-      node.h = node.h;
     } else if (node.u == UTREE && node.h > node.k && node.k >= 2) {
       unsigned size_child1 = count_leaves_with_cache(
           VTREE, node.k, node.t, node.h, k, t, h, count_cache);
@@ -351,9 +341,6 @@ char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
       if (size_child1 >= nth) {
         cur[0] = ZERO;
         node.u = VTREE;
-        node.k = node.k;
-        node.t = node.t;
-        node.h = node.h;
       } else if (size_child1 + size_child2 >= nth) {
         nth -= size_child1;
         cur[0] = EPSILON;
@@ -361,16 +348,11 @@ char *stree_leaf_label(int const k, int const t, int const h, int const lth) {
         cur += 1;
         slack -= 1;
         node.u = UTREE;
-        node.k = node.k;
-        node.t = node.t;
         node.h = node.h - 1;
       } else {
         nth -= size_child1 + size_child2;
         cur[0] = ONE;
         node.u = VTREE;
-        node.k = node.k;
-        node.t = node.t;
-        node.h = node.h;
       }
       cur += 1;
       slack -= 1;

@@ -1,13 +1,11 @@
 #include <algorithm>
 #include <cassert>
-#include <charconv>
 #include <iostream>
-#include <string_view>
-#include <system_error>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "cli_parse.hpp"
 #include "cli_version.h"
 
 #include "../examples/k4t3h5.hpp"
@@ -28,19 +26,6 @@ std::vector<int> p_successors = make_indices(tree_b);
 
 std::vector<bool> tmp_b;
 std::vector<int> tmp_d;
-
-bool parse_int(char const *text, int minimum, int &result) {
-  std::string_view const input{text};
-  int parsed = 0;
-  auto const conversion =
-      std::from_chars(input.data(), input.data() + input.size(), parsed);
-  if (conversion.ec != std::errc{} ||
-      conversion.ptr != input.data() + input.size() || parsed < minimum) {
-    return false;
-  }
-  result = parsed;
-  return true;
-}
 
 int skipUntilNextLevel(std::vector<int> &curr_d, int i) {
   while ((i >= 0 && curr_d[i] == curr_d[i + 1]) ||

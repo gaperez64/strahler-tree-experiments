@@ -69,7 +69,8 @@ bool pg_priority_map_apply(PGPriorityMap const *map, PGGame *game);
 bool pg_priority_map_restore(PGPriorityMap const *map, PGGame *game);
 
 /* Translate a compact decomposition bound to the corresponding bound on the
- * input priority scale. Bounds for empty intervening levels are supported. */
+ * input priority scale. Bounds for empty intervening levels are supported.
+ * For merged compact levels, return the largest corresponding original. */
 [[nodiscard]]
 bool pg_priority_map_original_bound(PGPriorityMap const *map,
                                     uint64_t compact_bound,

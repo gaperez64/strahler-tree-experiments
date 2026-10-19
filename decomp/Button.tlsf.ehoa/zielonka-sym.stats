@@ -1,0 +1,4 @@
+outcome: complete
+zielonka-sym: vertices=7 result=complete calls=2 attractors=7 moves=3 sets=5 certification_lifts=0 separator=4
+zielonka-sym even: region=4 tree_nodes=1 tree_leaves=1 tree_height=1 strahler=1
+zielonka-sym odd: region=3 tree_nodes=2 tree_leaves=1 tree_height=2 strahler=1

@@ -1,0 +1,86 @@
+name: release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build and upload
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Release ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+            arch: x86_64
+            cc: clang-18
+            cxx: clang++-18
+          - os: macos-15
+            platform: macos-arm64
+            arch: arm64
+            cc: clang
+            cxx: clang++
+    runs-on: ${{ matrix.os }}
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+
+      - name: Check release and architecture
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          test "$(uname -m)" = "$EXPECTED_ARCH"
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 graphviz libboost-dev ninja-build pipx
+          pipx install meson==1.8.5
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install boost graphviz meson ninja
+
+      - name: Build and test
+        run: |
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            BOOST_ROOT="$(brew --prefix boost)"
+            export BOOST_ROOT
+          fi
+          meson setup build-release --buildtype=release -Dwerror=true -Dlenstree=enabled --prefix=/ --bindir=bin
+          meson compile -C build-release
+          meson test -C build-release --print-errorlogs
+
+      - name: Package and upload
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          version=${RELEASE_TAG#v}
+          if [[ ! "$version" =~ ^[0-9][0-9A-Za-z._+-]*$ ]]; then
+            echo "Release tag must be a version, optionally prefixed with v" >&2
+            exit 1
+          fi
+          name="strahler-tree-experiments-$version-$PLATFORM"
+          meson install -C build-release --no-rebuild --destdir "$PWD/package/$name"
+          cp README.md LICENSE LICENSE-APACHE-2.0 "package/$name/"
+          tar -czf "$name.tar.gz" -C package "$name"
+          gh release upload "$RELEASE_TAG" "$name.tar.gz" --clobber --repo "$GITHUB_REPOSITORY"

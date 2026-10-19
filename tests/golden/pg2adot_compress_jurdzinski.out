@@ -1,0 +1,16 @@
+digraph attractor_decompositions {
+  graph [rankdir=TB, ordering=out, newrank=true];
+  node [shape=box];
+  result [label="result (synthetic)"];
+  result -> even;
+  even [label=<<B>Even</B><BR/><I>H</I>: 1 vertex<BR/><FONT POINT-SIZE="10">base tree: 1 node; 1 leaf; height 1; Strahler 1</FONT>>];
+  even -> even_mininf [label=<&minus;&infin;>];
+  even_mininf [shape=ellipse, label=<<I>T</I>: 5 vertices>];
+  odd_empty [label=<<B>Odd</B>: <I>W</I> = empty; no decomposition>];
+  result -> odd_empty;
+  jurdzinski_level_2 [shape=plaintext, label=<<I>level</I> = 2<BR/><FONT POINT-SIZE="9">source bound = 200</FONT>>];
+  { rank=same; jurdzinski_level_2; even; }
+  jurdzinski_level_1 [shape=plaintext, label=<<I>level</I> = 1<BR/><FONT POINT-SIZE="9">source bound = 107</FONT>>];
+  { rank=same; jurdzinski_level_1; even_mininf; }
+  jurdzinski_level_2 -> jurdzinski_level_1 [style=invis, weight=100];
+}

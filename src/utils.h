@@ -7,12 +7,13 @@
 typedef struct {
   void *data;
   size_t capacity;
-  int succeeded;
+  bool succeeded;
 } ArrayGrowth;
 
 [[nodiscard]] static inline ArrayGrowth grow_array(void *data, size_t capacity,
                                                    size_t element_size) {
-  ArrayGrowth failure = {.data = data, .capacity = capacity, .succeeded = 0};
+  ArrayGrowth failure = {
+      .data = data, .capacity = capacity, .succeeded = false};
   if (capacity > (SIZE_MAX / 2) - 1) {
     return failure;
   }
@@ -28,7 +29,7 @@ typedef struct {
   }
 
   return (ArrayGrowth){
-      .data = resized, .capacity = new_capacity, .succeeded = 1};
+      .data = resized, .capacity = new_capacity, .succeeded = true};
 }
 
 // Append to a dynamic array, executing ON_FAILURE without losing the original

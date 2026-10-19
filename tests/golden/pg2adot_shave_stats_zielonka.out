@@ -1,0 +1,16 @@
+preprocess: residual=0 shaved_even=3 shaved_odd=0 single=3 loops=0 wcwc=0
+zielonka: vertices=0 result=complete
+zielonka: calls=0 attractors=0
+zielonka even: region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+zielonka odd: region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+digraph attractor_decompositions {
+  graph [rankdir=TB, ordering=out];
+  node [shape=box];
+  result [label="result (synthetic)"];
+  even_empty [label=<<B>Even</B>: no residual decomposition; see shaved vertices>];
+  result -> even_empty;
+  even_shaved [style="dashed,filled", fillcolor=lightgray, label=<<B>shaved (Even)</B>: 3 vertices>];
+  even_empty -> even_shaved [style=dashed];
+  odd_empty [label=<<B>Odd</B>: <I>W</I> = empty; no decomposition>];
+  result -> odd_empty;
+}

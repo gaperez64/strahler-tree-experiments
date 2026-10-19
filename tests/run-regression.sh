@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression harness for genstree and pms2dot
+# Regression harness for the command-line tools
 # Usage:
 #   tests/run-regression.sh                # run tests (via meson)
 #   tests/run-regression.sh --generate-goldens
@@ -73,6 +73,18 @@ else
   exit 2
 fi
 
+PG2PMDOT_BIN=""
+if [ -x "./build/pg2pmdot" ]; then
+  PG2PMDOT_BIN="./build/pg2pmdot"
+elif [ -x "./pg2pmdot" ]; then
+  PG2PMDOT_BIN="./pg2pmdot"
+elif command -v pg2pmdot >/dev/null 2>&1; then
+  PG2PMDOT_BIN="$(command -v pg2pmdot)"
+else
+  echo "Error: pg2pmdot binary not found in build/ or project root or PATH."
+  exit 2
+fi
+
 LENSTREE_BIN=""
 if [ -x "./build/lenstree" ]; then
   LENSTREE_BIN="./build/lenstree"
@@ -86,6 +98,7 @@ echo "Using genstree binary: $GENSTREE_BIN"
 echo "Using pms2dot binary: $PMS2DOT_BIN"
 echo "Using pgfilt binary: $PGFILT_BIN"
 echo "Using pg2adot binary: $PG2ADOT_BIN"
+echo "Using pg2pmdot binary: $PG2PMDOT_BIN"
 echo "Using lenstree binary: $LENSTREE_BIN"
 
 GENSTREE_CASES=(
@@ -107,6 +120,58 @@ sanitize_output() {
 }
 
 echo "Generating golden files into tests/golden/ ..."
+while IFS='|' read -r name fixture flags; do
+  read -r -a arguments <<< "$flags"
+  "$PG2ADOT_BIN" "${arguments[@]}" "tests/games/$fixture.pg" \
+    > "tests/golden/pg2adot_$name.out" 2>&1
+done <<'CASES'
+shave_loops|shave_loops|--shave=loops --labels=sets
+shave_wcwc|shave_wcwc|--shave=wcwc --labels=sets
+shave_single|shave_single|--shave=single --labels=sets
+shave_relative|shave_wcwc|--shave=loops,wcwc --view=tree-relative --labels=sets --max-set-items=2
+shave_empty_jurdzinski|shave_single|--shave=all --view=jurdzinski
+compress_original|compress|--compress --labels=sets
+compress_compact|compress|--compress --priority-mode=compact
+compress_jurdzinski|compress|--compress --view=jurdzinski
+shave_partial|shave_partial|--shave=loops --tree-k=1 --labels=sets
+shave_stats_lifting|shave_single|--algorithm=lifting --shave=all --compress --stats --labels=none
+shave_stats_zielonka|shave_single|--algorithm=zielonka --shave=all --compress --stats --labels=none
+sym_h4|thesis_h4|--algorithm=zielonka-sym --stats --player=even --labels=none
+sym_f4|thesis_f4|--algorithm=zielonka-sym --stats --player=even --labels=none
+sym_lifting_stats|strahler_two|--algorithm=lifting-sym --kary=1 --stats --player=even --labels=none
+CASES
+
+for algorithm in strahler succinct; do
+  while IFS='|' read -r name fixture flags; do
+    read -r -a arguments <<< "$flags"
+    if [[ "$name" == partial* ]]; then
+      if [ "$algorithm" = strahler ]; then
+        arguments=(--k=1 --t=1 "${arguments[@]}")
+      else
+        arguments=(--bits=0 "${arguments[@]}")
+      fi
+    fi
+    "$PG2PMDOT_BIN" "--algorithm=$algorithm" "${arguments[@]}" \
+      "tests/games/$fixture.pg" > "tests/golden/pm_${algorithm}_$name.out" 2>&1
+    sanitize_output "tests/golden/pm_${algorithm}_$name.out" "$PG2PMDOT_BIN"
+  done <<'CASES'
+counts|ordered_two_children|
+sets|strahler_two|--labels=sets --max-set-items=1
+none|split_winners|--labels=none
+leaves|pm_cycle|--format=leaves
+partial|strahler_two|--labels=sets
+partial_leaves|strahler_two|--format=leaves
+incremental|strahler_two|--incremental --labels=sets
+incremental_leaves|strahler_two|--incremental --format=leaves
+shave_compress|shave_partial|--shave=loops --compress --labels=sets
+shave_empty|shave_single|--shave=all --compress --labels=sets
+compress_original|compress|--compress --labels=sets
+compress_compact|compress|--compress --priority-mode=compact
+stats|pm_cycle|--stats --format=leaves
+preprocess_stats|shave_partial|--stats --format=leaves --shave=loops --compress
+CASES
+done
+
 for ct in "${GENSTREE_CASES[@]}"; do
   read -r k t h <<< "$ct"
   name="k${k}_t${t}_h${h}.out"
@@ -203,6 +268,9 @@ sanitize_output "tests/golden/pg2adot_partial_jurdzinski_tree_file.out" "$PG2ADO
 echo "  $PG2ADOT_BIN --adaptive-t --stats --player=even --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_adaptive_stats.out"
 "$PG2ADOT_BIN" --adaptive-t --stats --player=even --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_adaptive_stats.out 2>&1
 sanitize_output "tests/golden/pg2adot_adaptive_stats.out" "$PG2ADOT_BIN"
+echo "  $PG2ADOT_BIN --adaptive-t=incremental --stats --player=even --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_incremental_stats.out"
+"$PG2ADOT_BIN" --adaptive-t=incremental --stats --player=even --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_incremental_stats.out 2>&1
+sanitize_output "tests/golden/pg2adot_incremental_stats.out" "$PG2ADOT_BIN"
 echo "  $PG2ADOT_BIN --adaptive-t --max-host-leaves=1 --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_adaptive_limit.out"
 "$PG2ADOT_BIN" --adaptive-t --max-host-leaves=1 --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_adaptive_limit.out 2>&1
 sanitize_output "tests/golden/pg2adot_adaptive_limit.out" "$PG2ADOT_BIN"

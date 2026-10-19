@@ -7,6 +7,8 @@ ACTUAL=$3
 STDIN_CONTENT=$4
 shift 4
 
+read -r -a wrapper <<< "${STRAHLER_TEST_WRAPPER:-}"
+
 sanitize_output() {
   local file=$1
   local program=${BINARY##*/}
@@ -38,11 +40,15 @@ compare_files() {
 mkdir -p "$(dirname "$ACTUAL")"
 
 if [[ "$STDIN_CONTENT" == @* ]]; then
-    "$BINARY" "$@" < "${STDIN_CONTENT#@}" > "$ACTUAL" 2>&1
+    "${wrapper[@]}" "$BINARY" "$@" < "${STDIN_CONTENT#@}" > "$ACTUAL" 2>&1
 elif [ "$STDIN_CONTENT" != "EMPTY" ]; then
-    echo -n "$STDIN_CONTENT" | "$BINARY" "$@" > "$ACTUAL" 2>&1
+    printf '%s' "$STDIN_CONTENT" | "${wrapper[@]}" "$BINARY" "$@" > "$ACTUAL" 2>&1
 else
-    "$BINARY" "$@" > "$ACTUAL" 2>&1
+    "${wrapper[@]}" "$BINARY" "$@" > "$ACTUAL" 2>&1
+fi
+status=$?
+if [[ $status -eq 99 ]]; then
+  exit "$status"
 fi
 
 sanitize_output "$ACTUAL"

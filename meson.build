@@ -3,19 +3,23 @@ project(
   'c',
   'cpp',
   version : '0.1',
+  meson_version : '>=1.4.0',
   default_options : [
     'warning_level=3',
-    'c_std=c2x',
+    # Apple Clang releases can still use the draft spelling for C23.
+    'c_std=c23,c2x',
     'cpp_std=c++20',
     'b_coverage=false',
   ],
 )
 
-cc = meson.get_compiler('c')
-cpp = meson.get_compiler('cpp')
-
 lenstree_option = get_option('lenstree')
-boost_dep = dependency('boost', required : lenstree_option)
+boost_dep = dependency('boost', required : false)
+if lenstree_option.disabled()
+  boost_dep = disabler()
+elif not boost_dep.found() and meson.get_compiler('cpp').has_header('boost/functional/hash.hpp', required : lenstree_option)
+  boost_dep = declare_dependency()
+endif
 source_includes = include_directories('src')
 
 version_configuration = configuration_data()
@@ -82,6 +86,17 @@ pg_attractor_dep = declare_dependency(
   link_with : pg_attractor_lib,
 )
 
+pg_preprocess_lib = static_library(
+  'pg_preprocess',
+  'src/pg_preprocess.c',
+  dependencies : pg_attractor_dep,
+)
+pg_preprocess_dep = declare_dependency(
+  dependencies : pg_attractor_dep,
+  include_directories : source_includes,
+  link_with : pg_preprocess_lib,
+)
+
 ad_tree_lib = static_library(
   'ad_tree',
   'src/ad_tree.c',
@@ -117,7 +132,7 @@ ad_lift_tree_dep = declare_dependency(
 
 ad_lift_lib = static_library(
   'ad_lift',
-  ['src/ad_lift.c', 'src/ad_lift_solve.c'],
+  ['src/ad_lift.c', 'src/ad_lift_solve.c', 'src/ad_sym.c'],
   dependencies : [ad_lift_tree_dep, ad_tree_dep, stree_dep],
 )
 ad_lift_dep = declare_dependency(
@@ -126,15 +141,34 @@ ad_lift_dep = declare_dependency(
   link_with : ad_lift_lib,
 )
 
+pg_dot_lib = static_library('pg_dot', 'src/pg_dot.c',
+  dependencies : [pg_game_dep, pg_set_dep])
+pg_dot_dep = declare_dependency(
+  dependencies : [pg_game_dep, pg_set_dep],
+  include_directories : source_includes,
+  link_with : pg_dot_lib,
+)
+
 ad_tree_dot_lib = static_library(
   'ad_tree_dot',
   'src/ad_tree_dot.c',
-  dependencies : ad_tree_dep,
+  dependencies : [ad_tree_dep, pg_dot_dep],
 )
 ad_tree_dot_dep = declare_dependency(
-  dependencies : ad_tree_dep,
+  dependencies : [ad_tree_dep, pg_dot_dep],
   include_directories : source_includes,
   link_with : ad_tree_dot_lib,
+)
+
+pm_lift_lib = static_library(
+  'pm_lift',
+  ['src/pm_lift.c', 'src/pm_solve.c', 'src/strpm.c', 'src/sspm.c'],
+  dependencies : pg_attractor_dep,
+)
+pm_lift_dep = declare_dependency(
+  dependencies : pg_attractor_dep,
+  include_directories : source_includes,
+  link_with : pm_lift_lib,
 )
 
 # Executables
@@ -159,9 +193,20 @@ pms2dot = executable('pms2dot',
 pg2adot = executable(
   'pg2adot',
   'src/pg2adot.c',
-  dependencies : [ad_lift_dep, zielonka_dep, ad_tree_dot_dep, cli_version_dep],
+  dependencies : [ad_lift_dep, zielonka_dep, ad_tree_dot_dep, cli_version_dep, pg_preprocess_dep],
   install : true,
 )
+
+pm_tree_dot_lib = static_library('pm_tree_dot', 'src/pm_tree_dot.c',
+  dependencies : [pm_lift_dep, ordered_tree_dep, pg_dot_dep])
+pm_tree_dot_dep = declare_dependency(
+  dependencies : [pm_lift_dep, ordered_tree_dep, pg_dot_dep],
+  include_directories : source_includes,
+  link_with : pm_tree_dot_lib,
+)
+pg2pmdot = executable('pg2pmdot', 'src/pg2pmdot.c',
+  dependencies : [pm_tree_dot_dep, pg_preprocess_dep, cli_version_dep],
+  install : true)
 
 if not lenstree_option.disabled() and boost_dep.found()
   lenstree = executable('lenstree',
@@ -180,6 +225,19 @@ str_tree = executable('str-tree',
 )
 
 # Unit Tests
+test_cli_parse_exe = executable(
+  'test_cli_parse',
+  'tests/test_cli_parse.cpp',
+  include_directories : source_includes,
+)
+test('test_cli_parse', test_cli_parse_exe)
+test(
+  'test_wrappers',
+  find_program('tests/test-wrappers.sh'),
+  args : [genstree, pgfilt, meson.project_version()],
+  workdir : meson.project_source_root(),
+)
+
 test_stree_exe = executable(
   'test_stree',
   'tests/test_stree.c',
@@ -222,6 +280,18 @@ test_pg_attractor_exe = executable(
 )
 test('test_pg_attractor', test_pg_attractor_exe)
 
+test_pg_preprocess_exe = executable(
+  'test_pg_preprocess',
+  ['tests/test_pg_preprocess.c', 'tests/reference_solver.c'],
+  dependencies : [pg_preprocess_dep, ad_lift_dep, zielonka_dep],
+)
+test('test_pg_preprocess', test_pg_preprocess_exe,
+  workdir : meson.project_source_root())
+foreach rule : ['loops', 'wcwc', 'all']
+  test('test_pg_preprocess_scaling_' + rule, test_pg_preprocess_exe,
+    args : [rule], timeout : 30)
+endforeach
+
 test_zielonka_exe = executable(
   'test_zielonka',
   ['tests/test_zielonka.c', 'tests/reference_solver.c'],
@@ -243,6 +313,24 @@ test_ad_lift_exe = executable(
 )
 test('test_ad_lift', test_ad_lift_exe, timeout : 120)
 
+python = find_program('python3')
+test(
+  'test_research',
+  python,
+  args : [files('tests/test_research.py'), pg2adot],
+  workdir : meson.project_source_root(),
+  suite : 'python',
+  timeout : 120,
+)
+
+test_ad_sym_exe = executable(
+  'test_ad_sym',
+  ['tests/test_ad_sym.c', 'tests/reference_solver.c'],
+  dependencies : [ad_lift_dep, zielonka_dep, pg_preprocess_dep],
+)
+test('test_ad_sym', test_ad_sym_exe, timeout : 120,
+  workdir : meson.project_source_root())
+
 test_ad_tree_dot_exe = executable(
   'test_ad_tree_dot',
   'tests/test_ad_tree_dot.c',
@@ -258,6 +346,12 @@ test('str_tree_one_argument', str_tree, args : ['0'])
 test('str_tree_two_arguments', str_tree, args : ['0', '2'])
 test('pgfilt_help', pgfilt, args : ['-h'])
 test('pg2adot_help', pg2adot, args : ['--help'])
+test(
+  'pg2adot_rejects_bad_adaptive_t',
+  pg2adot,
+  args : ['--adaptive-t=bad'],
+  should_fail : true,
+)
 test(
   'pgfilt_rejects_bad_priority_mode',
   pgfilt,
@@ -282,6 +376,10 @@ test(
   args : ['--algorithm=bad'],
   should_fail : true,
 )
+foreach invalid_shave : ['bad', 'loops,', 'all,loops', 'none,wcwc']
+  test('pg2adot_rejects_shave_' + invalid_shave, pg2adot,
+    args : ['--shave=' + invalid_shave], should_fail : true)
+endforeach
 test(
   'pg2adot_rejects_zero_tree_k',
   pg2adot,
@@ -374,6 +472,94 @@ test(
 
 # Regression Tests
 run_single_test = find_program('tests/run-single-test.sh')
+
+foreach algorithm : ['zielonka-sym', 'lifting-sym']
+  foreach name, arguments : {
+    'sets' : ['pg2adot_sets', ['--labels=sets', '--max-set-items=1']],
+    'relative' : ['pg2adot_tree_relative_sets', [
+      '--view=tree-relative', '--labels=sets', '--max-set-items=1']],
+    'jurdzinski' : ['pg2adot_jurdzinski_sets', [
+      '--view=jurdzinski', '--labels=sets', '--max-set-items=1']],
+    'counts' : ['pg2adot_counts', []],
+    'no_verify' : ['pg2adot_counts', ['--no-verify']],
+  }
+    test('pg2adot_' + algorithm + '_' + name, run_single_test,
+      args : [pg2adot, 'tests/golden/' + arguments[0] + '.out',
+        'tests/actual/pg2adot_' + algorithm + '_' + name + '.out',
+        '@tests/games/ordered_two_children.pg', '--algorithm=' + algorithm] + arguments[1],
+      workdir : meson.project_source_root())
+  endforeach
+endforeach
+foreach host_option : ['--tree-k=1', '--kary=1']
+  test('pg2adot_lifting_sym_partial_' + host_option, run_single_test,
+    args : [pg2adot, 'tests/golden/pg2adot_kary_partial_sets.out',
+      'tests/actual/pg2adot_lifting_sym_partial_' + host_option + '.out',
+      '@tests/games/strahler_two.pg', '--algorithm=lifting-sym',
+      '--labels=sets', host_option], workdir : meson.project_source_root())
+endforeach
+foreach name, arguments : {
+  'sym_adaptive' : ['--algorithm=lifting-sym', '--adaptive-t'],
+  'sym_incremental' : ['--algorithm=lifting-sym', '--adaptive-t=incremental'],
+  'sym_zielonka_host' : ['--algorithm=zielonka-sym', '--kary=2'],
+  'sym_zielonka_incremental' : ['--algorithm=zielonka-sym', '--adaptive-t=incremental'],
+}
+  test('pg2adot_rejects_' + name, pg2adot,
+    args : arguments, should_fail : true)
+endforeach
+foreach name, arguments : {
+  'sym_h4' : ['thesis_h4', ['--algorithm=zielonka-sym']],
+  'sym_f4' : ['thesis_f4', ['--algorithm=zielonka-sym']],
+  'sym_lifting_stats' : ['strahler_two', ['--algorithm=lifting-sym', '--kary=1']],
+}
+  test('pg2adot_' + name, run_single_test,
+    args : [pg2adot, 'tests/golden/pg2adot_' + name + '.out',
+      'tests/actual/pg2adot_' + name + '.out',
+      '@tests/games/' + arguments[0] + '.pg', '--stats',
+      '--player=even', '--labels=none'] + arguments[1],
+    workdir : meson.project_source_root())
+endforeach
+
+preprocess_cases = {
+  'shave_loops' : ['shave_loops', ['--shave=loops', '--labels=sets']],
+  'shave_wcwc' : ['shave_wcwc', ['--shave=wcwc', '--labels=sets']],
+  'shave_single' : ['shave_single', ['--shave=single', '--labels=sets']],
+  'shave_relative' : ['shave_wcwc', [
+    '--shave=loops,wcwc', '--view=tree-relative', '--labels=sets',
+    '--max-set-items=2',
+  ]],
+  'shave_empty_jurdzinski' : ['shave_single', ['--shave=all', '--view=jurdzinski']],
+  'compress_original' : ['compress', ['--compress', '--labels=sets']],
+  'compress_compact' : ['compress', ['--compress', '--priority-mode=compact']],
+  'compress_jurdzinski' : ['compress', ['--compress', '--view=jurdzinski']],
+}
+foreach name, arguments : preprocess_cases
+  foreach algorithm : ['lifting', 'zielonka', 'zielonka-sym', 'lifting-sym']
+    test('pg2adot_' + name + '_' + algorithm, run_single_test,
+      args : [pg2adot, 'tests/golden/pg2adot_' + name + '.out',
+        'tests/actual/pg2adot_' + name + '_' + algorithm + '.out',
+        '@tests/games/' + arguments[0] + '.pg', '--algorithm=' + algorithm] + arguments[1],
+      workdir : meson.project_source_root())
+  endforeach
+endforeach
+foreach algorithm : ['lifting', 'zielonka']
+  test('pg2adot_shave_stats_' + algorithm, run_single_test,
+    args : [pg2adot, 'tests/golden/pg2adot_shave_stats_' + algorithm + '.out',
+      'tests/actual/pg2adot_shave_stats_' + algorithm + '.out',
+      '@tests/games/shave_single.pg', '--algorithm=' + algorithm,
+      '--shave=all', '--compress', '--stats', '--labels=none'],
+    workdir : meson.project_source_root())
+endforeach
+test('pg2adot_shave_empty_adaptive', run_single_test,
+  args : [pg2adot, 'tests/golden/pg2adot_shave_single.out',
+    'tests/actual/pg2adot_shave_empty_adaptive.out',
+    '@tests/games/shave_single.pg', '--shave=single', '--adaptive-t',
+    '--max-host-leaves=0', '--labels=sets'],
+  workdir : meson.project_source_root())
+test('pg2adot_shave_partial', run_single_test,
+  args : [pg2adot, 'tests/golden/pg2adot_shave_partial.out',
+    'tests/actual/pg2adot_shave_partial.out', '@tests/games/shave_partial.pg',
+    '--shave=loops', '--tree-k=1', '--labels=sets'],
+  workdir : meson.project_source_root())
 
 test(
   'pgfilt_sparse_summary',
@@ -688,6 +874,23 @@ test(
 )
 
 test(
+  'pg2adot_incremental_stats',
+  run_single_test,
+  args : [
+    pg2adot,
+    'tests/golden/pg2adot_incremental_stats.out',
+    'tests/actual/pg2adot_incremental_stats.out',
+    'EMPTY',
+    '--adaptive-t=incremental',
+    '--stats',
+    '--player=even',
+    '--labels=none',
+    files('tests/games/strahler_two.pg'),
+  ],
+  workdir : meson.project_source_root(),
+)
+
+test(
   'pg2adot_adaptive_limit',
   run_single_test,
   args : [
@@ -918,9 +1121,20 @@ test(
 
 dot_program = find_program('dot', required : false)
 if dot_program.found()
+  foreach name, arguments : preprocess_cases
+    test('pg2adot_' + name + '_dot_syntax', dot_program,
+      suite : 'graphviz',
+      args : ['-Tdot', '-o', '/dev/null',
+        files('tests/golden/pg2adot_' + name + '.out')])
+  endforeach
+  test('pg2adot_shave_partial_dot_syntax', dot_program,
+    suite : 'graphviz',
+    args : ['-Tdot', '-o', '/dev/null',
+      files('tests/golden/pg2adot_shave_partial.out')])
   test(
     'pg2adot_counts_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -931,6 +1145,7 @@ if dot_program.found()
   test(
     'pg2adot_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -941,6 +1156,7 @@ if dot_program.found()
   test(
     'pg2adot_tree_relative_counts_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -951,6 +1167,7 @@ if dot_program.found()
   test(
     'pg2adot_tree_relative_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -961,6 +1178,7 @@ if dot_program.found()
   test(
     'pg2adot_jurdzinski_counts_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -971,6 +1189,7 @@ if dot_program.found()
   test(
     'pg2adot_jurdzinski_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -981,6 +1200,7 @@ if dot_program.found()
   test(
     'pg2adot_gap_original_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -991,6 +1211,7 @@ if dot_program.found()
   test(
     'pg2adot_lifted_shape_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1001,6 +1222,7 @@ if dot_program.found()
   test(
     'pg2adot_lifted_shape_zielonka_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1011,6 +1233,7 @@ if dot_program.found()
   test(
     'pg2adot_partial_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1021,6 +1244,7 @@ if dot_program.found()
   test(
     'pg2adot_partial_tree_relative_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1031,6 +1255,7 @@ if dot_program.found()
   test(
     'pg2adot_partial_jurdzinski_tree_file_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1041,6 +1266,7 @@ if dot_program.found()
   test(
     'pg2adot_kary_partial_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1051,6 +1277,7 @@ if dot_program.found()
   test(
     'pg2adot_gap_compact_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1063,6 +1290,7 @@ if dot_program.found()
     test(
       'pms2dot_' + id + '_dot_syntax',
       dot_program,
+      suite : 'graphviz',
       args : [
         '-Tdot',
         '-o',
@@ -1077,6 +1305,7 @@ if dot_program.found()
     test(
       'genstree_' + base_name + '_dot_syntax',
       dot_program,
+      suite : 'graphviz',
       args : [
         '-Tdot',
         '-o',
@@ -1113,3 +1342,83 @@ foreach ec : error_cases
     args: [exe, 'tests/golden/' + name + '.out', 'tests/actual/' + name + '.out', 'EMPTY'] + args,
     workdir: meson.project_source_root())
 endforeach
+
+
+test_pm_lift_exe = executable('test_pm_lift', 'tests/test_pm_lift.c',
+  dependencies : [pm_lift_dep, pg_preprocess_dep, zielonka_dep])
+test('test_pm_lift', test_pm_lift_exe, workdir : meson.project_source_root())
+
+test('pg2pmdot_help', pg2pmdot, args : ['--help'])
+test('pg2pmdot_version', check_version,
+  args : [pg2pmdot, meson.project_version()])
+foreach bad : [
+  ['--algorithm=bad'], ['--format=bad'], ['--player=bad'], ['--labels=bad'],
+  ['--priority-mode=bad'], ['--shave=loops,'], ['--k=0', '--t=0'], ['--k=1'],
+  ['--t=1'], ['--bits=1'], ['--algorithm=succinct', '--k=1', '--t=1'],
+  ['--algorithm=succinct', '--bits=-1'], ['--k=999999999999999999999', '--t=1'],
+  ['--max-set-items=x'], ['--bits=x'], ['--k=1', '--t=x'],
+  ['--no-such-option'], ['one', 'two'], ['missing-file.pg'],
+]
+  test('pg2pmdot_rejects_' + '_'.join(bad), pg2pmdot,
+    args : bad, should_fail : true)
+endforeach
+
+pm_cases = {
+  'counts': ['tests/games/ordered_two_children.pg'],
+  'sets': ['--labels=sets', '--max-set-items=1', 'tests/games/strahler_two.pg'],
+  'none': ['--labels=none', 'tests/games/split_winners.pg'],
+  'leaves': ['--format=leaves', 'tests/games/pm_cycle.pg'],
+  'partial': ['--labels=sets', 'tests/games/strahler_two.pg'],
+  'partial_leaves': ['--format=leaves', 'tests/games/strahler_two.pg'],
+  'incremental': ['--incremental', '--labels=sets', 'tests/games/strahler_two.pg'],
+  'incremental_leaves': ['--incremental', '--format=leaves', 'tests/games/strahler_two.pg'],
+  'shave_compress': ['--shave=loops', '--compress', '--labels=sets', 'tests/games/shave_partial.pg'],
+  'shave_empty': ['--shave=all', '--compress', '--labels=sets', 'tests/games/shave_single.pg'],
+  'compress_original': ['--compress', '--labels=sets', 'tests/games/compress.pg'],
+  'compress_compact': ['--compress', '--priority-mode=compact', 'tests/games/compress.pg'],
+  'stats': ['--stats', '--format=leaves', 'tests/games/pm_cycle.pg'],
+  'preprocess_stats': ['--stats', '--format=leaves', '--shave=loops', '--compress', 'tests/games/shave_partial.pg'],
+}
+foreach algorithm : ['strahler', 'succinct']
+  foreach name, arguments : pm_cases
+    if name.startswith('partial')
+      arguments = (algorithm == 'strahler' ? ['--k=1', '--t=1'] : ['--bits=0']) + arguments
+    endif
+    test('pg2pmdot_' + algorithm + '_' + name, run_single_test,
+      args : [pg2pmdot, 'tests/golden/pm_' + algorithm + '_' + name + '.out',
+        'tests/actual/pm_' + algorithm + '_' + name + '.out', 'EMPTY',
+        '--algorithm=' + algorithm] + arguments,
+      workdir : meson.project_source_root())
+    if dot_program.found() and name not in ['leaves', 'partial_leaves', 'incremental_leaves', 'stats', 'preprocess_stats']
+      test('pg2pmdot_' + algorithm + '_' + name + '_dot_syntax', dot_program,
+        suite : 'graphviz',
+        args : ['-Tdot', '-o', '/dev/null', files('tests/golden/pm_' + algorithm + '_' + name + '.out')])
+    endif
+  endforeach
+  test('pg2pmdot_' + algorithm + '_stdin', run_single_test,
+    args : [pg2pmdot, 'tests/golden/pm_' + algorithm + '_leaves.out',
+      'tests/actual/pm_' + algorithm + '_stdin.out', '@tests/games/pm_cycle.pg',
+      '--algorithm=' + algorithm, '--format=leaves', '-'],
+    workdir : meson.project_source_root())
+  test('pg2pmdot_' + algorithm + '_no_verify', run_single_test,
+    args : [pg2pmdot, 'tests/golden/pm_' + algorithm + '_leaves.out',
+      'tests/actual/pm_' + algorithm + '_no_verify.out', '@tests/games/pm_cycle.pg',
+      '--algorithm=' + algorithm, '--format=leaves', '--no-verify'],
+    workdir : meson.project_source_root())
+  test('pg2pmdot_' + algorithm + '_oracle', find_program('tests/check-pm-oracle.sh'),
+    args : [pg2pmdot, algorithm, 'tests/golden/oink_' + (algorithm == 'strahler' ? 'strpm' : 'sspm') + '_cycle.out'],
+    workdir : meson.project_source_root())
+endforeach
+
+python3 = find_program('python3', required : false)
+if python3.found()
+  test('test_gen_decomp', python3,
+    args : [files('tests/test_gen_decomp.py'), meson.current_build_dir()],
+    suite : 'python',
+    depends : [pg2adot, pg2pmdot])
+  # Exit 77 skips this live oracle unless OINK_BIN is set at test time.
+  test('oink-oracle', python3,
+    args : [files('scripts/compare_oink.py'), pg2pmdot,
+      '--failures-dir', meson.current_build_dir() / 'oink-failures'],
+    suite : ['oracle', 'python'], timeout : 600)
+endif

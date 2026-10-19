@@ -5,6 +5,11 @@ Command-line tools for working with the Strahler trees described in
 
 ## Build
 
+Requires Meson 1.4 or later, Ninja, a C23 compiler (Clang 18+, GCC 14+, or
+recent Apple Clang), and a C++20 compiler. Boost enables `lenstree`; Graphviz
+enables the DOT syntax tests. On macOS, install the dependencies with
+`brew install boost graphviz meson ninja`.
+
 ```sh
 meson setup build
 meson compile -C build
@@ -13,6 +18,44 @@ meson test -C build --print-errorlogs
 
 The executables are written to `build/`. Every executable accepts `--version`;
 the value comes from the Meson project version, currently `0.1`.
+
+[DECOMP.md](DECOMP.md) contains implementation pseudocode, the generated
+inventory of every PGSolver game in `examples/`, and tree disagreements.
+The DOT trees, PM leaf streams, and deterministic statistics live in [decomp/](decomp/).
+Build release tools, then regenerate with Python 3.10+ (standard library only):
+
+```sh
+meson setup build --reconfigure --buildtype=release -Db_ndebug=true
+meson compile -C build pg2adot pg2pmdot
+python3 scripts/gen_decomp.py
+python3 scripts/gen_decomp.py --check
+```
+
+Use `--build-dir DIR`, `--timeout SECONDS` (default 600 per subprocess), or
+`--max-host-leaves N` (default 10000) to change the run limits. Measured slow
+pairs are skipped via `SKIP_RUNS` in `scripts/gen_decomp.py`, with fixed
+`skipped (> N s locally)` outcomes. A safety timeout aborts with a non-zero
+exit and asks you to add the pair to the skip list. Host-limit runs retain
+statistics files and inventory rows, with no tree. There are no vertex cutoffs.
+Set labels show at most 8 vertex IDs per set. Edit the methods in
+`scripts/decomp_methods.md`, then regenerate. CI checks freshness on PRs and
+non-main pushes, and refreshes generated files on pushes to `main`.
+
+CI checks formatting with clang-format 18, treats compiler and clang-tidy
+warnings as errors, enforces 75% line coverage, and runs ASan/UBSan and
+Valgrind separately. To run the memory check locally after building:
+
+```sh
+ci/check-valgrind.sh build
+```
+
+Published GitHub releases build and test all seven commands, including
+`lenstree`, on Ubuntu 24.04 x86_64 and macOS 15 arm64 with Apple Clang.
+The release assets are `strahler-tree-experiments-<version>-linux-x86_64.tar.gz`
+and `strahler-tree-experiments-<version>-macos-arm64.tar.gz`, each containing
+`bin/`, this README, LICENSE, and LICENSE-APACHE-2.0. The release workflow can also be dispatched
+with an existing release tag to rebuild and replace its assets. Update the
+Meson project version before tagging so `--version` matches the release.
 
 ## Commands
 
@@ -85,9 +128,22 @@ name; the latter two read from standard input.
 - `--max-set-items=N` limits the number of vertices shown in a set label.
 - `--priority-mode=original|compact` selects the priority bounds shown in the
   tree. The default is `original`.
-- `--algorithm=lifting|zielonka` selects how the decompositions are built. The
-  default is `lifting`; `zielonka` runs the enhanced Zielonka algorithm for
-  comparison. Only `--stats` of the options below applies to it.
+- `--algorithm=lifting|zielonka|zielonka-sym|lifting-sym` selects the solver;
+  the default is `lifting`. `zielonka` runs enhanced Zielonka. All four share
+  preprocessing, statistics and verification; symmetric variants are described
+  below.
+- `--shave=LIST` solves and removes dominions before building either tree.
+  Use a comma list of `single` (all remaining priorities have one parity),
+  `loops` (winning self-loops, including forced losing-owner loops), and
+  `wcwc` (winner-controlled winning cycles), or `all` / `none` alone.
+  The default is `none`. Each discovered dominion is removed with its winner's
+  attractor in the current game. Rules run in the order single, loops, wcwc,
+  repeating to a fixpoint so removal can expose more opportunities.
+- `--compress` merges consecutive distinct priorities of the same parity,
+  following oink's priority compression. This is stronger than gap removal.
+  `--priority-mode` still controls only display: in `original` mode a merged
+  level shows its **largest original priority**, and an intervening empty
+  bound shows that priority plus the compact offset.
 - `--tree-k=K` lifts in the smaller Strahler host `U^K_{t,H}`. The result may
   be partial.
 - `--adaptive-t` lifts in `U^K_{t,H}` with `t = 0, 1, ...` and the largest
@@ -95,6 +151,12 @@ name; the latter two read from standard input.
   smallest such `t` on standard error, together with the smallest `t` at which
   each player's whole winning region was found. `--start-t=T` starts the
   search at `T`, and `--tree-k=K` caps `K`; a capped search can end partial.
+  Both adaptive modes require `--algorithm=lifting`.
+- `--adaptive-t=incremental` uses certified opponent wins as TOP seeds. It
+  produces exactly the same least labellings and trees at every tried host as
+  `--adaptive-t`, usually with fewer lifts. Bare `--adaptive-t` keeps the cold
+  behaviour. Adaptive `--stats` includes `total_lifts` across all tried hosts.
+  See [the incremental analysis](docs/incremental-t.md) for proofs and results.
 - `--kary=A` lifts in the full `A`-ary tree with each player's full height
   `H`, which is not bounded by a Strahler number. The result may be partial;
   it is complete when `A` is at least the number of vertices.
@@ -105,11 +167,30 @@ name; the latter two read from standard input.
   than `N` leaves. The default is 1000000. With `--adaptive-t`, reaching the
   limit stops the search and prints a warning; the result found so far is kept
   and labelled as partial.
-- `--stats` prints statistics to standard error. For lifting, these are the
-  host of each player and its size, rounds, vertex lifts, vertices left at the
-  top, and the size and Strahler number of each decomposition. For Zielonka,
-  they are the region sizes and the decomposition metrics.
-- `--no-verify` skips the decomposition checks and is intended for debugging.
+- `--stats` prints statistics to standard error. Ordinary lifting reports each
+  player's host and its size, rounds, vertex lifts, vertices left at the top,
+  and the size and Strahler number of each decomposition. Zielonka adds
+  nonempty calls and attractor counts to region sizes and tree metrics.
+  Symmetric variants report calls, attractors, Move/Set counts, certification
+  lifts and the Even separator size; `lifting-sym` also reports host sizes.
+  With preprocessing, it also reports residual and shaved sizes and counts per
+  rule, including
+  attracted vertices; a vertex is counted only against the rule that removed it.
+- `--no-verify` skips the decomposition and shaved-region closure checks and
+  is intended for debugging.
+
+`--algorithm=zielonka-sym` runs McNaughton–Zielonka with memory (Algorithm 8
+of Thejaswini Raghavan's thesis). It keeps both players' decomposition labellings
+across recursive calls and starts with trivial decompositions. Complete n-ary
+hosts are represented lazily, so only visited nodes consume space. It always
+returns both winning regions with decompositions and accepts no host options.
+
+`--algorithm=lifting-sym` is **Algorithm 9 + asymmetric certification (thesis
+§8.3)**. It uses the default, `--tree-k`, `--kary` or `--tree-file` hosts and
+leaf limit. Both `--adaptive-t` and `--adaptive-t=incremental` are rejected:
+Algorithm 9 runs on a fixed pair of hosts. With restricted hosts, Theorem F's
+returned set is only a separator: final short lifts certify the two dominions,
+leaving other vertices Unresolved. Universal hosts give complete results.
 
 By default, `pg2adot` lifts in a Strahler tree that is guaranteed to contain a
 decomposition of each winning region, so the result is complete. That host
@@ -122,16 +203,27 @@ gaps do not add empty levels or exhaust the recursion limit. It still shows
 bounds on the original priority scale by default. Use
 `--priority-mode=compact` to show the internal bounds instead.
 
+With shaving, roots and tree metrics describe only the residual game. A shaded
+`shaved (Even)` / `shaved (Odd)` node attached to the corresponding root reports
+the solved vertices separately, including their IDs with `--labels=sets`.
+An empty residual is a complete result with no decomposition; shaved vertices
+count as won when deciding completeness. Verification checks the residual
+decomposition and, in the full game, that shaved regions are closed under their
+winner's attractor and that the loser cannot force an exit. The rules establish
+their winning parity. The implementation follows the behavior of
+[oink](https://github.com/trolando/oink) (Apache-2.0), using the shared attractor
+code for cycle searches rather than copying oink's SCC implementation.
+
 <details>
 <summary>How to read the trees</summary>
 
 #### Complete and partial results
 
-The default host and `--algorithm=zielonka` always give a complete result: the
-Even and Odd roots decompose the two winning regions. A restricted host from
-`--tree-k`, `--kary`, `--tree-file`, or a capped or interrupted
-`--adaptive-t` search still
-certifies that each root region is won by its player, but it may leave some
+The default host, `--algorithm=zielonka`, and `--algorithm=zielonka-sym` always
+give a complete result: the Even and Odd roots decompose the two winning
+regions. A restricted host from `--tree-k`, `--kary`, `--tree-file`, or a capped
+or interrupted `--adaptive-t` search still certifies that each root region is
+won by its player, but it may leave some
 vertices unresolved. The result is complete exactly when the two regions cover
 the game, even with a restricted host.
 
@@ -189,6 +281,10 @@ The reported Strahler number belongs to the tree that `pg2adot` built. The
 command does not search for the smallest value over every possible
 decomposition. Lifting and Zielonka can build different trees for the same
 game; `tests/games/lifted_shape.pg` is an example.
+
+[The disagreement study](docs/disagreements.md) compares shapes and vertex
+sets, with seeded generators, shrinking, and paired canonical goldens in
+`tests/games/disagree_*.pg` and `tests/golden/disagree_*.json`.
 
 #### Tree-relative view
 
@@ -269,6 +365,82 @@ The repository includes small sample games under `tests/games/`, for example:
 ```sh
 ./build/pg2adot tests/games/ordered_two_children.pg
 ```
+
+### `pg2pmdot`
+
+Lift Strahler or succinct progress measures and draw the ordered prefix tree
+of each player's distinct non-top final measures. Leaves show the vertices
+holding that measure. The tool reads a PGSolver file, `-`, or standard input.
+
+```sh
+./build/pg2pmdot --algorithm=strahler --labels=sets game.pg > measures.dot
+./build/pg2pmdot --algorithm=succinct --stats game.pg > measures.dot
+./build/pg2pmdot --k=1 --t=1 game.pg > partial.dot
+./build/pg2pmdot --algorithm=succinct --bits=0 game.pg > partial.dot
+./build/pg2pmdot --format=leaves game.pg
+./build/pg2pmdot --incremental --shave=all --compress game.pg
+```
+
+`--algorithm=strahler|succinct` defaults to `strahler`. Both algorithms share
+`pg2adot`'s `--player`, `--labels`, `--max-set-items`, `--priority-mode`,
+`--shave`, `--compress`, `--stats`, `--no-verify`, and `--version` options.
+Priorities are made gap-free internally. DOT's `p` labels identify the counter
+priority of each component, on the original scale by default. Preprocessing
+keeps shaved vertices in separate shaded nodes; they have no progress measure.
+An empty residual produces empty trees and empty leaf streams.
+
+By default, each player starts from bottom on the full residual game at every
+parameter choice. Neither player's dominion is removed before the other's
+run. Search stops at the first choice whose non-top sets cover the residual.
+Oink's counter player is the **opponent** of the winner named on our tree:
+Even's tree uses odd counters and Odd's tree uses even counters.
+
+Strahler search starts at `(k,t)=(1,1)` and uses Oink's priority queue with its
+integer `max(k,t)/min(k,t)` comparison, pushing `(k+1,t)` before `(k,t+1)`.
+`t_max=floor(log2(n))`. Full-game mode bounds `k` by
+`min(t_max+2, max_depth+1)`, including the measure tree's extra root.
+**This is one level larger than Oink's outer search limit.** Its smaller
+limit can depend on attraction/removal to solve vertices that never receive
+a finite measure, even at the final parameters. For example, after
+`--compress`, `strahler_two.pg` needs `k=2` to give every winner a measure,
+although Oink's outer limit is `k=1`. Each run caps `k` at its own
+`depth+1`. Succinct search uses Oink's **bounded** schedule, starting at one
+bit and increasing through `ceil(log2(n))`; zero/one-vertex games also support
+a zero-bit budget. Depth is the number of counter-parity levels, including
+empty intervening levels.
+
+`--k=K --t=T` fixes Strahler parameters; `--bits=B` fixes succinct's budget.
+These results may be partial. Roots say `partial` and, with `--player=both`,
+a dashed Unresolved node lists the remaining vertices. `--stats` reports the
+chosen parameters, depths, vertex counts, lifts, attempts and top counts on
+standard error. Verification checks the actual truncated progress condition
+on every edge (one successor for the winner, all for its opponent) and checks
+dominion closure using the shared attractor code.
+
+`--incremental` follows Oink's removal semantics: run odd counters first,
+remove Even's non-top dominion and its attractor, then run even counters on
+the remaining game. It prints a separate DOT graph for every round. Roots
+show that round's parameters; an `attracted` node lists removed vertices that
+have no finite measure. Succinct repeats a bit budget if it made progress;
+Strahler keeps Oink's original outer bound
+`k_max=min(t_max+2,max_depth)` and can end partial when that search is
+exhausted. Fixed parameters request just one round. Each graph describes that
+round's residual, rather than a cumulative winning tree.
+
+`--format=leaves` prints `even: ` and `odd: ` lines, with `e` for an empty
+bitstring and `|` after each distinct measure. Remove the player prefix to
+feed one line to `pms2dot --reorder`. The raw streams retain Oink's first
+occurrence order in priority-sorted vertex order; equal-priority vertices are
+ordered by external ID. DOT sorts branches in the paper's order
+`0β < ε < 1β`. Oink's unspecified tie ordering, its preprocessing, and its
+last-residual-only printer can make other byte comparisons differ. Incremental
+leaf output adds `# round ...` parameter lines before each pair of streams.
+
+An optional live differential test compares both backends with pinned Oink
+on seeded random games and quick examples. Set `OINK_BIN` and run
+`meson test -C build oink-oracle --print-errorlogs`; see
+[the oracle instructions](tests/README.md#live-oink-oracle) for the required
+upstream printer fixes and known Strahler search limit.
 
 ### `str-tree`
 
@@ -360,3 +532,31 @@ before `c`. This makes each `S_i` an opponent trap in the remaining vertices
 and each `A_i` its attractor. `ad_lift_solve` checks the labelling directly
 with `ad_lift_verify` and the materialized trees with both `ad_tree_verify`
 and `ad_tree_relative_verify`.
+
+### Symmetric algorithms and thesis correspondence
+
+`src/ad_sym.c` shares the player-swapped recursion for thesis Algorithms 8
+and 9. Algorithm 8 uses lazy complete hosts; Algorithm 9 uses supplied hosts
+and `ad_lift_continue` to certify its final labels without resetting progress.
+See [the thesis correspondence and corrected entry invariant](docs/symmetric.md)
+for errata, the added trap-closure operation, proofs and debug checks.
+
+## NOTICE
+
+The following files are derived from [Oink](https://github.com/trolando/oink)
+and [Vanessa Flügel's fork](https://github.com/vfluegel/oink), branch
+`print-pms` (checkout `51c2640fe650fd18d9331cfe5133cf3605a98c31`; tree printing
+introduced in `504081d`):
+
+- `src/pm_lift.c`
+- `src/pm_solve.c`
+- `src/pm_internal.h`
+- `src/strpm.c`
+- `src/sspm.c`
+
+Copyright 2017–2018 Tom van Dijk, Johannes Kepler University Linz.
+Changes: ported to C23 and modified for tree output. These files remain
+Apache-2.0; see [LICENSE-APACHE-2.0](LICENSE-APACHE-2.0). Apache-2.0 → MIT
+relicensing requires the copyright holders' consent; that consent has not
+been obtained. The original CLI, public interface, tree output, shared modules,
+and tests remain under this repository's MIT license.
