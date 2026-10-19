@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
+#include <assert.h>
 #include <errno.h>
 #include <getopt.h>
 #include <inttypes.h>
@@ -85,7 +86,7 @@ static void usage(FILE *out, char *argv[static 1]) {
   char *text = nullptr;
   size_t length = 0;
   size_t capacity = 0;
-  while (true) {
+  while (!feof(stream) && !ferror(stream)) {
     if (capacity - length < 2) {
       size_t const grown = capacity == 0 ? 4096 : capacity * 2;
       char *resized = grown < capacity ? nullptr : realloc(text, grown);
@@ -98,6 +99,7 @@ static void usage(FILE *out, char *argv[static 1]) {
       capacity = grown;
     }
     size_t const read = fread(text + length, 1, capacity - length - 1, stream);
+    assert(read < capacity - length);
     length += read;
     if (read == 0) {
       break;

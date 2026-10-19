@@ -626,56 +626,6 @@ write_node(FILE *out, PGGame const *game, PGSet const *domain,
   return fputs(">];\n  result -> unresolved [style=dashed];\n", out) >= 0;
 }
 
-[[nodiscard]] static bool
-write_jurdzinski_dot(FILE *out, PGGame const *game, ADResult const *result,
-                     ADDotPlayer const player, ADDotLabels const labels,
-                     size_t const max_set_items,
-                     PGPriorityMap const *priority_map) {
-  if (fputs("digraph attractor_decompositions {\n"
-            "  graph [rankdir=TB, ordering=out, newrank=true];\n"
-            "  node [shape=box];\n",
-            out) < 0) {
-    return false;
-  }
-
-  bool const partial = result->kind == AD_RESULT_PARTIAL;
-  ADDotRanks ranks = {0};
-  bool succeeded = true;
-  if (player == AD_DOT_PLAYER_BOTH) {
-    succeeded = write_result_node(out, result);
-    for (size_t candidate = 0; succeeded && candidate < 2; candidate++) {
-      char const *identifier = candidate == PG_EVEN ? "even" : "odd";
-      if (result->decomposition[candidate] == nullptr) {
-        succeeded = write_empty(out, (PGPlayer)candidate, true, partial);
-      } else {
-        succeeded =
-            fprintf(out, "  result -> %s;\n", identifier) >= 0 &&
-            write_jurdzinski_node(out, game, &result->region[candidate],
-                                  &result->region[candidate],
-                                  result->decomposition[candidate], identifier,
-                                  labels, max_set_items, true, partial, &ranks);
-      }
-    }
-    succeeded =
-        succeeded && write_unresolved(out, game, result, labels, max_set_items);
-  } else {
-    PGPlayer const selected = player == AD_DOT_PLAYER_EVEN ? PG_EVEN : PG_ODD;
-    char const *identifier = selected == PG_EVEN ? "even" : "odd";
-    succeeded =
-        result->decomposition[selected] == nullptr
-            ? write_empty(out, selected, false, partial)
-            : write_jurdzinski_node(
-                  out, game, &result->region[selected],
-                  &result->region[selected], result->decomposition[selected],
-                  identifier, labels, max_set_items, true, partial, &ranks);
-  }
-  if (succeeded) {
-    succeeded = write_jurdzinski_ranks(out, &ranks, priority_map);
-  }
-  ranks_destroy(&ranks);
-  return succeeded && fputs("}\n", out) >= 0;
-}
-
 bool ad_tree_write_dot(FILE *out, PGGame const *game, ADResult const *result,
                        ADDotPlayer const player, ADDotView const view,
                        ADDotLabels const labels, size_t const max_set_items,
@@ -685,46 +635,44 @@ bool ad_tree_write_dot(FILE *out, PGGame const *game, ADResult const *result,
       labels > AD_DOT_LABEL_NONE || result->kind > AD_RESULT_PARTIAL) {
     return false;
   }
-  if (view == AD_DOT_VIEW_JURDZINSKI) {
-    return write_jurdzinski_dot(out, game, result, player, labels,
-                                max_set_items, priority_map);
-  }
-  if (fputs("digraph attractor_decompositions {\n"
-            "  graph [rankdir=TB, ordering=out];\n"
-            "  node [shape=box];\n",
-            out) < 0) {
+  bool const jurdzinski = view == AD_DOT_VIEW_JURDZINSKI;
+  if (fprintf(out,
+              "digraph attractor_decompositions {\n"
+              "  graph [rankdir=TB, ordering=out%s];\n"
+              "  node [shape=box];\n",
+              jurdzinski ? ", newrank=true" : "") < 0) {
     return false;
   }
 
+  bool const both = player == AD_DOT_PLAYER_BOTH;
   bool const partial = result->kind == AD_RESULT_PARTIAL;
-  bool succeeded = true;
-  if (player == AD_DOT_PLAYER_BOTH) {
-    succeeded = write_result_node(out, result);
-    for (size_t candidate = 0; succeeded && candidate < 2; candidate++) {
-      char const *identifier = candidate == PG_EVEN ? "even" : "odd";
-      if (result->decomposition[candidate] == nullptr) {
-        succeeded = write_empty(out, (PGPlayer)candidate, true, partial);
-      } else {
-        succeeded =
-            fprintf(out, "  result -> %s;\n", identifier) >= 0 &&
-            write_node(out, game, &result->region[candidate],
-                       &result->region[candidate],
-                       result->decomposition[candidate], identifier, view,
-                       labels, max_set_items, true, partial, priority_map);
-      }
+  ADDotRanks ranks = {0};
+  bool succeeded = !both || write_result_node(out, result);
+  for (size_t candidate = 0; succeeded && candidate < 2; candidate++) {
+    if ((player == AD_DOT_PLAYER_EVEN && candidate != PG_EVEN) ||
+        (player == AD_DOT_PLAYER_ODD && candidate != PG_ODD)) {
+      continue;
     }
-    succeeded =
-        succeeded && write_unresolved(out, game, result, labels, max_set_items);
-  } else {
-    PGPlayer const selected = player == AD_DOT_PLAYER_EVEN ? PG_EVEN : PG_ODD;
-    char const *identifier = selected == PG_EVEN ? "even" : "odd";
-    succeeded =
-        result->decomposition[selected] == nullptr
-            ? write_empty(out, selected, false, partial)
-            : write_node(out, game, &result->region[selected],
-                         &result->region[selected],
-                         result->decomposition[selected], identifier, view,
-                         labels, max_set_items, true, partial, priority_map);
+    char const *identifier = candidate == PG_EVEN ? "even" : "odd";
+    ADNode const *root = result->decomposition[candidate];
+    PGSet const *region = &result->region[candidate];
+    if (root == nullptr) {
+      succeeded = write_empty(out, (PGPlayer)candidate, both, partial);
+    } else {
+      succeeded =
+          (!both || fprintf(out, "  result -> %s;\n", identifier) >= 0) &&
+          (jurdzinski ? write_jurdzinski_node(out, game, region, region, root,
+                                              identifier, labels, max_set_items,
+                                              true, partial, &ranks)
+                      : write_node(out, game, region, region, root, identifier,
+                                   view, labels, max_set_items, true, partial,
+                                   priority_map));
+    }
   }
+  succeeded =
+      succeeded &&
+      (!both || write_unresolved(out, game, result, labels, max_set_items)) &&
+      (!jurdzinski || write_jurdzinski_ranks(out, &ranks, priority_map));
+  ranks_destroy(&ranks);
   return succeeded && fputs("}\n", out) >= 0;
 }

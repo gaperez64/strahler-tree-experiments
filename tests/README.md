@@ -3,6 +3,10 @@
 Meson builds the C unit tests and runs the command-line regression cases.
 
 - `test_stree.c` tests the reusable Strahler-tree generator.
+- `test_cli_parse.cpp` checks the shared C++ CLI integer parser, including
+  overflow and malformed arguments.
+- `test-wrappers.sh` checks wrapper forwarding and propagation of memory-check
+  failures through the golden harness.
 - `test_ordered_tree.c` tests the owned compact-leaf tree, including stable
   sibling order, normalization, round trips, invalid input, DOT, and p-level
   partitions.
@@ -101,6 +105,13 @@ meson setup build
 meson compile -C build
 meson test -C build --print-errorlogs
 ```
+
+`ci/check-valgrind.sh build` runs the suite under Valgrind, using exit code 99
+to fail even expected-failure cases on memory errors. The script sets
+`STRAHLER_TEST_WRAPPER` so golden, stdin, and version harnesses also wrap their
+child binaries. Wrapper arguments are whitespace-separated, without shell
+evaluation. Valgrind's `--quiet` keeps successful runs' goldens unchanged;
+memory errors appear in the Meson error logs.
 
 To regenerate golden files after an intentional output change:
 

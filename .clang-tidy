@@ -16,11 +16,13 @@ Checks: >
   -bugprone-narrowing-conversions,
   -bugprone-not-null-terminated-result,
   -bugprone-reserved-identifier,
-  cert-err33-c,
-  -cert-err33-c,
   cert-err34-c,
   performance-*,
   -performance-avoid-endl,
+  misc-misplaced-const,
+  misc-redundant-expression,
+  readability-inconsistent-declaration-parameter-name,
+  readability-non-const-parameter,
   portability-*
 WarningsAsErrors: '*'
 HeaderFilterRegex: '(^|.*/)(src|tests)/.*'

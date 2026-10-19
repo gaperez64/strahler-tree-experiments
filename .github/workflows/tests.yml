@@ -43,7 +43,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-18 graphviz libboost-dev meson ninja-build
+          sudo apt-get install -y clang-18 graphviz libboost-dev ninja-build pipx
+          pipx install meson==1.8.5
 
       - name: Configure
         env:
@@ -67,7 +68,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++-14 gcc-14 graphviz libboost-dev meson ninja-build
+          sudo apt-get install -y g++-14 gcc-14 graphviz libboost-dev ninja-build pipx
+          pipx install meson==1.8.5
 
       - name: Configure
         env:
@@ -91,7 +93,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-18 clang-tidy-18 libboost-dev meson ninja-build
+          sudo apt-get install -y clang-18 clang-tidy-18 libboost-dev ninja-build pipx
+          pipx install meson==1.8.5
 
       - name: Configure compilation database
         env:
@@ -115,7 +118,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++-14 gcc-14 gcovr graphviz libboost-dev meson ninja-build
+          sudo apt-get install -y g++-14 gcc-14 gcovr graphviz libboost-dev ninja-build pipx
+          pipx install meson==1.8.5
 
       - name: Configure
         env:
@@ -165,7 +169,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-18 graphviz libboost-dev meson ninja-build
+          sudo apt-get install -y clang-18 graphviz libboost-dev ninja-build pipx
+          pipx install meson==1.8.5
 
       - name: Configure
         env:
@@ -181,3 +186,27 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: meson test -C build-sanitizers --print-errorlogs
+
+  valgrind:
+    name: Valgrind memory and leak checks
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-14 gcc-14 graphviz libboost-dev ninja-build pipx valgrind
+          pipx install meson==1.8.5
+
+      - name: Configure and build
+        env:
+          CC: gcc-14
+          CXX: g++-14
+        run: |
+          meson setup build-valgrind --buildtype=debug -Dwerror=true -Dlenstree=enabled
+          meson compile -C build-valgrind
+
+      - name: Check memory and leaks
+        run: ci/check-valgrind.sh build-valgrind

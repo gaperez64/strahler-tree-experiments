@@ -3,16 +3,15 @@ project(
   'c',
   'cpp',
   version : '0.1',
+  meson_version : '>=1.4.0',
   default_options : [
     'warning_level=3',
-    'c_std=c2x',
+    # Apple Clang releases can still use the draft spelling for C23.
+    'c_std=c23,c2x',
     'cpp_std=c++20',
     'b_coverage=false',
   ],
 )
-
-cc = meson.get_compiler('c')
-cpp = meson.get_compiler('cpp')
 
 lenstree_option = get_option('lenstree')
 boost_dep = dependency('boost', required : lenstree_option)
@@ -180,6 +179,19 @@ str_tree = executable('str-tree',
 )
 
 # Unit Tests
+test_cli_parse_exe = executable(
+  'test_cli_parse',
+  'tests/test_cli_parse.cpp',
+  include_directories : source_includes,
+)
+test('test_cli_parse', test_cli_parse_exe)
+test(
+  'test_wrappers',
+  find_program('tests/test-wrappers.sh'),
+  args : [genstree, pgfilt, meson.project_version()],
+  workdir : meson.project_source_root(),
+)
+
 test_stree_exe = executable(
   'test_stree',
   'tests/test_stree.c',

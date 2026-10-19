@@ -65,7 +65,8 @@ typedef struct {
     return nullptr;
   }
   size_t used = 0;
-  for (size_t vertex = pg_set_next(active, 0); vertex != SIZE_MAX;
+  for (size_t vertex = pg_set_next(active, 0);
+       vertex != SIZE_MAX && used < total;
        vertex = pg_set_next(active, vertex + 1)) {
     if (labels[vertex] < limit) {
       sorted[used++] =

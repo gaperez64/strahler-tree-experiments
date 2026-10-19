@@ -5,6 +5,11 @@ Command-line tools for working with the Strahler trees described in
 
 ## Build
 
+Requires Meson 1.4 or later, Ninja, a C23 compiler (Clang 18+, GCC 14+, or
+recent Apple Clang), and a C++20 compiler. Boost enables `lenstree`; Graphviz
+enables the DOT syntax tests. On macOS, install the dependencies with
+`brew install boost graphviz meson ninja`.
+
 ```sh
 meson setup build
 meson compile -C build
@@ -13,6 +18,22 @@ meson test -C build --print-errorlogs
 
 The executables are written to `build/`. Every executable accepts `--version`;
 the value comes from the Meson project version, currently `0.1`.
+
+CI checks formatting with clang-format 18, treats compiler and clang-tidy
+warnings as errors, enforces 75% line coverage, and runs ASan/UBSan and
+Valgrind separately. To run the memory check locally after building:
+
+```sh
+ci/check-valgrind.sh build
+```
+
+Published GitHub releases build and test all six commands, including
+`lenstree`, on Ubuntu 24.04 x86_64 and macOS 15 arm64 with Apple Clang.
+The release assets are `strahler-tree-experiments-<version>-linux-x86_64.tar.gz`
+and `strahler-tree-experiments-<version>-macos-arm64.tar.gz`, each containing
+`bin/`, this README, and LICENSE. The release workflow can also be dispatched
+with an existing release tag to rebuild and replace its assets. Update the
+Meson project version before tagging so `--version` matches the release.
 
 ## Commands
 

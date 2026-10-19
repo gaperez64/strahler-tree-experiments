@@ -8,4 +8,5 @@ fi
 
 input=$1
 shift
-exec "$@" < "$input"
+read -r -a wrapper <<< "${STRAHLER_TEST_WRAPPER:-}"
+exec ${wrapper[@]+"${wrapper[@]}"} "$@" < "$input"
