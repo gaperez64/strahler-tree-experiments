@@ -151,7 +151,7 @@ unsigned stree_count_leaves(int const k, int const t, int const h) {
   if (k < 1 || t < 0 || h < k) {
     return 0;
   }
-  unsigned (*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
+  unsigned(*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
   if (tree == nullptr) {
     return 0;
   }
@@ -235,8 +235,7 @@ char *stree_leaf_label(int const k, int const t, int const h,
   if (k < 1 || t < 0 || h < k || leaf_number < 1) {
     return nullptr;
   }
-  unsigned (*count_cache)[k + 1][t + 1][h + 1] =
-      calloc(2, sizeof(*count_cache));
+  unsigned(*count_cache)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*count_cache));
   if (count_cache == nullptr) {
     return nullptr;
   }
