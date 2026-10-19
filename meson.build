@@ -1387,6 +1387,9 @@ endforeach
 
 python3 = find_program('python3', required : false)
 if python3.found()
+  test('test_gen_decomp', python3,
+    args : [files('tests/test_gen_decomp.py'), meson.current_build_dir()],
+    depends : [pg2adot, pg2pmdot])
   # Exit 77 skips this live oracle unless OINK_BIN is set at test time.
   test('oink-oracle', python3,
     args : [files('scripts/compare_oink.py'), pg2pmdot,

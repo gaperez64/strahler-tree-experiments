@@ -1,0 +1,3 @@
+outcome: host limit
+Solver failed: the Even host U^8_{12,8} has 113213439 leaves, more than the limit of 10000
+Use --adaptive-t, --tree-k, --kary, a larger --max-host-leaves, or --algorithm=zielonka

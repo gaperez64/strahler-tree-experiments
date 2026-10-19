@@ -1,0 +1,4 @@
+outcome: complete
+zielonka-sym: vertices=5596 result=complete calls=34 attractors=265 moves=67 sets=133 certification_lifts=0 separator=5596
+zielonka-sym even: region=5596 tree_nodes=22 tree_leaves=8 tree_height=8 strahler=3
+zielonka-sym odd: region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0

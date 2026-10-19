@@ -1,0 +1,6 @@
+outcome: complete
+preprocess: residual=875281 shaved_even=0 shaved_odd=0 single=0 loops=0 wcwc=0
+zielonka: vertices=875281 result=complete
+zielonka: calls=15 attractors=42
+zielonka even: region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+zielonka odd: region=875281 tree_nodes=15 tree_leaves=14 tree_height=2 strahler=2

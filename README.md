@@ -19,6 +19,28 @@ meson test -C build --print-errorlogs
 The executables are written to `build/`. Every executable accepts `--version`;
 the value comes from the Meson project version, currently `0.1`.
 
+[DECOMP.md](DECOMP.md) contains implementation pseudocode, the generated
+inventory of every PGSolver game in `examples/`, and tree disagreements.
+The DOT trees, PM leaf streams, and deterministic statistics live in [decomp/](decomp/).
+Build release tools, then regenerate with Python 3.10+ (standard library only):
+
+```sh
+meson setup build --reconfigure --buildtype=release -Db_ndebug=true
+meson compile -C build pg2adot pg2pmdot
+python3 scripts/gen_decomp.py
+python3 scripts/gen_decomp.py --check
+```
+
+Use `--build-dir DIR`, `--timeout SECONDS` (default 600 per subprocess), or
+`--max-host-leaves N` (default 10000) to change the run limits. Measured slow
+pairs are skipped via `SKIP_RUNS` in `scripts/gen_decomp.py`, with fixed
+`skipped (> N s locally)` outcomes. A safety timeout aborts with a non-zero
+exit and asks you to add the pair to the skip list. Host-limit runs retain
+statistics files and inventory rows, with no tree. There are no vertex cutoffs.
+Set labels show at most 8 vertex IDs per set. Edit the methods in
+`scripts/decomp_methods.md`, then regenerate. CI checks freshness on PRs and
+non-main pushes, and refreshes generated files on pushes to `main`.
+
 CI checks formatting with clang-format 18, treats compiler and clang-tidy
 warnings as errors, enforces 75% line coverage, and runs ASan/UBSan and
 Valgrind separately. To run the memory check locally after building:
