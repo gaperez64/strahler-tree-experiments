@@ -63,7 +63,8 @@ jobs:
       - name: Build and test
         run: |
           if [[ "$RUNNER_OS" == macOS ]]; then
-            export BOOST_ROOT="$(brew --prefix boost)"
+            BOOST_ROOT="$(brew --prefix boost)"
+            export BOOST_ROOT
           fi
           meson setup build-release --buildtype=release -Dwerror=true -Dlenstree=enabled --prefix=/ --bindir=bin
           meson compile -C build-release

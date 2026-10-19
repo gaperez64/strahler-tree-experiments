@@ -30,6 +30,11 @@ jobs:
       - name: Check shell scripts
         run: shellcheck ci/*.sh tests/*.sh
 
+      - name: Check GitHub Actions workflows
+        run: |
+          curl -fsSL https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz | tar -xz -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" .github/workflows/*.yml
+
       - name: Check Python syntax
         run: python3 -m py_compile src/convert_out.py scripts/compare_oink.py scripts/gen_decomp.py tests/test_gen_decomp.py
 
@@ -48,13 +53,13 @@ jobs:
     env:
       CC: clang-18
       CXX: clang++-18
-      TMPDIR: ${{ runner.temp }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
+          echo "TMPDIR=$RUNNER_TEMP" >> "$GITHUB_ENV"
           sudo apt-get update
           sudo apt-get install -y clang-18 ninja-build pipx
           pipx install meson==1.8.5
@@ -103,14 +108,13 @@ jobs:
     env:
       CC: clang-18
       CXX: clang++-18
-      TMPDIR: ${{ runner.temp }}
-      OINK_BIN: ${{ runner.temp }}/oink-build/oink
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
+          printf 'TMPDIR=%s\nOINK_BIN=%s/oink-build/oink\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
           sudo apt-get update
           sudo apt-get install -y clang-18 cmake ninja-build pipx libboost-filesystem-dev libboost-iostreams-dev libboost-random-dev libboost-regex-dev
           pipx install meson==1.8.5
