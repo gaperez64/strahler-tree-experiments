@@ -94,6 +94,9 @@ visible level ranks and empty added leaves omitted. The solver and verifier
 use compact priorities; the DOT writer can show the corresponding source
 bounds without changing the verified witness.
 
+See [reading attractor decompositions](../docs/developing.md#reading-attractor-decompositions)
+for the output labels and complete/partial result conventions.
+
 The goldens come from the lifting solver unless they name Zielonka. On
 `ordered_two_children.pg` and the priority-gap games, lifting and Zielonka
 produce identical DOT, so `pg2adot_counts.out` also serves as the legacy
