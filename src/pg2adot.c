@@ -94,7 +94,7 @@ static void usage(FILE *out, char *argv[static 1]) {
   char *text = nullptr;
   size_t length = 0;
   size_t capacity = 0;
-  while (!feof(stream) && !ferror(stream)) {
+  do {
     if (capacity - length < 2) {
       size_t const grown = capacity == 0 ? 4096 : capacity * 2;
       char *resized = grown < capacity ? nullptr : realloc(text, grown);
@@ -112,7 +112,7 @@ static void usage(FILE *out, char *argv[static 1]) {
     if (read == 0) {
       break;
     }
-  }
+  } while (!feof(stream) && !ferror(stream));
   bool const failed = ferror(stream) != 0;
   if (fclose(stream) != 0 || failed) {
     free(text);

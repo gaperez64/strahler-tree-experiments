@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -219,6 +220,7 @@ static int compare_cycle_roots(void const *left, void const *right) {
         size_t begin = member_count;
         uint64_t maximum = 0;
         do {
+          assert(begin != 0);
           size_t const member = members[--begin];
           if (game->vertices[member].priority > maximum) {
             maximum = game->vertices[member].priority;

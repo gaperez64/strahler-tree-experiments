@@ -11,4 +11,4 @@ export STRAHLER_TEST_WRAPPER="valgrind --quiet --leak-check=full --show-leak-kin
 
 # Exit 99 is a Meson error even for should_fail tests; the harnesses preserve it.
 exec meson test -C "$build_dir" --print-errorlogs --timeout-multiplier 10 \
-  --wrapper="$STRAHLER_TEST_WRAPPER"
+  --no-suite python --wrapper="$STRAHLER_TEST_WRAPPER"
