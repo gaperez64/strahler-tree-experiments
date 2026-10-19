@@ -1,0 +1,11 @@
+digraph attractor_decompositions {
+  graph [rankdir=TB, ordering=out];
+  node [shape=box];
+  result [label="result (synthetic)"];
+  even_empty [label=<<B>Even</B>: no residual decomposition; see shaved vertices>];
+  result -> even_empty;
+  even_shaved [style="dashed,filled", fillcolor=lightgray, label=<<B>shaved (Even)</B>: 3 vertices<BR/>{0,1,2}>];
+  even_empty -> even_shaved [style=dashed];
+  odd_empty [label=<<B>Odd</B>: <I>W</I> = empty; no decomposition>];
+  result -> odd_empty;
+}

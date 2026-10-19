@@ -107,6 +107,24 @@ sanitize_output() {
 }
 
 echo "Generating golden files into tests/golden/ ..."
+while IFS='|' read -r name fixture flags; do
+  read -r -a arguments <<< "$flags"
+  "$PG2ADOT_BIN" "${arguments[@]}" "tests/games/$fixture.pg" \
+    > "tests/golden/pg2adot_$name.out" 2>&1
+done <<'CASES'
+shave_loops|shave_loops|--shave=loops --labels=sets
+shave_wcwc|shave_wcwc|--shave=wcwc --labels=sets
+shave_single|shave_single|--shave=single --labels=sets
+shave_relative|shave_wcwc|--shave=loops,wcwc --view=tree-relative --labels=sets --max-set-items=2
+shave_empty_jurdzinski|shave_single|--shave=all --view=jurdzinski
+compress_original|compress|--compress --labels=sets
+compress_compact|compress|--compress --priority-mode=compact
+compress_jurdzinski|compress|--compress --view=jurdzinski
+shave_partial|shave_partial|--shave=loops --tree-k=1 --labels=sets
+shave_stats_lifting|shave_single|--algorithm=lifting --shave=all --compress --stats --labels=none
+shave_stats_zielonka|shave_single|--algorithm=zielonka --shave=all --compress --stats --labels=none
+CASES
+
 for ct in "${GENSTREE_CASES[@]}"; do
   read -r k t h <<< "$ct"
   name="k${k}_t${t}_h${h}.out"

@@ -81,6 +81,17 @@ pg_attractor_dep = declare_dependency(
   link_with : pg_attractor_lib,
 )
 
+pg_preprocess_lib = static_library(
+  'pg_preprocess',
+  'src/pg_preprocess.c',
+  dependencies : pg_attractor_dep,
+)
+pg_preprocess_dep = declare_dependency(
+  dependencies : pg_attractor_dep,
+  include_directories : source_includes,
+  link_with : pg_preprocess_lib,
+)
+
 ad_tree_lib = static_library(
   'ad_tree',
   'src/ad_tree.c',
@@ -158,7 +169,7 @@ pms2dot = executable('pms2dot',
 pg2adot = executable(
   'pg2adot',
   'src/pg2adot.c',
-  dependencies : [ad_lift_dep, zielonka_dep, ad_tree_dot_dep, cli_version_dep],
+  dependencies : [ad_lift_dep, zielonka_dep, ad_tree_dot_dep, cli_version_dep, pg_preprocess_dep],
   install : true,
 )
 
@@ -234,6 +245,18 @@ test_pg_attractor_exe = executable(
 )
 test('test_pg_attractor', test_pg_attractor_exe)
 
+test_pg_preprocess_exe = executable(
+  'test_pg_preprocess',
+  ['tests/test_pg_preprocess.c', 'tests/reference_solver.c'],
+  dependencies : [pg_preprocess_dep, ad_lift_dep, zielonka_dep],
+)
+test('test_pg_preprocess', test_pg_preprocess_exe,
+  workdir : meson.project_source_root())
+foreach rule : ['loops', 'wcwc', 'all']
+  test('test_pg_preprocess_scaling_' + rule, test_pg_preprocess_exe,
+    args : [rule], timeout : 30)
+endforeach
+
 test_zielonka_exe = executable(
   'test_zielonka',
   ['tests/test_zielonka.c', 'tests/reference_solver.c'],
@@ -294,6 +317,10 @@ test(
   args : ['--algorithm=bad'],
   should_fail : true,
 )
+foreach invalid_shave : ['bad', 'loops,', 'all,loops', 'none,wcwc']
+  test('pg2adot_rejects_shave_' + invalid_shave, pg2adot,
+    args : ['--shave=' + invalid_shave], should_fail : true)
+endforeach
 test(
   'pg2adot_rejects_zero_tree_k',
   pg2adot,
@@ -386,6 +413,48 @@ test(
 
 # Regression Tests
 run_single_test = find_program('tests/run-single-test.sh')
+
+preprocess_cases = {
+  'shave_loops' : ['shave_loops', ['--shave=loops', '--labels=sets']],
+  'shave_wcwc' : ['shave_wcwc', ['--shave=wcwc', '--labels=sets']],
+  'shave_single' : ['shave_single', ['--shave=single', '--labels=sets']],
+  'shave_relative' : ['shave_wcwc', [
+    '--shave=loops,wcwc', '--view=tree-relative', '--labels=sets',
+    '--max-set-items=2',
+  ]],
+  'shave_empty_jurdzinski' : ['shave_single', ['--shave=all', '--view=jurdzinski']],
+  'compress_original' : ['compress', ['--compress', '--labels=sets']],
+  'compress_compact' : ['compress', ['--compress', '--priority-mode=compact']],
+  'compress_jurdzinski' : ['compress', ['--compress', '--view=jurdzinski']],
+}
+foreach name, arguments : preprocess_cases
+  foreach algorithm : ['lifting', 'zielonka']
+    test('pg2adot_' + name + '_' + algorithm, run_single_test,
+      args : [pg2adot, 'tests/golden/pg2adot_' + name + '.out',
+        'tests/actual/pg2adot_' + name + '_' + algorithm + '.out',
+        '@tests/games/' + arguments[0] + '.pg', '--algorithm=' + algorithm] + arguments[1],
+      workdir : meson.project_source_root())
+  endforeach
+endforeach
+foreach algorithm : ['lifting', 'zielonka']
+  test('pg2adot_shave_stats_' + algorithm, run_single_test,
+    args : [pg2adot, 'tests/golden/pg2adot_shave_stats_' + algorithm + '.out',
+      'tests/actual/pg2adot_shave_stats_' + algorithm + '.out',
+      '@tests/games/shave_single.pg', '--algorithm=' + algorithm,
+      '--shave=all', '--compress', '--stats', '--labels=none'],
+    workdir : meson.project_source_root())
+endforeach
+test('pg2adot_shave_empty_adaptive', run_single_test,
+  args : [pg2adot, 'tests/golden/pg2adot_shave_single.out',
+    'tests/actual/pg2adot_shave_empty_adaptive.out',
+    '@tests/games/shave_single.pg', '--shave=single', '--adaptive-t',
+    '--max-host-leaves=0', '--labels=sets'],
+  workdir : meson.project_source_root())
+test('pg2adot_shave_partial', run_single_test,
+  args : [pg2adot, 'tests/golden/pg2adot_shave_partial.out',
+    'tests/actual/pg2adot_shave_partial.out', '@tests/games/shave_partial.pg',
+    '--shave=loops', '--tree-k=1', '--labels=sets'],
+  workdir : meson.project_source_root())
 
 test(
   'pgfilt_sparse_summary',
@@ -930,6 +999,14 @@ test(
 
 dot_program = find_program('dot', required : false)
 if dot_program.found()
+  foreach name, arguments : preprocess_cases
+    test('pg2adot_' + name + '_dot_syntax', dot_program,
+      args : ['-Tdot', '-o', '/dev/null',
+        files('tests/golden/pg2adot_' + name + '.out')])
+  endforeach
+  test('pg2adot_shave_partial_dot_syntax', dot_program,
+    args : ['-Tdot', '-o', '/dev/null',
+      files('tests/golden/pg2adot_shave_partial.out')])
   test(
     'pg2adot_counts_dot_syntax',
     dot_program,

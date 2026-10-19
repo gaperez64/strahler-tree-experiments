@@ -18,7 +18,7 @@ render(PGGame const *game, ADResult const *result, ADDotPlayer const player,
   FILE *stream = open_memstream(&buffer, &length);
   assert(stream != nullptr);
   assert(ad_tree_write_dot(stream, game, result, player, view, labels,
-                           max_items, priority_map));
+                           max_items, priority_map, nullptr));
   assert(fclose(stream) == 0);
   assert(buffer != nullptr && length == strlen(buffer));
   return buffer;
@@ -197,7 +197,7 @@ int main(void) {
 
   assert(!ad_tree_write_dot(nullptr, &game, &result, AD_DOT_PLAYER_BOTH,
                             AD_DOT_VIEW_CLASSIC, AD_DOT_LABEL_COUNTS, 1,
-                            nullptr));
+                            nullptr, nullptr));
   assert(pg_priority_map_restore(&priority_map, &game));
   ad_result_destroy(&result);
   pg_set_destroy(&domain);

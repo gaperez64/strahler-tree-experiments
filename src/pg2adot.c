@@ -11,6 +11,7 @@
 #include "ad_lift_solve.h"
 #include "ad_tree_dot.h"
 #include "cli_version.h"
+#include "pg_preprocess.h"
 #include "zielonka.h"
 
 enum {
@@ -48,6 +49,9 @@ static void usage(FILE *out, char *argv[static 1]) {
       "  --priority-mode=original|compact\n"
       "                               default: original\n"
       "  --algorithm=lifting|zielonka default: lifting\n"
+      "  --shave=loops,wcwc,single|all|none  default: none\n"
+      "  --compress                   merge consecutive same-parity "
+      "priorities\n"
       "  --tree-k=K                   lift in U^K_{t,H}; may be partial\n"
       "  --adaptive-t                 raise t until the result is complete;\n"
       "                               --tree-k=K caps K\n"
@@ -202,6 +206,8 @@ int main(int argc, char *argv[argc + 1]) {
     OPTION_TREE_FILE,
     OPTION_MAX_HOST_LEAVES,
     OPTION_STATS,
+    OPTION_SHAVE,
+    OPTION_COMPRESS,
   };
   static struct option const options[] = {
       {"help", no_argument, nullptr, 'h'},
@@ -219,6 +225,8 @@ int main(int argc, char *argv[argc + 1]) {
       {"tree-file", required_argument, nullptr, OPTION_TREE_FILE},
       {"max-host-leaves", required_argument, nullptr, OPTION_MAX_HOST_LEAVES},
       {"stats", no_argument, nullptr, OPTION_STATS},
+      {"shave", required_argument, nullptr, OPTION_SHAVE},
+      {"compress", no_argument, nullptr, OPTION_COMPRESS},
       {nullptr, 0, nullptr, 0},
   };
 
@@ -243,6 +251,7 @@ int main(int argc, char *argv[argc + 1]) {
   bool host_limit_given = false;
   bool print_stats = false;
   bool verify = true;
+  PGPreprocessOptions preprocess_options = {0};
   opterr = 0;
   int option = 0;
   while ((option = getopt_long(argc, argv, "h", options, nullptr)) != -1) {
@@ -350,6 +359,15 @@ int main(int argc, char *argv[argc + 1]) {
     case OPTION_STATS:
       print_stats = true;
       break;
+    case OPTION_SHAVE:
+    case OPTION_COMPRESS:
+      if (!pg_preprocess_parse_option(
+              &preprocess_options,
+              option == OPTION_SHAVE ? "shave" : "compress", optarg)) {
+        fputs("Invalid preprocessing option\n", stderr);
+        return EXIT_USAGE;
+      }
+      break;
     default:
       usage(stderr, argv);
       return EXIT_USAGE;
@@ -452,37 +470,55 @@ int main(int argc, char *argv[argc + 1]) {
     return EXIT_SOLVER;
   }
 
-  PGPriorityMap priority_map = {0};
-  PGSet domain = {0};
+  PGPreprocessResult preprocessed = {0};
   ADResult result = {0};
-  if (!pg_priority_map_build(&game, &priority_map) ||
-      !pg_priority_map_apply(&priority_map, &game)) {
-    fputs("Failed to compact the game priorities\n", stderr);
+  if (!pg_preprocess(&game, &preprocess_options, &preprocessed)) {
+    fputs("Failed to preprocess the game\n", stderr);
     status = EXIT_SOLVER;
     goto cleanup;
   }
-  if (!pg_set_init(&domain, game.vertex_count)) {
-    fputs("Failed to allocate the game domain\n", stderr);
+  if (verify && !pg_preprocess_verify(&game, &preprocessed)) {
+    fputs("Verification failed: invalid shaved regions\n", stderr);
     status = EXIT_SOLVER;
     goto cleanup;
   }
-  pg_set_fill(&domain);
+  PGSet const *domain = &preprocessed.active;
+  if (print_stats &&
+      (preprocess_options.shave != 0 || preprocess_options.compress)) {
+    fprintf(stderr,
+            "preprocess: residual=%zu shaved_even=%zu shaved_odd=%zu "
+            "single=%zu loops=%zu wcwc=%zu\n",
+            pg_set_count(domain), pg_set_count(&preprocessed.won[PG_EVEN]),
+            pg_set_count(&preprocessed.won[PG_ODD]),
+            preprocessed.shaved[PG_SHAVE_SINGLE][0] +
+                preprocessed.shaved[PG_SHAVE_SINGLE][1],
+            preprocessed.shaved[PG_SHAVE_LOOPS][0] +
+                preprocessed.shaved[PG_SHAVE_LOOPS][1],
+            preprocessed.shaved[PG_SHAVE_WCWC][0] +
+                preprocessed.shaved[PG_SHAVE_WCWC][1]);
+  }
 
   if (algorithm == ALGORITHM_ZIELONKA) {
     ZielonkaError solver_error = {0};
-    if (!zielonka_decompose(&game, &domain, game.max_priority, &result,
-                            &solver_error)) {
+    uint64_t maximum = 0;
+    for (size_t vertex = pg_set_next(domain, 0); vertex != SIZE_MAX;
+         vertex = pg_set_next(domain, vertex + 1)) {
+      if (game.vertices[vertex].priority > maximum) {
+        maximum = game.vertices[vertex].priority;
+      }
+    }
+    if (!zielonka_decompose(&game, domain, maximum, &result, &solver_error)) {
       fprintf(stderr, "Solver failed: %s\n", solver_error.message);
       status = EXIT_SOLVER;
       goto cleanup;
     }
     if (print_stats) {
-      write_zielonka_stats(&result, game.vertex_count);
+      write_zielonka_stats(&result, pg_set_count(domain));
     }
   } else {
     ADLiftSolveStats stats = {0};
     ADLiftError lift_error = {0};
-    if (!ad_lift_solve(&game, &domain, &lift_options, &result, &stats,
+    if (!ad_lift_solve(&game, domain, &lift_options, &result, &stats,
                        &lift_error)) {
       fprintf(stderr, "Solver failed: %s\n", lift_error.message);
       if (stats.budget_exhausted) {
@@ -496,14 +532,16 @@ int main(int argc, char *argv[argc + 1]) {
     if (stats.budget_exhausted) {
       fprintf(stderr, "Warning: %s; the result is partial\n",
               lift_error.message);
-    } else if (lift_options.mode == AD_LIFT_HOST_ADAPTIVE &&
+    } else if (stats.vertices != 0 &&
+               lift_options.mode == AD_LIFT_HOST_ADAPTIVE &&
                stats.adaptive_complete) {
       fprintf(stderr,
               "Adaptive t: complete at t=%zu (Even complete at t=%zu, Odd "
               "complete at t=%zu)\n",
               stats.first_complete_t, stats.player[PG_EVEN].first_full_t,
               stats.player[PG_ODD].first_full_t);
-    } else if (lift_options.mode == AD_LIFT_HOST_ADAPTIVE) {
+    } else if (stats.vertices != 0 &&
+               lift_options.mode == AD_LIFT_HOST_ADAPTIVE) {
       fprintf(stderr,
               "Adaptive t: incomplete at t=%zu with K capped at %zu; the "
               "result is partial\n",
@@ -518,8 +556,8 @@ int main(int argc, char *argv[argc + 1]) {
     ADVerifyError verify_error = {0};
     bool const verified =
         result.kind == AD_RESULT_COMPLETE
-            ? ad_result_verify_complete(&game, &domain, &result, &verify_error)
-            : ad_result_verify_partial(&game, &domain, &result, &verify_error);
+            ? ad_result_verify_complete(&game, domain, &result, &verify_error)
+            : ad_result_verify_partial(&game, domain, &result, &verify_error);
     if (!verified) {
       fprintf(stderr, "Verification failed: %s\n", verify_error.message);
       status = EXIT_SOLVER;
@@ -540,24 +578,18 @@ int main(int argc, char *argv[argc + 1]) {
     }
   }
 
-  PGPriorityMap const *display_map =
-      priority_mode == PRIORITY_MODE_ORIGINAL ? &priority_map : nullptr;
+  PGPriorityMap const *display_map = priority_mode == PRIORITY_MODE_ORIGINAL
+                                         ? &preprocessed.priority_map
+                                         : nullptr;
   if (!ad_tree_write_dot(stdout, &game, &result, player, view, labels,
-                         max_set_items, display_map)) {
+                         max_set_items, display_map, preprocessed.won)) {
     fputs("Failed to write DOT output\n", stderr);
     status = EXIT_IO;
   }
 
 cleanup:
-  if (priority_map.entries != nullptr &&
-      !pg_priority_map_restore(&priority_map, &game) &&
-      status == EXIT_SUCCESS) {
-    fputs("Failed to restore the source priorities\n", stderr);
-    status = EXIT_SOLVER;
-  }
   ad_result_destroy(&result);
-  pg_set_destroy(&domain);
-  pg_priority_map_destroy(&priority_map);
+  pg_preprocess_destroy(&preprocessed);
   pg_game_destroy(&game);
   ordered_tree_destroy(host_tree);
   return status;

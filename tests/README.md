@@ -14,6 +14,11 @@ Meson builds the C unit tests and runs the command-line regression cases.
   construction, predecessor and successor CSR, replacement declarations,
   canonical round trips, and malformed inputs.
 - `test_pg_set.c` tests the owned dense-index bitset and its move semantics.
+- `test_pg_preprocess.c` checks shared option parsing, each shaving rule,
+  fixpoint iteration, full-game closure verification, compression bounds, and
+  residual lifting/Zielonka results against the exhaustive solver. Separate
+  30-second scaling cases exercise loops, wcwc, and all on 100,000-vertex games
+  with independent loops or wcwc candidates without a controlled cycle.
 - `test_pg_attractor.c` compares the predecessor-queue attractor against an
   independent fixed-point implementation on fixed and random subgames, and
   does the same for the reach-through-safe attractor with non-total safe sets,

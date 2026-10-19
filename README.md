@@ -108,7 +108,19 @@ name; the latter two read from standard input.
   tree. The default is `original`.
 - `--algorithm=lifting|zielonka` selects how the decompositions are built. The
   default is `lifting`; `zielonka` runs the enhanced Zielonka algorithm for
-  comparison. Only `--stats` of the options below applies to it.
+  comparison. Both algorithms support preprocessing, statistics and verification.
+- `--shave=LIST` solves and removes dominions before building either tree.
+  Use a comma list of `single` (all remaining priorities have one parity),
+  `loops` (winning self-loops, including forced losing-owner loops), and
+  `wcwc` (winner-controlled winning cycles), or `all` / `none` alone.
+  The default is `none`. Each discovered dominion is removed with its winner's
+  attractor in the current game. Rules run in the order single, loops, wcwc,
+  repeating to a fixpoint so removal can expose more opportunities.
+- `--compress` merges consecutive distinct priorities of the same parity,
+  following oink's priority compression. This is stronger than gap removal.
+  `--priority-mode` still controls only display: in `original` mode a merged
+  level shows its **largest original priority**, and an intervening empty
+  bound shows that priority plus the compact offset.
 - `--tree-k=K` lifts in the smaller Strahler host `U^K_{t,H}`. The result may
   be partial.
 - `--adaptive-t` lifts in `U^K_{t,H}` with `t = 0, 1, ...` and the largest
@@ -129,8 +141,11 @@ name; the latter two read from standard input.
 - `--stats` prints statistics to standard error. For lifting, these are the
   host of each player and its size, rounds, vertex lifts, vertices left at the
   top, and the size and Strahler number of each decomposition. For Zielonka,
-  they are the region sizes and the decomposition metrics.
-- `--no-verify` skips the decomposition checks and is intended for debugging.
+  they are the region sizes and the decomposition metrics. With preprocessing,
+  it also reports residual and shaved sizes and counts per rule, including
+  attracted vertices; a vertex is counted only against the rule that removed it.
+- `--no-verify` skips the decomposition and shaved-region closure checks and
+  is intended for debugging.
 
 By default, `pg2adot` lifts in a Strahler tree that is guaranteed to contain a
 decomposition of each winning region, so the result is complete. That host
@@ -142,6 +157,17 @@ exceeds the leaf limit, and `pg2adot` stops with an error. Use `--adaptive-t`,
 gaps do not add empty levels or exhaust the recursion limit. It still shows
 bounds on the original priority scale by default. Use
 `--priority-mode=compact` to show the internal bounds instead.
+
+With shaving, roots and tree metrics describe only the residual game. A shaded
+`shaved (Even)` / `shaved (Odd)` node attached to the corresponding root reports
+the solved vertices separately, including their IDs with `--labels=sets`.
+An empty residual is a complete result with no decomposition; shaved vertices
+count as won when deciding completeness. Verification checks the residual
+decomposition and, in the full game, that shaved regions are closed under their
+winner's attractor and that the loser cannot force an exit. The rules establish
+their winning parity. The implementation follows the behavior of
+[oink](https://github.com/trolando/oink) (Apache-2.0), using the shared attractor
+code for cycle searches rather than copying oink's SCC implementation.
 
 <details>
 <summary>How to read the trees</summary>

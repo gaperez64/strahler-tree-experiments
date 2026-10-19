@@ -589,12 +589,14 @@ write_node(FILE *out, PGGame const *game, PGSet const *domain,
 }
 
 [[nodiscard]] static bool write_empty(FILE *out, PGPlayer const player,
-                                      bool const attach, bool const partial) {
+                                      bool const attach, bool const partial,
+                                      bool const shaved) {
   char const *name = player == PG_EVEN ? "Even" : "Odd";
   char const *identifier = player == PG_EVEN ? "even_empty" : "odd_empty";
   if (fprintf(out, "  %s [label=<<B>%s</B>: %s>];\n", identifier, name,
-              partial ? "<I>D</I> = empty; no certified dominion"
-                      : "<I>W</I> = empty; no decomposition") < 0) {
+              shaved    ? "no residual decomposition; see shaved vertices"
+              : partial ? "<I>D</I> = empty; no certified dominion"
+                        : "<I>W</I> = empty; no decomposition") < 0) {
     return false;
   }
   return !attach || fprintf(out, "  result -> %s;\n", identifier) >= 0;
@@ -626,10 +628,30 @@ write_node(FILE *out, PGGame const *game, PGSet const *domain,
   return fputs(">];\n  result -> unresolved [style=dashed];\n", out) >= 0;
 }
 
+[[nodiscard]] static bool
+write_shaved(FILE *out, PGGame const *game, PGSet const *shaved,
+             char const *identifier, bool const empty_root,
+             ADDotLabels const labels, size_t const max_items) {
+  if (shaved == nullptr || pg_set_empty(shaved)) {
+    return true;
+  }
+  return fprintf(out,
+                 "  %s_shaved [style=\"dashed,filled\", fillcolor=lightgray, "
+                 "label=<<B>shaved (%s)</B>: %zu vertices",
+                 identifier, strcmp(identifier, "even") == 0 ? "Even" : "Odd",
+                 pg_set_count(shaved)) >= 0 &&
+         (labels != AD_DOT_LABEL_SETS ||
+          (fputs("<BR/>", out) >= 0 &&
+           write_set(out, game, shaved, max_items))) &&
+         fprintf(out, ">];\n  %s%s -> %s_shaved [style=dashed];\n", identifier,
+                 empty_root ? "_empty" : "", identifier) >= 0;
+}
+
 bool ad_tree_write_dot(FILE *out, PGGame const *game, ADResult const *result,
                        ADDotPlayer const player, ADDotView const view,
                        ADDotLabels const labels, size_t const max_set_items,
-                       PGPriorityMap const *priority_map) {
+                       PGPriorityMap const *priority_map,
+                       PGSet const shaved[2]) {
   if (out == nullptr || game == nullptr || result == nullptr ||
       player > AD_DOT_PLAYER_ODD || view > AD_DOT_VIEW_JURDZINSKI ||
       labels > AD_DOT_LABEL_NONE || result->kind > AD_RESULT_PARTIAL) {
@@ -657,7 +679,9 @@ bool ad_tree_write_dot(FILE *out, PGGame const *game, ADResult const *result,
     ADNode const *root = result->decomposition[candidate];
     PGSet const *region = &result->region[candidate];
     if (root == nullptr) {
-      succeeded = write_empty(out, (PGPlayer)candidate, both, partial);
+      succeeded =
+          write_empty(out, (PGPlayer)candidate, both, partial,
+                      shaved != nullptr && !pg_set_empty(&shaved[candidate]));
     } else {
       succeeded =
           (!both || fprintf(out, "  result -> %s;\n", identifier) >= 0) &&
@@ -668,6 +692,10 @@ bool ad_tree_write_dot(FILE *out, PGGame const *game, ADResult const *result,
                                    view, labels, max_set_items, true, partial,
                                    priority_map));
     }
+    succeeded = succeeded &&
+                write_shaved(
+                    out, game, shaved == nullptr ? nullptr : &shaved[candidate],
+                    identifier, root == nullptr, labels, max_set_items);
   }
   succeeded =
       succeeded &&
