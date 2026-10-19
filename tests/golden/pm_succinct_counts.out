@@ -1,0 +1,17 @@
+digraph progress_measures {
+  ordering=out;
+  node [shape=box];
+  result [label="result (synthetic)"];
+  result -> n1;
+  n1 [label="Even (complete)\nsuccinct bits=1 depth=1\nno non-top measures\n|V|=0"];
+  result -> n2;
+  n2 [label="Odd (complete)\nsuccinct bits=1 depth=2\np=2"];
+  n2 -> n3 [label="0"];
+  n3 [label="p=0"];
+  n3 -> n4 [label=""];
+  n4 [label="\n|V|=1"];
+  n2 -> n5 [label=""];
+  n5 [label="p=0"];
+  n5 -> n6 [label="0"];
+  n6 [label="\n|V|=2"];
+}

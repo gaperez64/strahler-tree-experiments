@@ -80,6 +80,6 @@ jobs:
           fi
           name="strahler-tree-experiments-$version-$PLATFORM"
           meson install -C build-release --no-rebuild --destdir "$PWD/package/$name"
-          cp README.md LICENSE "package/$name/"
+          cp README.md LICENSE LICENSE-APACHE-2.0 "package/$name/"
           tar -czf "$name.tar.gz" -C package "$name"
           gh release upload "$RELEASE_TAG" "$name.tar.gz" --clobber --repo "$GITHUB_REPOSITORY"

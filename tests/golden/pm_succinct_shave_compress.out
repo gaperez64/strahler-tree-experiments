@@ -1,0 +1,15 @@
+digraph progress_measures {
+  ordering=out;
+  node [shape=box];
+  result [label="result (synthetic)"];
+  result -> n1;
+  n1 [label="Even (complete)\nsuccinct bits=1 depth=1\np=3"];
+  n1 -> n2 [label="0"];
+  n2 [label="\nV={0,3,5}"];
+  n1 -> n3 [label=""];
+  n3 [label="\nV={1,2,4}"];
+  n4 [style=filled, fillcolor=lightgrey, label="shaved (Even)\nW={6}"];
+  n1 -> n4 [style=dashed];
+  result -> n5;
+  n5 [label="Odd (complete)\nsuccinct bits=1 depth=1\nno non-top measures\nV={}"];
+}

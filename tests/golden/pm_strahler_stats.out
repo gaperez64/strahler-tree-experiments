@@ -1,0 +1,5 @@
+strahler: round=2 result=complete unresolved=0
+even: k=2 t=1 depth=1 vertices=2 lifts=1 attempts=3 non_top=2 top=0 attracted=0
+odd: k=2 t=1 depth=2 vertices=2 lifts=14 attempts=16 non_top=0 top=2 attracted=0
+even: 0|00|
+odd: 

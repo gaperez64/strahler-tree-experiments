@@ -27,11 +27,11 @@ Valgrind separately. To run the memory check locally after building:
 ci/check-valgrind.sh build
 ```
 
-Published GitHub releases build and test all six commands, including
+Published GitHub releases build and test all seven commands, including
 `lenstree`, on Ubuntu 24.04 x86_64 and macOS 15 arm64 with Apple Clang.
 The release assets are `strahler-tree-experiments-<version>-linux-x86_64.tar.gz`
 and `strahler-tree-experiments-<version>-macos-arm64.tar.gz`, each containing
-`bin/`, this README, and LICENSE. The release workflow can also be dispatched
+`bin/`, this README, LICENSE, and LICENSE-APACHE-2.0. The release workflow can also be dispatched
 with an existing release tag to rebuild and replace its assets. Update the
 Meson project version before tagging so `--version` matches the release.
 
@@ -317,6 +317,82 @@ The repository includes small sample games under `tests/games/`, for example:
 ./build/pg2adot tests/games/ordered_two_children.pg
 ```
 
+### `pg2pmdot`
+
+Lift Strahler or succinct progress measures and draw the ordered prefix tree
+of each player's distinct non-top final measures. Leaves show the vertices
+holding that measure. The tool reads a PGSolver file, `-`, or standard input.
+
+```sh
+./build/pg2pmdot --algorithm=strahler --labels=sets game.pg > measures.dot
+./build/pg2pmdot --algorithm=succinct --stats game.pg > measures.dot
+./build/pg2pmdot --k=1 --t=1 game.pg > partial.dot
+./build/pg2pmdot --algorithm=succinct --bits=0 game.pg > partial.dot
+./build/pg2pmdot --format=leaves game.pg
+./build/pg2pmdot --incremental --shave=all --compress game.pg
+```
+
+`--algorithm=strahler|succinct` defaults to `strahler`. Both algorithms share
+`pg2adot`'s `--player`, `--labels`, `--max-set-items`, `--priority-mode`,
+`--shave`, `--compress`, `--stats`, `--no-verify`, and `--version` options.
+Priorities are made gap-free internally. DOT's `p` labels identify the counter
+priority of each component, on the original scale by default. Preprocessing
+keeps shaved vertices in separate shaded nodes; they have no progress measure.
+An empty residual produces empty trees and empty leaf streams.
+
+By default, each player starts from bottom on the full residual game at every
+parameter choice. Neither player's dominion is removed before the other's
+run. Search stops at the first choice whose non-top sets cover the residual.
+Oink's counter player is the **opponent** of the winner named on our tree:
+Even's tree uses odd counters and Odd's tree uses even counters.
+
+Strahler search starts at `(k,t)=(1,1)` and uses Oink's priority queue with its
+integer `max(k,t)/min(k,t)` comparison, pushing `(k+1,t)` before `(k,t+1)`.
+`t_max=floor(log2(n))`. Full-game mode bounds `k` by
+`min(t_max+2, max_depth+1)`, including the measure tree's extra root.
+**This is one level larger than Oink's outer search limit.** Its smaller
+limit can depend on attraction/removal to solve vertices that never receive
+a finite measure, even at the final parameters. For example, after
+`--compress`, `strahler_two.pg` needs `k=2` to give every winner a measure,
+although Oink's outer limit is `k=1`. Each run caps `k` at its own
+`depth+1`. Succinct search uses Oink's **bounded** schedule, starting at one
+bit and increasing through `ceil(log2(n))`; zero/one-vertex games also support
+a zero-bit budget. Depth is the number of counter-parity levels, including
+empty intervening levels.
+
+`--k=K --t=T` fixes Strahler parameters; `--bits=B` fixes succinct's budget.
+These results may be partial. Roots say `partial` and, with `--player=both`,
+a dashed Unresolved node lists the remaining vertices. `--stats` reports the
+chosen parameters, depths, vertex counts, lifts, attempts and top counts on
+standard error. Verification checks the actual truncated progress condition
+on every edge (one successor for the winner, all for its opponent) and checks
+dominion closure using the shared attractor code.
+
+`--incremental` follows Oink's removal semantics: run odd counters first,
+remove Even's non-top dominion and its attractor, then run even counters on
+the remaining game. It prints a separate DOT graph for every round. Roots
+show that round's parameters; an `attracted` node lists removed vertices that
+have no finite measure. Succinct repeats a bit budget if it made progress;
+Strahler keeps Oink's original outer bound
+`k_max=min(t_max+2,max_depth)` and can end partial when that search is
+exhausted. Fixed parameters request just one round. Each graph describes that
+round's residual, rather than a cumulative winning tree.
+
+`--format=leaves` prints `even: ` and `odd: ` lines, with `e` for an empty
+bitstring and `|` after each distinct measure. Remove the player prefix to
+feed one line to `pms2dot --reorder`. The raw streams retain Oink's first
+occurrence order in priority-sorted vertex order; equal-priority vertices are
+ordered by external ID. DOT sorts branches in the paper's order
+`0β < ε < 1β`. Oink's unspecified tie ordering, its preprocessing, and its
+last-residual-only printer can make other byte comparisons differ. Incremental
+leaf output adds `# round ...` parameter lines before each pair of streams.
+
+An optional live differential test compares both backends with pinned Oink
+on seeded random games and quick examples. Set `OINK_BIN` and run
+`meson test -C build oink-oracle --print-errorlogs`; see
+[the oracle instructions](tests/README.md#live-oink-oracle) for the required
+upstream printer fixes and known Strahler search limit.
+
 ### `str-tree`
 
 Check p-level successors in the tree compiled into `src/str-tree.cc`.
@@ -407,3 +483,23 @@ before `c`. This makes each `S_i` an opponent trap in the remaining vertices
 and each `A_i` its attractor. `ad_lift_solve` checks the labelling directly
 with `ad_lift_verify` and the materialized trees with both `ad_tree_verify`
 and `ad_tree_relative_verify`.
+
+## NOTICE
+
+The following files are derived from [Oink](https://github.com/trolando/oink)
+and [Vanessa Flügel's fork](https://github.com/vfluegel/oink), branch
+`print-pms` (checkout `51c2640fe650fd18d9331cfe5133cf3605a98c31`; tree printing
+introduced in `504081d`):
+
+- `src/pm_lift.c`
+- `src/pm_solve.c`
+- `src/pm_internal.h`
+- `src/strpm.c`
+- `src/sspm.c`
+
+Copyright 2017–2018 Tom van Dijk, Johannes Kepler University Linz.
+Changes: ported to C23 and modified for tree output. These files remain
+Apache-2.0; see [LICENSE-APACHE-2.0](LICENSE-APACHE-2.0). Apache-2.0 → MIT
+relicensing requires the copyright holders' consent; that consent has not
+been obtained. The original CLI, public interface, tree output, shared modules,
+and tests remain under this repository's MIT license.

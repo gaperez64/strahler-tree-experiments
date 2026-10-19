@@ -1,0 +1,32 @@
+digraph progress_measures {
+  ordering=out;
+  node [shape=box];
+  label="round 1";
+  result [label="result (synthetic; partial)"];
+  result -> n1;
+  n1 [label="Even (partial)\nstrahler k=1 t=1 depth=2\np=3"];
+  n1 -> n2 [label="0"];
+  n2 [label="p=1"];
+  n2 -> n3 [label=""];
+  n3 [label="\nV={0,3}"];
+  n4 [style=filled, fillcolor=lightgrey, label="attracted (Even)\nW={4}"];
+  n1 -> n4 [style=dashed];
+  result -> n5;
+  n5 [label="Odd (partial)\nstrahler k=1 t=1 depth=2\nno non-top measures\nV={}"];
+  unresolved [style=dashed, label="Unresolved\nU={1,2}"];
+  result -> unresolved [style=dashed];
+}
+digraph progress_measures {
+  ordering=out;
+  node [shape=box];
+  label="round 2";
+  result [label="result (synthetic)"];
+  result -> n1;
+  n1 [label="Even (complete)\nstrahler k=2 t=1 depth=2\np=3"];
+  n1 -> n2 [label="00"];
+  n2 [label="p=1"];
+  n2 -> n3 [label=""];
+  n3 [label="\nV={1,2}"];
+  result -> n4;
+  n4 [label="Odd (complete)\nstrahler k=2 t=1 depth=2\nno non-top measures\nV={}"];
+}

@@ -1,0 +1,41 @@
+--- a/src/solvers/strpm.cpp
++++ b/src/solvers/strpm.cpp
+@@ -919,6 +919,9 @@
+         initial_d[i] = initial_d[i-1] + 1;
+     }
+     pm_d = std::vector<LevVec> (nodecount(), initial_d);
++    for (int v=0; v<nodecount(); v++) {
++        if (disabled[v]) pm_d[v][0] = -1;
++    }
+ 
+ #ifndef NDEBUG
+     if (trace >= 1)
+--- a/src/solvers/sspm.cpp
++++ b/src/solvers/sspm.cpp
+@@ -599,6 +599,9 @@
+     // initialize progress measures
+     // pm_b.reset(); // standard set to 0 already
+     memset(pm_d, 0, sizeof(int[l*nodecount()])); // every bit in the top ( = min )
++    for (int v=0; v<nodecount(); v++) {
++        if (disabled[v]) pm_d[l*v] = -1;
++    }
+ 
+     // lift_counters = new uint64_t[nodecount()];
+     // memset(lift_counters, 0, sizeof(uint64_t[nodecount()]));
+@@ -695,6 +698,8 @@
+     }
+     */
+ 
++    print_full_pm(logger);
++
+     delete[] pm_d;
+     delete[] tmp_d;
+     delete[] best_d;
+@@ -765,7 +770,6 @@
+     }
+ 
+     logger << "solved with " << lift_count << " lifts, " << lift_attempt << " lift attempts, max l " << i << "." << std::endl;
+-    print_full_pm(logger);
+ }
+ 
+ }

@@ -136,15 +136,34 @@ ad_lift_dep = declare_dependency(
   link_with : ad_lift_lib,
 )
 
+pg_dot_lib = static_library('pg_dot', 'src/pg_dot.c',
+  dependencies : [pg_game_dep, pg_set_dep])
+pg_dot_dep = declare_dependency(
+  dependencies : [pg_game_dep, pg_set_dep],
+  include_directories : source_includes,
+  link_with : pg_dot_lib,
+)
+
 ad_tree_dot_lib = static_library(
   'ad_tree_dot',
   'src/ad_tree_dot.c',
-  dependencies : ad_tree_dep,
+  dependencies : [ad_tree_dep, pg_dot_dep],
 )
 ad_tree_dot_dep = declare_dependency(
-  dependencies : ad_tree_dep,
+  dependencies : [ad_tree_dep, pg_dot_dep],
   include_directories : source_includes,
   link_with : ad_tree_dot_lib,
+)
+
+pm_lift_lib = static_library(
+  'pm_lift',
+  ['src/pm_lift.c', 'src/pm_solve.c', 'src/strpm.c', 'src/sspm.c'],
+  dependencies : pg_attractor_dep,
+)
+pm_lift_dep = declare_dependency(
+  dependencies : pg_attractor_dep,
+  include_directories : source_includes,
+  link_with : pm_lift_lib,
 )
 
 # Executables
@@ -172,6 +191,17 @@ pg2adot = executable(
   dependencies : [ad_lift_dep, zielonka_dep, ad_tree_dot_dep, cli_version_dep, pg_preprocess_dep],
   install : true,
 )
+
+pm_tree_dot_lib = static_library('pm_tree_dot', 'src/pm_tree_dot.c',
+  dependencies : [pm_lift_dep, ordered_tree_dep, pg_dot_dep])
+pm_tree_dot_dep = declare_dependency(
+  dependencies : [pm_lift_dep, ordered_tree_dep, pg_dot_dep],
+  include_directories : source_includes,
+  link_with : pm_tree_dot_lib,
+)
+pg2pmdot = executable('pg2pmdot', 'src/pg2pmdot.c',
+  dependencies : [pm_tree_dot_dep, pg_preprocess_dep, cli_version_dep],
+  install : true)
 
 if not lenstree_option.disabled() and boost_dep.found()
   lenstree = executable('lenstree',
@@ -1202,3 +1232,78 @@ foreach ec : error_cases
     args: [exe, 'tests/golden/' + name + '.out', 'tests/actual/' + name + '.out', 'EMPTY'] + args,
     workdir: meson.project_source_root())
 endforeach
+
+
+test_pm_lift_exe = executable('test_pm_lift', 'tests/test_pm_lift.c',
+  dependencies : [pm_lift_dep, pg_preprocess_dep, zielonka_dep])
+test('test_pm_lift', test_pm_lift_exe, workdir : meson.project_source_root())
+
+test('pg2pmdot_help', pg2pmdot, args : ['--help'])
+test('pg2pmdot_version', check_version,
+  args : [pg2pmdot, meson.project_version()])
+foreach bad : [
+  ['--algorithm=bad'], ['--format=bad'], ['--player=bad'], ['--labels=bad'],
+  ['--priority-mode=bad'], ['--shave=loops,'], ['--k=0', '--t=0'], ['--k=1'],
+  ['--t=1'], ['--bits=1'], ['--algorithm=succinct', '--k=1', '--t=1'],
+  ['--algorithm=succinct', '--bits=-1'], ['--k=999999999999999999999', '--t=1'],
+  ['--max-set-items=x'], ['--bits=x'], ['--k=1', '--t=x'],
+  ['--no-such-option'], ['one', 'two'], ['missing-file.pg'],
+]
+  test('pg2pmdot_rejects_' + '_'.join(bad), pg2pmdot,
+    args : bad, should_fail : true)
+endforeach
+
+pm_cases = {
+  'counts': ['tests/games/ordered_two_children.pg'],
+  'sets': ['--labels=sets', '--max-set-items=1', 'tests/games/strahler_two.pg'],
+  'none': ['--labels=none', 'tests/games/split_winners.pg'],
+  'leaves': ['--format=leaves', 'tests/games/pm_cycle.pg'],
+  'partial': ['--labels=sets', 'tests/games/strahler_two.pg'],
+  'partial_leaves': ['--format=leaves', 'tests/games/strahler_two.pg'],
+  'incremental': ['--incremental', '--labels=sets', 'tests/games/strahler_two.pg'],
+  'incremental_leaves': ['--incremental', '--format=leaves', 'tests/games/strahler_two.pg'],
+  'shave_compress': ['--shave=loops', '--compress', '--labels=sets', 'tests/games/shave_partial.pg'],
+  'shave_empty': ['--shave=all', '--compress', '--labels=sets', 'tests/games/shave_single.pg'],
+  'compress_original': ['--compress', '--labels=sets', 'tests/games/compress.pg'],
+  'compress_compact': ['--compress', '--priority-mode=compact', 'tests/games/compress.pg'],
+  'stats': ['--stats', '--format=leaves', 'tests/games/pm_cycle.pg'],
+  'preprocess_stats': ['--stats', '--format=leaves', '--shave=loops', '--compress', 'tests/games/shave_partial.pg'],
+}
+foreach algorithm : ['strahler', 'succinct']
+  foreach name, arguments : pm_cases
+    if name.startswith('partial')
+      arguments = (algorithm == 'strahler' ? ['--k=1', '--t=1'] : ['--bits=0']) + arguments
+    endif
+    test('pg2pmdot_' + algorithm + '_' + name, run_single_test,
+      args : [pg2pmdot, 'tests/golden/pm_' + algorithm + '_' + name + '.out',
+        'tests/actual/pm_' + algorithm + '_' + name + '.out', 'EMPTY',
+        '--algorithm=' + algorithm] + arguments,
+      workdir : meson.project_source_root())
+    if dot_program.found() and name not in ['leaves', 'partial_leaves', 'incremental_leaves', 'stats', 'preprocess_stats']
+      test('pg2pmdot_' + algorithm + '_' + name + '_dot_syntax', dot_program,
+        args : ['-Tdot', '-o', '/dev/null', files('tests/golden/pm_' + algorithm + '_' + name + '.out')])
+    endif
+  endforeach
+  test('pg2pmdot_' + algorithm + '_stdin', run_single_test,
+    args : [pg2pmdot, 'tests/golden/pm_' + algorithm + '_leaves.out',
+      'tests/actual/pm_' + algorithm + '_stdin.out', '@tests/games/pm_cycle.pg',
+      '--algorithm=' + algorithm, '--format=leaves', '-'],
+    workdir : meson.project_source_root())
+  test('pg2pmdot_' + algorithm + '_no_verify', run_single_test,
+    args : [pg2pmdot, 'tests/golden/pm_' + algorithm + '_leaves.out',
+      'tests/actual/pm_' + algorithm + '_no_verify.out', '@tests/games/pm_cycle.pg',
+      '--algorithm=' + algorithm, '--format=leaves', '--no-verify'],
+    workdir : meson.project_source_root())
+  test('pg2pmdot_' + algorithm + '_oracle', find_program('tests/check-pm-oracle.sh'),
+    args : [pg2pmdot, algorithm, 'tests/golden/oink_' + (algorithm == 'strahler' ? 'strpm' : 'sspm') + '_cycle.out'],
+    workdir : meson.project_source_root())
+endforeach
+
+python3 = find_program('python3', required : false)
+if python3.found()
+  # Exit 77 skips this live oracle unless OINK_BIN is set at test time.
+  test('oink-oracle', python3,
+    args : [files('scripts/compare_oink.py'), pg2pmdot,
+      '--failures-dir', meson.current_build_dir() / 'oink-failures'],
+    suite : 'oracle', timeout : 600)
+endif

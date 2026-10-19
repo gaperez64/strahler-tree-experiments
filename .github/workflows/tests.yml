@@ -31,7 +31,52 @@ jobs:
         run: shellcheck ci/*.sh tests/*.sh
 
       - name: Check Python syntax
-        run: python3 -m py_compile src/convert_out.py
+        run: python3 -m py_compile src/convert_out.py scripts/compare_oink.py
+
+  oink-oracle:
+    name: Live Oink progress-measure oracle
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang-18
+      CXX: clang++-18
+      TMPDIR: ${{ runner.temp }}
+      OINK_BIN: ${{ runner.temp }}/oink-build/oink
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 cmake ninja-build pipx libboost-filesystem-dev libboost-iostreams-dev libboost-random-dev libboost-regex-dev
+          pipx install meson==1.8.5
+
+      - name: Build pinned print-pms Oink
+        run: |
+          git clone --branch print-pms https://github.com/vfluegel/oink.git "$TMPDIR/oink-src"
+          git -C "$TMPDIR/oink-src" checkout --detach 51c2640fe650fd18d9331cfe5133cf3605a98c31
+          # Fix only upstream printer defects; see tests/README.md.
+          git -C "$TMPDIR/oink-src" apply "$GITHUB_WORKSPACE/scripts/oink-print-pms.patch"
+          cmake -S "$TMPDIR/oink-src" -B "$TMPDIR/oink-build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DOINK_BUILD_TOOLS=OFF -DOINK_BUILD_TESTS=OFF
+          cmake --build "$TMPDIR/oink-build" --target solve --parallel 2
+
+      - name: Compare 500 seeded games per algorithm and quick examples
+        run: |
+          meson setup "$TMPDIR/strahler-build" --buildtype=debug -Dwerror=true -Dlenstree=disabled
+          meson compile -C "$TMPDIR/strahler-build" pg2pmdot
+          meson test -C "$TMPDIR/strahler-build" oink-oracle --print-errorlogs
+
+      - name: Upload mismatch reproducers
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oink-oracle-failures
+          path: ${{ runner.temp }}/strahler-build/oink-failures
+          if-no-files-found: ignore
+
+      - name: Remove scratch builds
+        if: always()
+        run: rm -rf "$TMPDIR/oink-src" "$TMPDIR/oink-build" "$TMPDIR/strahler-build"
 
   clang-build-test:
     name: Clang 18 build and tests

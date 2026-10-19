@@ -4,30 +4,8 @@
 #include <string.h>
 
 #include "ad_tree_dot.h"
+#include "pg_dot.h"
 #include "utils.h"
-
-[[nodiscard]] static bool write_set(FILE *stream, PGGame const *game,
-                                    PGSet const *set, size_t const max_items) {
-  if (fputc('{', stream) == EOF) {
-    return false;
-  }
-  size_t shown = 0;
-  size_t const total = pg_set_count(set);
-  for (size_t vertex = pg_set_next(set, 0);
-       vertex != SIZE_MAX && shown < max_items;
-       vertex = pg_set_next(set, vertex + 1)) {
-    if ((shown != 0 && fputc(',', stream) == EOF) ||
-        fprintf(stream, "%" PRIu64, game->vertices[vertex].external_id) < 0) {
-      return false;
-    }
-    shown++;
-  }
-  if (shown < total && fprintf(stream, "%s..., +%zu more",
-                               shown == 0 ? "" : ",", total - shown) < 0) {
-    return false;
-  }
-  return fputc('}', stream) != EOF;
-}
 
 [[nodiscard]] static bool begin_html_table(FILE *out) {
   return fputs("<<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"4\" "
@@ -228,11 +206,11 @@ write_classic_node_label(FILE *out, PGGame const *game, PGSet const *domain,
         fprintf(out,
                 "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>%s</I> = ", region) >=
             0 &&
-        write_set(out, game, domain, max_items) &&
+        pg_dot_write_set(out, game, domain, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>A</I> = ",
               out) >= 0 &&
-        write_set(out, game, &node->top_attractor, max_items) &&
+        pg_dot_write_set(out, game, &node->top_attractor, max_items) &&
         fputs("</TD></TR>", out) >= 0;
   }
   return succeeded && end_html_table(out);
@@ -283,19 +261,19 @@ write_classic_node_label(FILE *out, PGGame const *game, PGSet const *domain,
         fprintf(out,
                 "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>%s</I> = ", region) >=
             0 &&
-        write_set(out, game, outer, max_items) &&
+        pg_dot_write_set(out, game, outer, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>H</I> = ",
               out) >= 0 &&
-        write_set(out, game, &parts.highest, max_items) &&
+        pg_dot_write_set(out, game, &parts.highest, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>T</I> = ",
               out) >= 0 &&
-        write_set(out, game, &parts.top, max_items) &&
+        pg_dot_write_set(out, game, &parts.top, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>S</I> = ",
               out) >= 0 &&
-        write_set(out, game, &parts.side, max_items) &&
+        pg_dot_write_set(out, game, &parts.side, max_items) &&
         fputs("</TD></TR>", out) >= 0;
   }
   ad_tree_relative_parts_destroy(&parts);
@@ -318,12 +296,12 @@ write_classic_edge_label(FILE *out, PGGame const *game, ADChild const *child,
         fputs("<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>S</I><SUB><I>i</I>"
               "</SUB> = ",
               out) >= 0 &&
-        write_set(out, game, &child->trap, max_items) &&
+        pg_dot_write_set(out, game, &child->trap, max_items) &&
         fputs("</TD></TR>"
               "<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\"><I>A</I><SUB><I>i</I>"
               "</SUB> = ",
               out) >= 0 &&
-        write_set(out, game, &child->attractor, max_items) &&
+        pg_dot_write_set(out, game, &child->attractor, max_items) &&
         fputs("</TD></TR>", out) >= 0;
   }
   return succeeded && end_html_table(out);
@@ -344,7 +322,7 @@ write_tree_relative_edge_label(FILE *out, PGGame const *game,
   if (succeeded && labels == AD_DOT_LABEL_SETS) {
     succeeded = fputs("<TR><TD ALIGN=\"LEFT\"><I>R</I><SUB><I>i</I></SUB> = ",
                       out) >= 0 &&
-                write_set(out, game, &child->attractor, max_items) &&
+                pg_dot_write_set(out, game, &child->attractor, max_items) &&
                 fputs("</TD></TR>", out) >= 0;
   }
   return succeeded && end_html_table(out);
@@ -404,7 +382,7 @@ write_jurdzinski_part_label(FILE *out, PGGame const *game, PGSet const *set,
     return false;
   }
   if (labels == AD_DOT_LABEL_SETS &&
-      (fputs(" = ", out) < 0 || !write_set(out, game, set, max_items))) {
+      (fputs(" = ", out) < 0 || !pg_dot_write_set(out, game, set, max_items))) {
     return false;
   }
   if (metrics_root != nullptr && labels != AD_DOT_LABEL_NONE) {
@@ -622,7 +600,7 @@ write_node(FILE *out, PGGame const *game, PGSet const *domain,
            0) ||
       (labels == AD_DOT_LABEL_SETS &&
        (fputs(": <I>U</I> = ", out) < 0 ||
-        !write_set(out, game, &result->unresolved, max_items)))) {
+        !pg_dot_write_set(out, game, &result->unresolved, max_items)))) {
     return false;
   }
   return fputs(">];\n  result -> unresolved [style=dashed];\n", out) >= 0;
@@ -642,7 +620,7 @@ write_shaved(FILE *out, PGGame const *game, PGSet const *shaved,
                  pg_set_count(shaved)) >= 0 &&
          (labels != AD_DOT_LABEL_SETS ||
           (fputs("<BR/>", out) >= 0 &&
-           write_set(out, game, shaved, max_items))) &&
+           pg_dot_write_set(out, game, shaved, max_items))) &&
          fprintf(out, ">];\n  %s%s -> %s_shaved [style=dashed];\n", identifier,
                  empty_root ? "_empty" : "", identifier) >= 0;
 }
