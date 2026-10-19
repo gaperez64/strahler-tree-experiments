@@ -1123,15 +1123,18 @@ dot_program = find_program('dot', required : false)
 if dot_program.found()
   foreach name, arguments : preprocess_cases
     test('pg2adot_' + name + '_dot_syntax', dot_program,
+      suite : 'graphviz',
       args : ['-Tdot', '-o', '/dev/null',
         files('tests/golden/pg2adot_' + name + '.out')])
   endforeach
   test('pg2adot_shave_partial_dot_syntax', dot_program,
+    suite : 'graphviz',
     args : ['-Tdot', '-o', '/dev/null',
       files('tests/golden/pg2adot_shave_partial.out')])
   test(
     'pg2adot_counts_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1142,6 +1145,7 @@ if dot_program.found()
   test(
     'pg2adot_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1152,6 +1156,7 @@ if dot_program.found()
   test(
     'pg2adot_tree_relative_counts_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1162,6 +1167,7 @@ if dot_program.found()
   test(
     'pg2adot_tree_relative_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1172,6 +1178,7 @@ if dot_program.found()
   test(
     'pg2adot_jurdzinski_counts_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1182,6 +1189,7 @@ if dot_program.found()
   test(
     'pg2adot_jurdzinski_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1192,6 +1200,7 @@ if dot_program.found()
   test(
     'pg2adot_gap_original_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1202,6 +1211,7 @@ if dot_program.found()
   test(
     'pg2adot_lifted_shape_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1212,6 +1222,7 @@ if dot_program.found()
   test(
     'pg2adot_lifted_shape_zielonka_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1222,6 +1233,7 @@ if dot_program.found()
   test(
     'pg2adot_partial_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1232,6 +1244,7 @@ if dot_program.found()
   test(
     'pg2adot_partial_tree_relative_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1242,6 +1255,7 @@ if dot_program.found()
   test(
     'pg2adot_partial_jurdzinski_tree_file_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1252,6 +1266,7 @@ if dot_program.found()
   test(
     'pg2adot_kary_partial_sets_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1262,6 +1277,7 @@ if dot_program.found()
   test(
     'pg2adot_gap_compact_dot_syntax',
     dot_program,
+    suite : 'graphviz',
     args : [
       '-Tdot',
       '-o',
@@ -1274,6 +1290,7 @@ if dot_program.found()
     test(
       'pms2dot_' + id + '_dot_syntax',
       dot_program,
+      suite : 'graphviz',
       args : [
         '-Tdot',
         '-o',
@@ -1288,6 +1305,7 @@ if dot_program.found()
     test(
       'genstree_' + base_name + '_dot_syntax',
       dot_program,
+      suite : 'graphviz',
       args : [
         '-Tdot',
         '-o',
@@ -1373,6 +1391,7 @@ foreach algorithm : ['strahler', 'succinct']
       workdir : meson.project_source_root())
     if dot_program.found() and name not in ['leaves', 'partial_leaves', 'incremental_leaves', 'stats', 'preprocess_stats']
       test('pg2pmdot_' + algorithm + '_' + name + '_dot_syntax', dot_program,
+        suite : 'graphviz',
         args : ['-Tdot', '-o', '/dev/null', files('tests/golden/pm_' + algorithm + '_' + name + '.out')])
     endif
   endforeach

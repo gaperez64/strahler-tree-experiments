@@ -136,8 +136,9 @@ meson test -C build --print-errorlogs
 ```
 
 `ci/check-valgrind.sh build` runs the native tests under Valgrind, excluding
-the `python` suite, using exit code 99 to fail even expected-failure cases on
-memory errors. Python tests still run in the regular test job. The script sets
+the `python` and `graphviz` suites, using exit code 99 to fail even expected-failure
+cases on memory errors. Python and Graphviz tests still run in the regular test
+job. The script sets
 `STRAHLER_TEST_WRAPPER` so golden, stdin, and version harnesses also wrap their
 child binaries. Wrapper arguments are whitespace-separated, without shell
 evaluation. Valgrind's `--quiet` keeps successful runs' goldens unchanged;
