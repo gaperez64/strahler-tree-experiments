@@ -14,7 +14,12 @@ project(
 )
 
 lenstree_option = get_option('lenstree')
-boost_dep = dependency('boost', required : lenstree_option)
+boost_dep = dependency('boost', required : false)
+if lenstree_option.disabled()
+  boost_dep = disabler()
+elif not boost_dep.found() and meson.get_compiler('cpp').has_header('boost/functional/hash.hpp', required : lenstree_option)
+  boost_dep = declare_dependency()
+endif
 source_includes = include_directories('src')
 
 version_configuration = configuration_data()
