@@ -1,0 +1,55 @@
+{
+  "seed": 20261019,
+  "parameters": {
+    "binary": "/tmp/strahler-research-bin/pg2adot",
+    "seed": 20261019,
+    "n": "1",
+    "h": "1",
+    "out_degree": 2,
+    "even_owner": 0.5,
+    "priority_distribution": "uniform",
+    "samples": 0,
+    "cpu_seconds": 1200,
+    "timeout": 2,
+    "output": "/tmp/disagreements-examples.json",
+    "no_shrink": false
+  },
+  "cpu_seconds": 2.59411,
+  "wall_seconds": 2.81967141199857,
+  "counts": {
+    "ladder:1,1": {
+      "games": 2
+    },
+    "nested_cycles:1,1": {
+      "games": 2
+    },
+    "examples/Button.tlsf.ehoa.pg": {
+      "games": 1
+    },
+    "examples/cabp_swp.ehoa.pg": {
+      "lifting:exit_4": 1,
+      "zielonka:exit_0": 1
+    }
+  },
+  "counterexamples": {},
+  "follow_up": {
+    "cabp_zielonka": {
+      "vertices": 875281,
+      "even": 0,
+      "odd": 875281,
+      "nodes": 15,
+      "leaves": 14,
+      "height": 2,
+      "strahler": 2,
+      "finished_within_seconds": 10
+    },
+    "cabp_incremental": {
+      "timeout_seconds": 10
+    },
+    "cabp_default_lifting": {
+      "host": "U^2_{19,2}",
+      "host_leaves": 1048575,
+      "limit": 1000000
+    }
+  }
+}

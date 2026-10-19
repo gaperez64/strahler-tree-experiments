@@ -1,0 +1,353 @@
+{
+  "seed": 20261019,
+  "totals": {
+    "games": 628,
+    "cold_lifts": 99636,
+    "adaptive_lifts": 114627,
+    "incremental_lifts": 54686,
+    "residual_lifts": 52417,
+    "incremental_better_than_cold": 408,
+    "incremental_better_than_adaptive": 414,
+    "residual_same_shape": 572,
+    "residual_same_tree": 572
+  },
+  "excluded": {
+    "examples/cabp_swp.ehoa.pg": "Default lifting exceeds leaf limit; incremental timed out after 10 seconds.",
+    "tests/games/incomplete.pg": "invalid parser fixture"
+  },
+  "nonnested_dominion_sizes": [
+    70,
+    0
+  ],
+  "adaptive_nonnested_dominion_sizes": [
+    70,
+    36
+  ],
+  "wall_seconds": 10.232954534003511,
+  "parameters": {
+    "seed": 20261019,
+    "samples_per_random_cell": 50,
+    "n": [
+      4,
+      8,
+      16,
+      32
+    ],
+    "h": [
+      2,
+      3,
+      4
+    ],
+    "out_degree": 2,
+    "even_owner": 0.5,
+    "priority_distribution": "uniform",
+    "player_order": [
+      "Even",
+      "Odd"
+    ]
+  },
+  "by_group": {
+    "random:4,2": {
+      "games": 50,
+      "cold_lifts": 683,
+      "adaptive_lifts": 724,
+      "incremental_lifts": 474,
+      "residual_lifts": 455,
+      "residual_same_shape": 48,
+      "residual_same_tree": 48
+    },
+    "random:4,3": {
+      "games": 50,
+      "cold_lifts": 721,
+      "adaptive_lifts": 721,
+      "incremental_lifts": 479,
+      "residual_lifts": 479,
+      "residual_same_shape": 50,
+      "residual_same_tree": 50
+    },
+    "random:4,4": {
+      "games": 50,
+      "cold_lifts": 759,
+      "adaptive_lifts": 776,
+      "incremental_lifts": 506,
+      "residual_lifts": 499,
+      "residual_same_shape": 49,
+      "residual_same_tree": 49
+    },
+    "random:8,2": {
+      "games": 50,
+      "cold_lifts": 1511,
+      "adaptive_lifts": 1651,
+      "incremental_lifts": 1097,
+      "residual_lifts": 1036,
+      "residual_same_shape": 46,
+      "residual_same_tree": 46
+    },
+    "random:8,3": {
+      "games": 50,
+      "cold_lifts": 2017,
+      "adaptive_lifts": 2064,
+      "incremental_lifts": 1228,
+      "residual_lifts": 1214,
+      "residual_same_shape": 49,
+      "residual_same_tree": 49
+    },
+    "random:8,4": {
+      "games": 50,
+      "cold_lifts": 2292,
+      "adaptive_lifts": 2384,
+      "incremental_lifts": 1373,
+      "residual_lifts": 1344,
+      "residual_same_shape": 48,
+      "residual_same_tree": 48
+    },
+    "random:16,2": {
+      "games": 50,
+      "cold_lifts": 3268,
+      "adaptive_lifts": 3599,
+      "incremental_lifts": 2633,
+      "residual_lifts": 2498,
+      "residual_same_shape": 45,
+      "residual_same_tree": 45
+    },
+    "random:16,3": {
+      "games": 50,
+      "cold_lifts": 5732,
+      "adaptive_lifts": 6266,
+      "incremental_lifts": 3151,
+      "residual_lifts": 2967,
+      "residual_same_shape": 44,
+      "residual_same_tree": 44
+    },
+    "random:16,4": {
+      "games": 50,
+      "cold_lifts": 8296,
+      "adaptive_lifts": 8970,
+      "incremental_lifts": 4663,
+      "residual_lifts": 4430,
+      "residual_same_shape": 45,
+      "residual_same_tree": 45
+    },
+    "random:32,2": {
+      "games": 50,
+      "cold_lifts": 6524,
+      "adaptive_lifts": 7073,
+      "incremental_lifts": 4871,
+      "residual_lifts": 4649,
+      "residual_same_shape": 46,
+      "residual_same_tree": 46
+    },
+    "random:32,3": {
+      "games": 50,
+      "cold_lifts": 14400,
+      "adaptive_lifts": 16017,
+      "incremental_lifts": 6882,
+      "residual_lifts": 6392,
+      "residual_same_shape": 41,
+      "residual_same_tree": 41
+    },
+    "random:32,4": {
+      "games": 50,
+      "cold_lifts": 22298,
+      "adaptive_lifts": 24630,
+      "incremental_lifts": 9051,
+      "residual_lifts": 8282,
+      "residual_same_shape": 40,
+      "residual_same_tree": 40
+    },
+    "ladder": {
+      "games": 6,
+      "cold_lifts": 394,
+      "adaptive_lifts": 394,
+      "incremental_lifts": 260,
+      "residual_lifts": 260,
+      "residual_same_shape": 6,
+      "residual_same_tree": 6
+    },
+    "nested_cycles": {
+      "games": 6,
+      "cold_lifts": 276,
+      "adaptive_lifts": 276,
+      "incremental_lifts": 118,
+      "residual_lifts": 118,
+      "residual_same_shape": 6,
+      "residual_same_tree": 6
+    },
+    "repository": {
+      "games": 16,
+      "cold_lifts": 30465,
+      "adaptive_lifts": 39082,
+      "incremental_lifts": 17900,
+      "residual_lifts": 17794,
+      "residual_same_shape": 9,
+      "residual_same_tree": 9
+    }
+  },
+  "repository_and_obstruction": {
+    "saturated_nonnesting": {
+      "cold_final_t": 2,
+      "residual_final_t": 2,
+      "cold_lifts": 29806,
+      "adaptive_lifts": 37984,
+      "incremental_lifts": 17185,
+      "residual_lifts": 17185,
+      "residual_same_shape": true,
+      "residual_same_tree": true
+    },
+    "examples/Button.tlsf.ehoa.pg": {
+      "cold_final_t": 0,
+      "residual_final_t": 0,
+      "cold_lifts": 22,
+      "adaptive_lifts": 22,
+      "incremental_lifts": 11,
+      "residual_lifts": 11,
+      "residual_same_shape": true,
+      "residual_same_tree": true
+    },
+    "tests/games/disagree_lifting_leaves.pg": {
+      "cold_final_t": 1,
+      "residual_final_t": 1,
+      "cold_lifts": 130,
+      "adaptive_lifts": 182,
+      "incremental_lifts": 132,
+      "residual_lifts": 130,
+      "residual_same_shape": false,
+      "residual_same_tree": false
+    },
+    "tests/games/disagree_lifting_strahler.pg": {
+      "cold_final_t": 2,
+      "residual_final_t": 2,
+      "cold_lifts": 212,
+      "adaptive_lifts": 509,
+      "incremental_lifts": 355,
+      "residual_lifts": 289,
+      "residual_same_shape": false,
+      "residual_same_tree": false
+    },
+    "tests/games/disagree_odd_strahler.pg": {
+      "cold_final_t": 0,
+      "residual_final_t": 0,
+      "cold_lifts": 30,
+      "adaptive_lifts": 30,
+      "incremental_lifts": 30,
+      "residual_lifts": 30,
+      "residual_same_shape": true,
+      "residual_same_tree": true
+    },
+    "tests/games/disagree_shape.pg": {
+      "cold_final_t": 1,
+      "residual_final_t": 1,
+      "cold_lifts": 34,
+      "adaptive_lifts": 55,
+      "incremental_lifts": 27,
+      "residual_lifts": 18,
+      "residual_same_shape": false,
+      "residual_same_tree": false
+    },
+    "tests/games/disagree_zielonka_height.pg": {
+      "cold_final_t": 0,
+      "residual_final_t": 0,
+      "cold_lifts": 110,
+      "adaptive_lifts": 110,
+      "incremental_lifts": 52,
+      "residual_lifts": 52,
+      "residual_same_shape": true,
+      "residual_same_tree": true
+    },
+    "tests/games/even_loop.pg": {
+      "cold_final_t": 0,
+      "residual_final_t": 0,
+      "cold_lifts": 1,
+      "adaptive_lifts": 1,
+      "incremental_lifts": 0,
+      "residual_lifts": 0,
+      "residual_same_shape": true,
+      "residual_same_tree": true
+    },
+    "tests/games/lifted_shape.pg": {
+      "cold_final_t": 1,
+      "residual_final_t": 1,
+      "cold_lifts": 43,
+      "adaptive_lifts": 69,
+      "incremental_lifts": 31,
+      "residual_lifts": 20,
+      "residual_same_shape": false,
+      "residual_same_tree": false
+    },
+    "tests/games/odd_loop.pg": {
+      "cold_final_t": 0,
+      "residual_final_t": 0,
+      "cold_lifts": 2,
+      "adaptive_lifts": 2,
+      "incremental_lifts": 2,
+      "residual_lifts": 2,
+      "residual_same_shape": true,
+      "residual_same_tree": true
+    },
+    "tests/games/ordered_two_children.pg": {
+      "cold_final_t": 1,
+      "residual_final_t": 1,
+      "cold_lifts": 14,
+      "adaptive_lifts": 24,
+      "incremental_lifts": 19,
+      "residual_lifts": 15,
+      "residual_same_shape": false,
+      "residual_same_tree": false
+    },
+    "tests/games/priority_gap.pg": {
+      "cold_final_t": 0,
+      "residual_final_t": 0,
+      "cold_lifts": 4,
+      "adaptive_lifts": 4,
+      "incremental_lifts": 3,
+      "residual_lifts": 3,
+      "residual_same_shape": true,
+      "residual_same_tree": true
+    },
+    "tests/games/priority_gap_start.pg": {
+      "cold_final_t": 1,
+      "residual_final_t": 1,
+      "cold_lifts": 14,
+      "adaptive_lifts": 24,
+      "incremental_lifts": 19,
+      "residual_lifts": 15,
+      "residual_same_shape": false,
+      "residual_same_tree": false
+    },
+    "tests/games/sparse.pg": {
+      "cold_final_t": 0,
+      "residual_final_t": 0,
+      "cold_lifts": 4,
+      "adaptive_lifts": 4,
+      "incremental_lifts": 2,
+      "residual_lifts": 2,
+      "residual_same_shape": true,
+      "residual_same_tree": true
+    },
+    "tests/games/split_winners.pg": {
+      "cold_final_t": 0,
+      "residual_final_t": 0,
+      "cold_lifts": 4,
+      "adaptive_lifts": 4,
+      "incremental_lifts": 3,
+      "residual_lifts": 3,
+      "residual_same_shape": true,
+      "residual_same_tree": true
+    },
+    "tests/games/strahler_two.pg": {
+      "cold_final_t": 1,
+      "residual_final_t": 1,
+      "cold_lifts": 35,
+      "adaptive_lifts": 58,
+      "incremental_lifts": 29,
+      "residual_lifts": 19,
+      "residual_same_shape": false,
+      "residual_same_tree": false
+    }
+  },
+  "checks": {
+    "all_winning_regions_equal": true,
+    "all_incremental_trees_equal": true,
+    "all_model_trees_and_lift_counts_match_c": true
+  }
+}

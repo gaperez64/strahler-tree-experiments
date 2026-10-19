@@ -378,6 +378,41 @@ static void test_schedules_agree(void) {
   }
 }
 
+static void test_seeded_labels(void) {
+  for (size_t iteration = 0; iteration < 30; iteration++) {
+    PGGame game = random_game(2 + next_random() % 5, 6);
+    PGSet domain = full_domain(&game);
+    PGSet winning[2] = {0};
+    assert(reference_solve(&game, winning, winning + 1));
+    for (size_t player = 0; player < 2; player++) {
+      ADLiftTree host = strahler_host(2, 2, (PGPlayer)player, 4 + player);
+      ADLiftLabelling cold = {0};
+      ADLiftLabelling warm = {0};
+      ADLiftError error = {0};
+      assert(ad_lift_run(&game, &domain, &host, AD_LIFT_SCHEDULE_ROUNDS, &cold,
+                         &error));
+      assert(ad_lift_run_seeded(&game, &domain, &host, AD_LIFT_SCHEDULE_ROUNDS,
+                                winning + 1 - player, &warm, &error));
+      assert(memcmp(cold.labels, warm.labels,
+                    game.vertex_count * sizeof(cold.labels[0])) == 0);
+      assert(warm.stats.lifts <= cold.stats.lifts);
+      ADVerifyError verify_error = {0};
+      assert(ad_lift_verify(&game, &domain, &host, &warm, &verify_error));
+      ad_lift_labelling_destroy(&cold);
+      ad_lift_labelling_destroy(&warm);
+      ADLiftLabelling unused = {0};
+      PGSet wrong_size = {0};
+      assert(!ad_lift_run_seeded(&game, &domain, &host, AD_LIFT_SCHEDULE_ROUNDS,
+                                 &wrong_size, &unused, &error));
+      ad_lift_tree_destroy(&host);
+    }
+    pg_set_destroy(winning);
+    pg_set_destroy(winning + 1);
+    pg_set_destroy(&domain);
+    pg_game_destroy(&game);
+  }
+}
+
 static void test_verifier_rejections(void) {
   /* In the Odd run on a one-node host, vertex 0 cannot stay in its regular
    * block because its only edge leads to Even's self-loop at vertex 1. */
@@ -555,6 +590,64 @@ static void test_partial_and_adaptive(void) {
   pg_game_destroy(&game);
 }
 
+static void expect_same_tree(ADNode const *left, ADNode const *right) {
+  assert((left == nullptr) == (right == nullptr));
+  if (left == nullptr) {
+    return;
+  }
+  assert(left->player == right->player);
+  assert(left->priority_bound == right->priority_bound);
+  assert(pg_set_equal(&left->top_attractor, &right->top_attractor));
+  assert(left->child_count == right->child_count);
+  for (size_t index = 0; index < left->child_count; index++) {
+    ADChild const *a = left->children + index;
+    ADChild const *b = right->children + index;
+    assert(pg_set_equal(&a->trap, &b->trap));
+    assert(pg_set_equal(&a->attractor, &b->attractor));
+    expect_same_tree(a->subtree, b->subtree);
+  }
+}
+
+static void test_incremental(void) {
+  size_t saved_lifts = 0;
+  for (size_t iteration = 0; iteration < 60; iteration++) {
+    PGGame game = random_game(2 + next_random() % 18, 7);
+    PGSet domain = full_domain(&game);
+    /* Exercise starts, caps, and a budget-limited partial result too. */
+    ADLiftOptions options = options_for(AD_LIFT_HOST_ADAPTIVE, iteration % 3);
+    options.t = iteration % 2;
+    if (iteration % 4 == 0) {
+      size_t const budgets[] = {1, 3, 9, 20};
+      options.max_host_leaves = budgets[(iteration / 4) % 4];
+      options.t = 0;
+    }
+    ADLiftSolveStats cold_stats = {0};
+    ADResult cold = solve(&game, &domain, &options, &cold_stats);
+    options.incremental = true;
+    ADLiftSolveStats warm_stats = {0};
+    ADResult warm = solve(&game, &domain, &options, &warm_stats);
+    assert(cold.kind == warm.kind);
+    assert(pg_set_equal(&cold.unresolved, &warm.unresolved));
+    assert(cold_stats.budget_exhausted == warm_stats.budget_exhausted);
+    assert(cold_stats.first_complete_t == warm_stats.first_complete_t);
+    for (size_t player = 0; player < 2; player++) {
+      assert(pg_set_equal(&cold.region[player], &warm.region[player]));
+      expect_same_tree(cold.decomposition[player], warm.decomposition[player]);
+      assert(cold_stats.player[player].first_full_t ==
+             warm_stats.player[player].first_full_t);
+      assert(warm_stats.player[player].total_lifts <=
+             cold_stats.player[player].total_lifts);
+      saved_lifts += cold_stats.player[player].total_lifts -
+                     warm_stats.player[player].total_lifts;
+    }
+    ad_result_destroy(&cold);
+    ad_result_destroy(&warm);
+    pg_set_destroy(&domain);
+    pg_game_destroy(&game);
+  }
+  assert(saved_lifts > 0);
+}
+
 static void test_kary_hosts(void) {
   PGGame game = parse(partial_game);
   PGSet domain = full_domain(&game);
@@ -631,6 +724,9 @@ static void test_solver_inputs(void) {
   options = options_for(AD_LIFT_HOST_TREE, 0);
   assert(!ad_lift_solve(&game, &domain, &options, &result, nullptr, &error));
   options = options_for(AD_LIFT_HOST_FULL, 0);
+  options.incremental = true;
+  assert(!ad_lift_solve(&game, &domain, &options, &result, nullptr, &error));
+  options.incremental = false;
   assert(!ad_lift_solve(&game, &domain, nullptr, &result, nullptr, &error));
   assert(!ad_lift_solve(nullptr, &domain, &options, &result, nullptr, &error));
   /* Vertex 1 only moves to 0, so {1} is not total. */
@@ -664,9 +760,11 @@ int main(void) {
   test_random_zielonka_agreement();
   test_restricted_soundness();
   test_schedules_agree();
+  test_seeded_labels();
   test_verifier_rejections();
   test_materialize_rejects_empty_core();
   test_partial_and_adaptive();
+  test_incremental();
   test_kary_hosts();
   test_tree_hosts();
   test_solver_inputs();

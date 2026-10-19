@@ -52,6 +52,8 @@ typedef struct {
   /* Check every labelling directly and every materialized tree with both
    * decomposition verifiers. */
   bool verify;
+  /* ADAPTIVE: seed TOP with the previously certified opponent dominion. */
+  bool incremental;
 } ADLiftOptions;
 
 typedef struct {
@@ -71,6 +73,8 @@ typedef struct {
   size_t host_leaves;
   size_t host_positions;
   ADLiftStats lift;
+  /* Sum over all hosts tried, including the final run. */
+  size_t total_lifts;
   /* Metrics of the materialized decomposition; zero if it is empty. */
   ADTreeMetrics tree;
 } ADLiftPlayerStats;

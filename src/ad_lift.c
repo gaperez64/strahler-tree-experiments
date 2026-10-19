@@ -198,6 +198,14 @@ void ad_lift_labelling_destroy(ADLiftLabelling *labelling) {
 bool ad_lift_run(PGGame const *game, PGSet const *active,
                  ADLiftTree const *host, ADLiftSchedule const schedule,
                  ADLiftLabelling *result, ADLiftError *error) {
+  return ad_lift_run_seeded(game, active, host, schedule, nullptr, result,
+                            error);
+}
+
+bool ad_lift_run_seeded(PGGame const *game, PGSet const *active,
+                        ADLiftTree const *host, ADLiftSchedule const schedule,
+                        PGSet const *known_losing, ADLiftLabelling *result,
+                        ADLiftError *error) {
   if (error != nullptr) {
     *error = (ADLiftError){0};
   }
@@ -207,6 +215,9 @@ bool ad_lift_run(PGGame const *game, PGSet const *active,
   if (game == nullptr || active == nullptr || result == nullptr ||
       !valid_host(host) || schedule > AD_LIFT_SCHEDULE_SINGLE ||
       active->bit_count != game->vertex_count ||
+      (known_losing != nullptr &&
+       (known_losing->bit_count != game->vertex_count ||
+        !pg_set_subset(known_losing, active))) ||
       !pg_subgame_is_total(game, active)) {
     lift_error(error, "invalid lifting input");
     return false;
@@ -230,6 +241,9 @@ bool ad_lift_run(PGGame const *game, PGSet const *active,
                                ? ad_lift_tree_first_compatible(
                                      host, 0, game->vertices[vertex].priority)
                                : SIZE_MAX;
+    if (known_losing != nullptr && pg_set_contains(known_losing, vertex)) {
+      state.labels[vertex] = host->top;
+    }
   }
 
   ADLiftStats stats = {.max_position = SIZE_MAX};

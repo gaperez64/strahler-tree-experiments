@@ -116,6 +116,11 @@ name; the latter two read from standard input.
   smallest such `t` on standard error, together with the smallest `t` at which
   each player's whole winning region was found. `--start-t=T` starts the
   search at `T`, and `--tree-k=K` caps `K`; a capped search can end partial.
+- `--adaptive-t=incremental` uses certified opponent wins as TOP seeds. It
+  produces exactly the same least labellings and trees at every tried host as
+  `--adaptive-t`, usually with fewer lifts. Bare `--adaptive-t` keeps the cold
+  behaviour. Adaptive `--stats` includes `total_lifts` across all tried hosts.
+  See [the incremental analysis](docs/incremental-t.md) for proofs and results.
 - `--kary=A` lifts in the full `A`-ary tree with each player's full height
   `H`, which is not bounded by a Strahler number. The result may be partial;
   it is complete when `A` is at least the number of vertices.
@@ -210,6 +215,10 @@ The reported Strahler number belongs to the tree that `pg2adot` built. The
 command does not search for the smallest value over every possible
 decomposition. Lifting and Zielonka can build different trees for the same
 game; `tests/games/lifted_shape.pg` is an example.
+
+[The disagreement study](docs/disagreements.md) compares shapes and vertex
+sets, with seeded generators, shrinking, and paired canonical goldens in
+`tests/games/disagree_*.pg` and `tests/golden/disagree_*.json`.
 
 #### Tree-relative view
 

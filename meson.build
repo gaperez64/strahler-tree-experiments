@@ -255,6 +255,15 @@ test_ad_lift_exe = executable(
 )
 test('test_ad_lift', test_ad_lift_exe, timeout : 120)
 
+python = find_program('python3')
+test(
+  'test_research',
+  python,
+  args : [files('tests/test_research.py'), pg2adot],
+  workdir : meson.project_source_root(),
+  timeout : 120,
+)
+
 test_ad_tree_dot_exe = executable(
   'test_ad_tree_dot',
   'tests/test_ad_tree_dot.c',
@@ -270,6 +279,12 @@ test('str_tree_one_argument', str_tree, args : ['0'])
 test('str_tree_two_arguments', str_tree, args : ['0', '2'])
 test('pgfilt_help', pgfilt, args : ['-h'])
 test('pg2adot_help', pg2adot, args : ['--help'])
+test(
+  'pg2adot_rejects_bad_adaptive_t',
+  pg2adot,
+  args : ['--adaptive-t=bad'],
+  should_fail : true,
+)
 test(
   'pgfilt_rejects_bad_priority_mode',
   pgfilt,
@@ -691,6 +706,23 @@ test(
     'tests/actual/pg2adot_adaptive_stats.out',
     'EMPTY',
     '--adaptive-t',
+    '--stats',
+    '--player=even',
+    '--labels=none',
+    files('tests/games/strahler_two.pg'),
+  ],
+  workdir : meson.project_source_root(),
+)
+
+test(
+  'pg2adot_incremental_stats',
+  run_single_test,
+  args : [
+    pg2adot,
+    'tests/golden/pg2adot_incremental_stats.out',
+    'tests/actual/pg2adot_incremental_stats.out',
+    'EMPTY',
+    '--adaptive-t=incremental',
     '--stats',
     '--player=even',
     '--labels=none',
