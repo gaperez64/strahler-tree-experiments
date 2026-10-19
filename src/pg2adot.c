@@ -31,6 +31,8 @@ typedef enum {
 typedef enum {
   ALGORITHM_LIFTING,
   ALGORITHM_ZIELONKA,
+  ALGORITHM_ZIELONKA_SYM,
+  ALGORITHM_LIFTING_SYM,
 } Algorithm;
 
 static void usage(FILE *out, char *argv[static 1]) {
@@ -48,7 +50,8 @@ static void usage(FILE *out, char *argv[static 1]) {
       "  --max-set-items=N            default: 32\n"
       "  --priority-mode=original|compact\n"
       "                               default: original\n"
-      "  --algorithm=lifting|zielonka default: lifting\n"
+      "  --algorithm=lifting|zielonka|zielonka-sym|lifting-sym\n"
+      "                               default: lifting\n"
       "  --shave=loops,wcwc,single|all|none  default: none\n"
       "  --compress                   merge consecutive same-parity "
       "priorities\n"
@@ -132,12 +135,29 @@ static void write_tree_stats(ADResult const *result, size_t const player,
           metrics.height, metrics.strahler);
 }
 
-static void write_zielonka_stats(ADResult const *result,
-                                 size_t const vertices) {
+static void write_zielonka_stats(ADResult const *result, size_t const vertices,
+                                 ZielonkaStats const *stats) {
   fprintf(stderr, "zielonka: vertices=%zu result=%s\n", vertices,
           result_kind(result));
+  fprintf(stderr, "zielonka: calls=%zu attractors=%zu\n", stats->calls,
+          stats->attractors);
   for (size_t player = 0; player < 2; player++) {
     fprintf(stderr, "zielonka %s: ", player == PG_EVEN ? "even" : "odd");
+    write_tree_stats(result, player,
+                     ad_tree_metrics(result->decomposition[player]));
+  }
+}
+
+static void write_sym_stats(char const *name, ADSymStats const *stats,
+                            ADResult const *result, size_t const vertices) {
+  fprintf(stderr,
+          "%s: vertices=%zu result=%s calls=%zu attractors=%zu "
+          "moves=%zu sets=%zu certification_lifts=%zu separator=%zu\n",
+          name, vertices, result_kind(result), stats->calls, stats->attractors,
+          stats->moves, stats->sets, stats->certification_lifts,
+          stats->separator);
+  for (size_t player = 0; player < 2; player++) {
+    fprintf(stderr, "%s %s: ", name, player == PG_EVEN ? "even" : "odd");
     write_tree_stats(result, player,
                      ad_tree_metrics(result->decomposition[player]));
   }
@@ -146,8 +166,17 @@ static void write_zielonka_stats(ADResult const *result,
 static void write_lifting_stats(ADLiftSolveStats const *stats,
                                 ADLiftOptions const *options,
                                 ADResult const *result) {
-  fprintf(stderr, "lifting: vertices=%zu t_full=%zu result=%s\n",
+  char const *name = options->symmetric ? "lifting-sym" : "lifting";
+  fprintf(stderr, "%s: vertices=%zu t_full=%zu result=%s\n", name,
           stats->vertices, stats->t_full, result_kind(result));
+  if (options->symmetric) {
+    ADSymStats const *counts = &stats->symmetric;
+    fprintf(stderr,
+            "%s: calls=%zu attractors=%zu moves=%zu sets=%zu "
+            "certification_lifts=%zu separator=%zu\n",
+            name, counts->calls, counts->attractors, counts->moves,
+            counts->sets, counts->certification_lifts, counts->separator);
+  }
   if (options->mode == AD_LIFT_HOST_ADAPTIVE) {
     fputs("lifting: first_complete_t=", stderr);
     if (stats->adaptive_complete) {
@@ -165,7 +194,7 @@ static void write_lifting_stats(ADLiftSolveStats const *stats,
   }
   for (size_t player = 0; player < 2; player++) {
     ADLiftPlayerStats const *current = stats->player + player;
-    fprintf(stderr, "lifting %s: root_level=%" PRIu64 " H=%zu k_full=%zu ",
+    fprintf(stderr, "%s %s: root_level=%" PRIu64 " H=%zu k_full=%zu ", name,
             player == PG_EVEN ? "even" : "odd", current->root_level,
             current->height, current->k_full);
     if (options->mode == AD_LIFT_HOST_TREE) {
@@ -175,11 +204,12 @@ static void write_lifting_stats(ADLiftSolveStats const *stats,
     } else {
       fprintf(stderr, "host=strahler K=%zu t=%zu", current->k, current->t);
     }
-    fprintf(stderr,
-            " host_nodes=%zu host_leaves=%zu positions=%zu rounds=%zu "
-            "lifts=%zu top=%zu ",
-            current->host_nodes, current->host_leaves, current->host_positions,
-            current->lift.rounds, current->lift.lifts, current->lift.top_count);
+    fprintf(stderr, " host_nodes=%zu host_leaves=%zu positions=%zu ",
+            current->host_nodes, current->host_leaves, current->host_positions);
+    if (!options->symmetric) {
+      fprintf(stderr, "rounds=%zu lifts=%zu top=%zu ", current->lift.rounds,
+              current->lift.lifts, current->lift.top_count);
+    }
     write_tree_stats(result, player, current->tree);
   }
 }
@@ -319,6 +349,10 @@ int main(int argc, char *argv[argc + 1]) {
         algorithm = ALGORITHM_LIFTING;
       } else if (strcmp(optarg, "zielonka") == 0) {
         algorithm = ALGORITHM_ZIELONKA;
+      } else if (strcmp(optarg, "zielonka-sym") == 0) {
+        algorithm = ALGORITHM_ZIELONKA_SYM;
+      } else if (strcmp(optarg, "lifting-sym") == 0) {
+        algorithm = ALGORITHM_LIFTING_SYM;
       } else {
         fputs("Invalid --algorithm value\n", stderr);
         return EXIT_USAGE;
@@ -390,12 +424,19 @@ int main(int argc, char *argv[argc + 1]) {
     fputs("--start-t requires --adaptive-t\n", stderr);
     return EXIT_USAGE;
   }
-  if (algorithm == ALGORITHM_ZIELONKA &&
+  if ((algorithm == ALGORITHM_ZIELONKA ||
+       algorithm == ALGORITHM_ZIELONKA_SYM) &&
       (strahler_host || start_t_given || arity != 0 || tree_path != nullptr ||
        host_limit_given)) {
-    fputs("Lifting options cannot be used with --algorithm=zielonka\n", stderr);
+    fprintf(stderr, "Lifting options cannot be used with --algorithm=%s\n",
+            algorithm == ALGORITHM_ZIELONKA ? "zielonka" : "zielonka-sym");
     return EXIT_USAGE;
   }
+  if (algorithm == ALGORITHM_LIFTING_SYM && adaptive_t) {
+    fputs("--adaptive-t cannot be used with --algorithm=lifting-sym\n", stderr);
+    return EXIT_USAGE;
+  }
+  lift_options.symmetric = algorithm == ALGORITHM_LIFTING_SYM;
   if (adaptive_t) {
     lift_options.mode = AD_LIFT_HOST_ADAPTIVE;
     lift_options.t = start_t;
@@ -500,6 +541,7 @@ int main(int argc, char *argv[argc + 1]) {
 
   if (algorithm == ALGORITHM_ZIELONKA) {
     ZielonkaError solver_error = {0};
+    ZielonkaStats stats = {0};
     uint64_t maximum = 0;
     for (size_t vertex = pg_set_next(domain, 0); vertex != SIZE_MAX;
          vertex = pg_set_next(domain, vertex + 1)) {
@@ -507,13 +549,26 @@ int main(int argc, char *argv[argc + 1]) {
         maximum = game.vertices[vertex].priority;
       }
     }
-    if (!zielonka_decompose(&game, domain, maximum, &result, &solver_error)) {
+    if (!zielonka_decompose_stats(&game, domain, maximum, &result, &stats,
+                                  &solver_error)) {
       fprintf(stderr, "Solver failed: %s\n", solver_error.message);
       status = EXIT_SOLVER;
       goto cleanup;
     }
     if (print_stats) {
-      write_zielonka_stats(&result, pg_set_count(domain));
+      write_zielonka_stats(&result, pg_set_count(domain), &stats);
+    }
+  } else if (algorithm == ALGORITHM_ZIELONKA_SYM) {
+    ADSymStats stats = {0};
+    ADLiftError error = {0};
+    if (!ad_sym_solve(&game, domain, nullptr, verify, &result, &stats,
+                      &error)) {
+      fprintf(stderr, "Solver failed: %s\n", error.message);
+      status = EXIT_SOLVER;
+      goto cleanup;
+    }
+    if (print_stats) {
+      write_sym_stats("zielonka-sym", &stats, &result, pg_set_count(domain));
     }
   } else {
     ADLiftSolveStats stats = {0};

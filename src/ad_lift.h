@@ -37,6 +37,7 @@ typedef enum {
 typedef struct {
   size_t rounds;
   size_t lifts;
+  size_t attractors;
   /* The largest position below TOP used by the final labelling, or SIZE_MAX
    * if every vertex is at TOP. */
   size_t max_position;
@@ -58,6 +59,13 @@ typedef struct {
 bool ad_lift_run(PGGame const *game, PGSet const *active,
                  ADLiftTree const *host, ADLiftSchedule schedule,
                  ADLiftLabelling *result, ADLiftError *error);
+
+/* Continue short lifts from a compatible labelling known to be below the
+ * least valid labelling. Replaces labelling only on success. */
+[[nodiscard]]
+bool ad_lift_continue(PGGame const *game, PGSet const *active,
+                      ADLiftTree const *host, ADLiftLabelling *labelling,
+                      ADLiftError *error);
 
 void ad_lift_labelling_destroy(ADLiftLabelling *labelling);
 

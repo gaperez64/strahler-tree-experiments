@@ -33,7 +33,8 @@ static void solver_error(ZielonkaError *error, char const *message) {
 
 [[nodiscard]] static bool solve(PGGame const *game, PGSet const *domain,
                                 uint64_t const bound, size_t const depth,
-                                ADResult *result, ZielonkaError *error) {
+                                ADResult *result, ZielonkaError *error,
+                                ZielonkaStats *stats) {
   if (depth > MAX_RECURSION_DEPTH) {
     solver_error(error, "priority depth exceeds the safe recursion depth");
     return false;
@@ -46,6 +47,7 @@ static void solver_error(ZielonkaError *error, char const *message) {
   if (pg_set_empty(domain)) {
     return true;
   }
+  stats->calls++;
   if (!domain_within_bound(game, domain, bound) ||
       !pg_subgame_is_total(game, domain)) {
     solver_error(error, "solver domain violates its bound or totality");
@@ -95,12 +97,14 @@ static void solver_error(ZielonkaError *error, char const *message) {
         pg_set_add(&target, vertex);
       }
     }
+    stats->attractors++;
     if (!pg_attractor(game, &residual, &target, alpha, &alpha_attractor)) {
       solver_error(error, "failed to compute the top attractor");
       goto iteration_failure;
     }
     pg_set_subtract_into(&lower, &alpha_attractor);
-    if (!solve(game, &lower, bound - 1, depth + 1, &recursive, error)) {
+    if (!pg_set_empty(&lower) &&
+        !solve(game, &lower, bound - 1, depth + 1, &recursive, error, stats)) {
       goto iteration_failure;
     }
 
@@ -141,6 +145,7 @@ static void solver_error(ZielonkaError *error, char const *message) {
     }
 
     PGSet beta_attractor = {0};
+    stats->attractors++;
     if (recursive.decomposition[beta] == nullptr ||
         !pg_attractor(game, &residual, &recursive.region[beta], beta,
                       &beta_attractor) ||
@@ -205,9 +210,14 @@ failure:
   return false;
 }
 
-bool zielonka_decompose(PGGame const *game, PGSet const *domain,
-                        uint64_t const bound, ADResult *result,
-                        ZielonkaError *error) {
+bool zielonka_decompose_stats(PGGame const *game, PGSet const *domain,
+                              uint64_t const bound, ADResult *result,
+                              ZielonkaStats *stats, ZielonkaError *error) {
+  ZielonkaStats local = {0};
+  if (stats == nullptr) {
+    stats = &local;
+  }
+  *stats = (ZielonkaStats){0};
   if (error != nullptr) {
     *error = (ZielonkaError){0};
   }
@@ -221,7 +231,7 @@ bool zielonka_decompose(PGGame const *game, PGSet const *domain,
     return false;
   }
   *result = (ADResult){0};
-  if (!solve(game, domain, bound, 0, result, error)) {
+  if (!solve(game, domain, bound, 0, result, error, stats)) {
     return false;
   }
   if (!pg_set_init(&result->unresolved, game->vertex_count)) {
@@ -230,4 +240,10 @@ bool zielonka_decompose(PGGame const *game, PGSet const *domain,
     return false;
   }
   return true;
+}
+
+bool zielonka_decompose(PGGame const *game, PGSet const *domain,
+                        uint64_t const bound, ADResult *result,
+                        ZielonkaError *error) {
+  return zielonka_decompose_stats(game, domain, bound, result, nullptr, error);
 }

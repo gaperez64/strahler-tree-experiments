@@ -112,6 +112,7 @@ typedef struct {
   PGSet below;
   PGSet safe;
   PGSet invalid;
+  size_t attractors;
 } LiftState;
 
 /* Mark every invalid vertex of the current labelling. Positions are visited in
@@ -154,6 +155,7 @@ typedef struct {
         pg_set_add(&state->safe, sorted[index].vertex);
       }
       PGSet attracted = {0};
+      state->attractors++;
       if (!pg_attractor_through(state->game, state->active, &state->safe,
                                 &state->below, host->player, &attracted)) {
         return false;
@@ -195,9 +197,11 @@ void ad_lift_labelling_destroy(ADLiftLabelling *labelling) {
          host->top + 1 == host->position_count;
 }
 
-bool ad_lift_run(PGGame const *game, PGSet const *active,
-                 ADLiftTree const *host, ADLiftSchedule const schedule,
-                 ADLiftLabelling *result, ADLiftError *error) {
+[[nodiscard]] static bool run(PGGame const *game, PGSet const *active,
+                              ADLiftTree const *host,
+                              ADLiftSchedule const schedule,
+                              ADLiftLabelling *result, ADLiftError *error,
+                              size_t const *initial) {
   if (error != nullptr) {
     *error = (ADLiftError){0};
   }
@@ -226,10 +230,18 @@ bool ad_lift_run(PGGame const *game, PGSet const *active,
     goto failure;
   }
   for (size_t vertex = 0; vertex < count; vertex++) {
-    state.labels[vertex] = pg_set_contains(active, vertex)
-                               ? ad_lift_tree_first_compatible(
-                                     host, 0, game->vertices[vertex].priority)
-                               : SIZE_MAX;
+    if (initial != nullptr && pg_set_contains(active, vertex) &&
+        !ad_position_accepts_priority(host, initial[vertex],
+                                      game->vertices[vertex].priority)) {
+      lift_error(error, "invalid initial label");
+      goto failure;
+    }
+    state.labels[vertex] =
+        pg_set_contains(active, vertex)
+            ? ad_lift_tree_first_compatible(
+                  host, initial == nullptr ? 0 : initial[vertex],
+                  game->vertices[vertex].priority)
+            : SIZE_MAX;
   }
 
   ADLiftStats stats = {.max_position = SIZE_MAX};
@@ -267,6 +279,7 @@ bool ad_lift_run(PGGame const *game, PGSet const *active,
       stats.max_position = label;
     }
   }
+  stats.attractors = state.attractors;
   result->labels = state.labels;
   result->vertex_count = count;
   result->stats = stats;
@@ -284,6 +297,33 @@ failure:
   pg_set_destroy(&state.invalid);
   ad_lift_labelling_destroy(result);
   return false;
+}
+
+bool ad_lift_run(PGGame const *game, PGSet const *active,
+                 ADLiftTree const *host, ADLiftSchedule const schedule,
+                 ADLiftLabelling *result, ADLiftError *error) {
+  return run(game, active, host, schedule, result, error, nullptr);
+}
+
+bool ad_lift_continue(PGGame const *game, PGSet const *active,
+                      ADLiftTree const *host, ADLiftLabelling *labelling,
+                      ADLiftError *error) {
+  if (error != nullptr) {
+    *error = (ADLiftError){0};
+  }
+  if (labelling == nullptr || labelling->labels == nullptr || game == nullptr ||
+      labelling->vertex_count != game->vertex_count) {
+    lift_error(error, "invalid initial labelling");
+    return false;
+  }
+  ADLiftLabelling result = {0};
+  if (!run(game, active, host, AD_LIFT_SCHEDULE_ROUNDS, &result, error,
+           labelling->labels)) {
+    return false;
+  }
+  ad_lift_labelling_destroy(labelling);
+  *labelling = result;
+  return true;
 }
 
 /* Recompute {μ <= position} and {μ < position} directly from the labels. */

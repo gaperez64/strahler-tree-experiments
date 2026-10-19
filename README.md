@@ -106,9 +106,9 @@ name; the latter two read from standard input.
 - `--max-set-items=N` limits the number of vertices shown in a set label.
 - `--priority-mode=original|compact` selects the priority bounds shown in the
   tree. The default is `original`.
-- `--algorithm=lifting|zielonka` selects how the decompositions are built. The
+- `--algorithm=lifting|zielonka|zielonka-sym|lifting-sym` selects how the decompositions are built. The
   default is `lifting`; `zielonka` runs the enhanced Zielonka algorithm for
-  comparison. Both algorithms support preprocessing, statistics and verification.
+  comparison. All algorithms support preprocessing, statistics and verification.
 - `--shave=LIST` solves and removes dominions before building either tree.
   Use a comma list of `single` (all remaining priorities have one parity),
   `loops` (winning self-loops, including forced losing-owner loops), and
@@ -147,6 +147,22 @@ name; the latter two read from standard input.
 - `--no-verify` skips the decomposition and shaved-region closure checks and
   is intended for debugging.
 
+`--algorithm=zielonka-sym` runs McNaughton–Zielonka with memory (Algorithm 8
+of Thejaswini Raghavan's thesis). It keeps both players' decomposition labellings
+across recursive calls and starts with trivial decompositions. Complete n-ary
+hosts are represented lazily, so only visited nodes consume space. It always
+returns both winning regions with verified decompositions and accepts no host
+options. `--stats` includes nonempty calls, attractor computations, Move/Set
+calls and decomposition metrics.
+
+`--algorithm=lifting-sym` is **Algorithm 9 + asymmetric certification (thesis
+§8.3)**. It runs over two host trees, using the usual default, `--tree-k`, `--kary` or
+`--tree-file` hosts and leaf limit. `--adaptive-t` is rejected. With restricted
+hosts, Theorem F's returned set is only a separator: final short lifts certify
+the two dominions, leaving other vertices Unresolved. Statistics include host
+sizes, calls, attractors, Move/Set calls, certification lifts, the size of the
+Even separator and decomposition metrics. Universal hosts give complete results.
+
 By default, `pg2adot` lifts in a Strahler tree that is guaranteed to contain a
 decomposition of each winning region, so the result is complete. That host
 grows quickly: for thousands of vertices and more than a few priorities it
@@ -174,7 +190,7 @@ code for cycle searches rather than copying oink's SCC implementation.
 
 #### Complete and partial results
 
-The default host and `--algorithm=zielonka` always give a complete result: the
+The default host, `--algorithm=zielonka`, and `--algorithm=zielonka-sym` always give a complete result: the
 Even and Odd roots decompose the two winning regions. A restricted host from
 `--tree-k`, `--kary`, `--tree-file`, or a capped or interrupted
 `--adaptive-t` search still
@@ -407,3 +423,36 @@ before `c`. This makes each `S_i` an opponent trap in the remaining vertices
 and each `A_i` its attractor. `ad_lift_solve` checks the labelling directly
 with `ad_lift_verify` and the materialized trees with both `ad_tree_verify`
 and `ad_tree_relative_verify`.
+
+### Symmetric algorithms and thesis correspondence
+
+`src/ad_sym.c` shares the player-swapped recursion for Algorithms 8 and 9:
+`is_ad` implements Proposition 7.2.1; `assign`/`move` implement Proposition
+7.2.3's ⊕/smallMove; `set_side` implements Remark 5. `solve` follows Algorithm
+8 lines 2–26 / Algorithm 9 lines 2–24. Algorithm 8's loop stops on a valid
+residual; Algorithm 9 exhausts the supplied children. Empty subgames never
+recurse. `ad_lift_solve.c` shares host selection; `ad_lift_continue` certifies
+Algorithm 9's final labels without resetting their progress. The original
+`ad_lift.c` computes Algorithm 5's least decomposition using Proposition 7.2.1
+short lifts, rather than Algorithm 5's recursive restart schedule.
+
+The corrected Lemma 8.2.1 entry condition allows the **higher player's side
+fibre**: the current game lies in the lower player's core and the union of the
+higher player's core and side. The printed intersection of both cores fails on
+`0 1 0 0; 1 0 0 1,0;`. See [the entry invariant and proof sketch](docs/symmetric.md)
+for the precise condition, trap closure, and the debug check that raw labels stay
+below the independently computed least valid labelling before certification.
+
+| Thesis correspondence | Classification |
+|---|---|
+| Algorithm 8 line 27 returns updated G_{i+1}, not G_i | Indexing erratum. |
+| Proposition 7.2.3's T/S unions preserve T/S, not H | Typographical errata. |
+| Lemma 8.2.1 item 4 includes the higher player's side | Proposed invariant erratum; justified in the linked proof sketch. |
+| Move the initial higher root's unsupported top labels | Faithful reading / normalization: its highest-priority target is empty. |
+| Set the opponent's residual labels to the side on return | Faithful bookkeeping addition: the winning entry case's update. |
+| Close a stale child by removing the escaping player's attractor | Added algorithmic operation; not a typographical correction. |
+| Finish Algorithm 9 with asymmetric short lifts | Thesis §8.3 extension to obtain certificates, with polynomial additional cost. |
+
+All updates affect only the current subgame and increase labels monotonically.
+Attractor statistics include validity checks and certification, exclude the final
+verifiers, and count ordinary and reach-through-safe computations alike.

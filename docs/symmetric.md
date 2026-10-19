@@ -1,0 +1,93 @@
+# Symmetric recursion: corrected entry condition
+
+This is the implementation's correction to Lemma 8.2.1, item 4 (thesis printed
+page 141), not a claim that the printed condition holds. The correction applies
+to both Algorithms 8 and 9, with the players exchanged at each recursive call.
+
+In a call `solve(G, P, a, b)`, the lower player P has node a at level h; the
+higher player Q has node b at level h+1. Write
+
+- `C_P(a) = {v : a <= D_P(v) < a^S}` for the core, excluding its side;
+- `S_P(a) = {v : D_P(v) = a^S}` for the side fibre, including TOP at a root.
+
+Let R be the ambient residual in which this call's subgame was selected (the
+whole active domain for the initial call). The corrected entry condition is
+
+```text
+V(G) = R ∩ C_P(a) ∩ (C_Q(b) ∪ S_Q(b)).
+```
+
+Thus each entry label is in `[a, a^S)` for P and `[b, b^S]` for Q. G must be
+total and, for a recursive child, a trap for the caller's lower player in R.
+Keep the lemma's other entry requirements: `D_P <= A_P` and `D_Q <= A_Q`
+pointwise, where A is the respective least valid labelling on the original
+active domain, and the two boundary conditions excluding a forced visit to
+earlier labels before crossing the corresponding side boundary (items 2–3,
+with the players swapped when necessary). Mere membership in these intervals
+does not imply the upper bounds or the boundary conditions.
+
+For `0 1 0 0; 1 0 0 1,0;`, the initial Odd call has h=1. Its top attractor
+is `{0}`. Vertex 1 is outside this attractor, so moving its Odd top label
+puts it at the Odd root's side, TOP. It still belongs to the Even child core
+at level 0. The Even recursive call therefore receives `{1}` with its higher
+(Odd) label at TOP. The printed intersection of two cores is false here;
+the corrected condition includes this call. Even wins vertex 1 by staying
+on its priority-0 loop, while Odd wins vertex 0.
+
+## Proof sketch
+
+Initially both labellings are the least priority-compatible ones. The higher
+root has an empty highest-priority target; moving its unsupported top fibre
+places vertices in its children or side. This preserves `D <= A` by the same
+Move argument as Proposition 7.2.3 and establishes the entry intervals.
+
+Consider an iteration at lower node a and higher child c. Moving the lower
+top fibre outside the top attractor can reach `a^S`, even before the recursive
+call. Thus the next call, whose lower node is c and higher node is a, must
+allow `S_P(a)`. Removing the top-attractor vertices from `C_Q(c)` by Set gives
+the candidate U. Old labels can leave U with escaping edges, so the code uses
+
+```text
+B = Attr_P^R(R \ U),     U' = U \ B = R \ B.
+```
+
+The complement of an attractor is a P-trap and induces a total subgame. Set
+moves `B ∩ U` to `c^S`, so the updated c-core in R is exactly U'. Meanwhile
+the caller's labels remain in its a-core or a-side. This gives the corrected
+entry equality after swapping players. This closure is an added operation.
+
+For its upper bound, note the loop's frontier invariant: every vertex still
+in R has Q label at least c. This holds for the first child after the higher
+top fibre is moved; after each iteration, Move advances the preceding child's
+side fibre outside the returned attractor. Consequently `R \ U` has Q labels
+at least `c^S`, not earlier labels. Since `D_Q <= A_Q`, those targets are
+outside the least Q c-core. The entry trap and earlier-label boundary conditions
+allow its Q-strategy to stay in that core within R, so P cannot attract any
+of its vertices to these targets. Thus `B ∩ U` is outside that least core,
+and setting it to `c^S` stays below A_Q. This is Proposition 7.2.6's exclusion
+argument; it also justifies the Sets of top-attractor vertices and of vertices
+attracted to the returned separator.
+
+Induction now uses the corrected entry condition for each nonempty child.
+Move advances only fibres outside their required attractors, preserving
+`D <= A` by Proposition 7.2.3. The return update sets the opponent's residual
+to its side, as in the winning entry case. A vertex already on that side
+needs no core witness for that player; it cannot make `is_ad` succeed there.
+These facts preserve the upper bounds needed by the separator argument.
+Continuing short lifts from `D <= A` then reaches A, as described in §8.3.
+
+## Regression and debug checks
+
+`higher_side_entry` in `tests/test_ad_sym.c` checks this two-vertex game for
+both algorithms, including exactly two calls and exactly one call containing
+a higher-side entry (`ADSymStats.higher_side_calls`), as well as the winners.
+At every entry, debug assertions check totality and both label intervals.
+
+Before certification, debug builds independently run ordinary lifting from
+the least compatible labels and assert `D_P(v) <= A_P(v)` for every active
+vertex and both players. This checks the raw labels, not labels repaired by
+certification, and the independent run is excluded from solver statistics.
+To keep this check cheap, it is limited to games with at most 12 vertices
+and hosts with at most 4096 nodes; it covers the boundary regression and the
+small random-game suite. Larger games rely on the argument above and final
+certificate verification. Defining NDEBUG omits these assertions and debug runs.
