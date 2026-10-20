@@ -152,7 +152,7 @@ def run_backend(backend, pre, game, root, build_dir, timeout, limit):
     if backend.binary == "pg2adot" and backend.name.startswith("lifting"):
         command.append(f"--max-host-leaves={limit}")
     if pre:
-        command.extend(("--shave=all", "--compress"))
+        command.extend(("--initial-shave=all", "--compress"))
     run = invoke(command, game, root, build_dir, timeout)
     if run.outcome not in ("complete", "partial"):
         return run
@@ -261,7 +261,7 @@ def generate(root, destination, build_dir, timeout, limit):
         "their graph descriptions,\n"
         "and leaves links list the distinct progress measures.\n\n",
         "## Preprocessing and shaving\n\n",
-        "The `+pre` rows pass `--shave=all --compress` before running the "
+        "The `+pre` rows pass `--initial-shave=all --compress` before running the "
         "selected solver:\n\n",
         "1. Compress priority gaps and merge consecutive distinct priorities "
         "of the same parity, preserving winners. Choose the levels from the "

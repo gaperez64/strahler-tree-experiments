@@ -35,13 +35,14 @@ standard input. For example:
 
 ```sh
 ./build/pg2adot --algorithm=lifting --adaptive-t game.pg > decomposition.dot
-./build/pg2adot --algorithm=zielonka --shave=all --compress game.pg > decomposition.dot
-./build/pg2pmdot --algorithm=strahler --shave=all --compress game.pg > measures.dot
+./build/pg2adot --algorithm=zielonka --initial-shave=all --compress game.pg > decomposition.dot
+./build/pg2pmdot --algorithm=strahler --initial-shave=all --compress game.pg > measures.dot
+./build/pg2adot --adaptive-t --iter-shave game.pg > decomposition.dot
 ./build/pg2pmdot --algorithm=succinct --labels=sets game.pg > measures.dot
 dot -Tsvg decomposition.dot > decomposition.svg
 ```
 
-`--shave=all` removes simple dominions before solving. `--compress` merges
+`--initial-shave=all` removes simple dominions before solving. `--compress` merges
 consecutive distinct priorities of the same parity. Sample games are in
 [tests/games/](tests/games/).
 

@@ -25,7 +25,8 @@
 
 static void test_options(void) {
   PGPreprocessOptions options = {0};
-  assert(pg_preprocess_parse_option(&options, "shave", "wcwc,loops,single"));
+  assert(pg_preprocess_parse_option(&options, "initial-shave",
+                                    "wcwc,loops,single"));
   assert(options.shave == PG_SHAVE_ALL);
   assert(pg_preprocess_parse_option(&options, "compress", nullptr));
   assert(options.compress);
@@ -34,18 +35,19 @@ static void test_options(void) {
                            "none,wcwc", " loops",      "Loops"};
   for (size_t index = 0; index < sizeof(invalid) / sizeof(invalid[0]);
        index++) {
-    assert(!pg_preprocess_parse_option(&options, "shave", invalid[index]));
+    assert(
+        !pg_preprocess_parse_option(&options, "initial-shave", invalid[index]));
     assert(options.shave == PG_SHAVE_ALL && options.compress);
   }
-  assert(!pg_preprocess_parse_option(&options, "shave", nullptr));
+  assert(!pg_preprocess_parse_option(&options, "initial-shave", nullptr));
   assert(!pg_preprocess_parse_option(&options, "compress", "yes"));
   assert(!pg_preprocess_parse_option(&options, "unknown", "all"));
-  assert(!pg_preprocess_parse_option(nullptr, "shave", "all"));
+  assert(!pg_preprocess_parse_option(nullptr, "initial-shave", "all"));
   assert(!pg_preprocess_parse_option(&options, nullptr, "all"));
-  assert(pg_preprocess_parse_option(&options, "shave", "none"));
+  assert(pg_preprocess_parse_option(&options, "initial-shave", "none"));
   assert(options.shave == 0);
-  assert(pg_preprocess_parse_option(&options, "shave", "all"));
-  assert(pg_preprocess_parse_option(&options, "shave", "loops,loops"));
+  assert(pg_preprocess_parse_option(&options, "initial-shave", "all"));
+  assert(pg_preprocess_parse_option(&options, "initial-shave", "loops,loops"));
   assert(options.shave == (1U << PG_SHAVE_LOOPS));
 }
 
@@ -253,7 +255,7 @@ static void test_scaling(PGPreprocessOptions const *options) {
 int main(int argc, char **argv) {
   if (argc == 2) {
     PGPreprocessOptions options = {0};
-    assert(pg_preprocess_parse_option(&options, "shave", argv[1]));
+    assert(pg_preprocess_parse_option(&options, "initial-shave", argv[1]));
     test_scaling(&options);
     return 0;
   }

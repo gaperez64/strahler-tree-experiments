@@ -93,7 +93,7 @@ static void check_game(PGGame *game, PGPreprocessOptions const *pre_options) {
       assert(pg_set_count(&result.won[0]) + pg_set_count(&result.won[1]) +
                  pg_set_count(&result.unresolved) ==
              pg_set_count(&preprocessed.active));
-      if (!incremental) {
+      if (!incremental || pg_set_empty(&result.unresolved)) {
         assert(pg_set_empty(&result.unresolved));
         assert(pg_set_equal(&result.won[0], &expected.region[0]));
         assert(pg_set_equal(&result.won[1], &expected.region[1]));
@@ -118,13 +118,24 @@ static void check_game(PGGame *game, PGPreprocessOptions const *pre_options) {
 }
 
 static void test_fixtures(void) {
-  char const *const files[] = {"even_loop",     "odd_loop",
-                               "split_winners", "ordered_two_children",
-                               "strahler_two",  "priority_gap_start",
-                               "lifted_shape",  "shave_single",
-                               "shave_loops",   "shave_wcwc",
-                               "shave_partial", "compress",
-                               "sparse"};
+  char const *const files[] = {"even_loop",
+                               "odd_loop",
+                               "split_winners",
+                               "ordered_two_children",
+                               "strahler_two",
+                               "priority_gap_start",
+                               "lifted_shape",
+                               "shave_single",
+                               "shave_loops",
+                               "shave_wcwc",
+                               "shave_partial",
+                               "compress",
+                               "sparse",
+                               "disagree_lifting_leaves",
+                               "disagree_lifting_strahler",
+                               "disagree_odd_strahler",
+                               "disagree_shape",
+                               "disagree_zielonka_height"};
   for (size_t index = 0; index < sizeof(files) / sizeof(files[0]); index++) {
     for (unsigned mode = 0; mode < 4; mode++) {
       char path[128];

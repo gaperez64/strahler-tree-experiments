@@ -34,14 +34,14 @@ static void usage(FILE *out, char const *program) {
           "  --labels=counts|sets|none     default: counts\n"
           "  --max-set-items=N             default: 32\n"
           "  --priority-mode=original|compact  default: original\n"
-          "  --shave=single,loops,wcwc|all|none  default: none\n"
+          "  --initial-shave=single,loops,wcwc|all|none  default: none\n"
           "  --compress                    merge consecutive same-parity "
           "priorities\n"
           "  --k=K --t=T                   fixed Strahler parameters; may be "
           "partial\n"
           "  --bits=B                      fixed succinct bit budget; may be "
           "partial\n"
-          "  --incremental                 remove dominions between runs; "
+          "  --iter-shave                 remove dominions between runs; "
           "print every round\n"
           "  --stats                       print parameters and lifting "
           "statistics to stderr\n"
@@ -72,6 +72,13 @@ static bool write_output(PMResult const result[static 2],
   Output const *output = context;
   bool const partial = !pg_set_empty(unresolved);
   if (output->stats) {
+    if (output->incremental) {
+      fprintf(stderr, "iter-shave: rounds=%zu shaved=%zu\n", round,
+              pg_set_count(&result[0].region) +
+                  pg_set_count(&result[1].region) +
+                  pg_set_count(&result[0].attracted) +
+                  pg_set_count(&result[1].attracted));
+    }
     fprintf(stderr, "%s: round=%zu result=%s unresolved=%zu\n",
             result[0].algorithm == PM_STRAHLER ? "strahler" : "succinct", round,
             partial ? "partial" : "complete", pg_set_count(unresolved));
@@ -154,12 +161,12 @@ int main(int argc, char *argv[argc + 1]) {
       {"labels", required_argument, nullptr, OPT_LABELS},
       {"max-set-items", required_argument, nullptr, OPT_MAX_ITEMS},
       {"priority-mode", required_argument, nullptr, OPT_PRIORITY},
-      {"shave", required_argument, nullptr, OPT_SHAVE},
+      {"initial-shave", required_argument, nullptr, OPT_SHAVE},
       {"compress", no_argument, nullptr, OPT_COMPRESS},
       {"k", required_argument, nullptr, OPT_K},
       {"t", required_argument, nullptr, OPT_T},
       {"bits", required_argument, nullptr, OPT_BITS},
-      {"incremental", no_argument, nullptr, OPT_INCREMENTAL},
+      {"iter-shave", no_argument, nullptr, OPT_INCREMENTAL},
       {"stats", no_argument, nullptr, OPT_STATS},
       {"no-verify", no_argument, nullptr, OPT_NO_VERIFY},
       {nullptr, 0, nullptr, 0},
@@ -239,8 +246,8 @@ int main(int argc, char *argv[argc + 1]) {
     case OPT_SHAVE:
     case OPT_COMPRESS:
       if (!pg_preprocess_parse_option(
-              &preprocess_options, option == OPT_SHAVE ? "shave" : "compress",
-              optarg)) {
+              &preprocess_options,
+              option == OPT_SHAVE ? "initial-shave" : "compress", optarg)) {
         goto invalid;
       }
       break;

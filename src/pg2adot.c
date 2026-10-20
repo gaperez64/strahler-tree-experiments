@@ -52,7 +52,9 @@ static void usage(FILE *out, char *argv[static 1]) {
       "                               default: original\n"
       "  --algorithm=lifting|zielonka|zielonka-sym|lifting-sym\n"
       "                               default: lifting\n"
-      "  --shave=loops,wcwc,single|all|none  default: none\n"
+      "  --initial-shave=loops,wcwc,single|all|none  default: none\n"
+      "  --iter-shave                  attract and remove dominions between "
+      "lifts\n"
       "  --compress                   merge consecutive same-parity "
       "priorities\n"
       "  --tree-k=K                   lift in U^K_{t,H}; may be partial\n"
@@ -170,6 +172,25 @@ static void write_lifting_stats(ADLiftSolveStats const *stats,
   char const *name = options->symmetric ? "lifting-sym" : "lifting";
   fprintf(stderr, "%s: vertices=%zu t_full=%zu result=%s\n", name,
           stats->vertices, stats->t_full, result_kind(result));
+  if (options->iter_shave) {
+    fprintf(stderr, "iter-shave: rounds=%zu\n", stats->iterations);
+    for (size_t round = 0; round < stats->iterations; round++) {
+      size_t even = pg_set_count(&result->region[0]);
+      size_t odd = pg_set_count(&result->region[1]);
+      size_t t = stats->player[0].t;
+      if (round < result->shave_count) {
+        ADShaveRound const *shave = result->shaves + round;
+        even = pg_set_count(&shave->attracted[0]);
+        odd = pg_set_count(&shave->attracted[1]);
+        t = shave->t;
+      }
+      fprintf(stderr, "iter-shave: round=%zu", round + 1);
+      if (options->mode == AD_LIFT_HOST_ADAPTIVE) {
+        fprintf(stderr, " t=%zu", t);
+      }
+      fprintf(stderr, " shaved=%zu even=%zu odd=%zu\n", even + odd, even, odd);
+    }
+  }
   if (options->symmetric) {
     ADSymStats const *counts = &stats->symmetric;
     fprintf(stderr,
@@ -242,6 +263,7 @@ int main(int argc, char *argv[argc + 1]) {
     OPTION_STATS,
     OPTION_SHAVE,
     OPTION_COMPRESS,
+    OPTION_ITER_SHAVE,
   };
   static struct option const options[] = {
       {"help", no_argument, nullptr, 'h'},
@@ -259,8 +281,9 @@ int main(int argc, char *argv[argc + 1]) {
       {"tree-file", required_argument, nullptr, OPTION_TREE_FILE},
       {"max-host-leaves", required_argument, nullptr, OPTION_MAX_HOST_LEAVES},
       {"stats", no_argument, nullptr, OPTION_STATS},
-      {"shave", required_argument, nullptr, OPTION_SHAVE},
+      {"initial-shave", required_argument, nullptr, OPTION_SHAVE},
       {"compress", no_argument, nullptr, OPTION_COMPRESS},
+      {"iter-shave", no_argument, nullptr, OPTION_ITER_SHAVE},
       {nullptr, 0, nullptr, 0},
   };
 
@@ -406,10 +429,13 @@ int main(int argc, char *argv[argc + 1]) {
     case OPTION_COMPRESS:
       if (!pg_preprocess_parse_option(
               &preprocess_options,
-              option == OPTION_SHAVE ? "shave" : "compress", optarg)) {
+              option == OPTION_SHAVE ? "initial-shave" : "compress", optarg)) {
         fputs("Invalid preprocessing option\n", stderr);
         return EXIT_USAGE;
       }
+      break;
+    case OPTION_ITER_SHAVE:
+      lift_options.iter_shave = true;
       break;
     default:
       usage(stderr, argv);
@@ -436,7 +462,7 @@ int main(int argc, char *argv[argc + 1]) {
   if ((algorithm == ALGORITHM_ZIELONKA ||
        algorithm == ALGORITHM_ZIELONKA_SYM) &&
       (strahler_host || start_t_given || arity != 0 || tree_path != nullptr ||
-       host_limit_given)) {
+       host_limit_given || lift_options.iter_shave)) {
     fprintf(stderr, "Lifting options cannot be used with --algorithm=%s\n",
             algorithm == ALGORITHM_ZIELONKA ? "zielonka" : "zielonka-sym");
     return EXIT_USAGE;

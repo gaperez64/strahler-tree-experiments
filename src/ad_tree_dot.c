@@ -609,20 +609,29 @@ write_node(FILE *out, PGGame const *game, PGSet const *domain,
 [[nodiscard]] static bool
 write_shaved(FILE *out, PGGame const *game, PGSet const *shaved,
              char const *identifier, bool const empty_root,
-             ADDotLabels const labels, size_t const max_items) {
+             ADDotLabels const labels, size_t const max_items,
+             size_t const round, size_t const t) {
   if (shaved == nullptr || pg_set_empty(shaved)) {
     return true;
   }
+  char node[80];
+  if (round == 0) {
+    (void)snprintf(node, sizeof(node), "%s_shaved", identifier);
+  } else {
+    (void)snprintf(node, sizeof(node), "%s_shaved_%zu", identifier, round);
+  }
   return fprintf(out,
-                 "  %s_shaved [style=\"dashed,filled\", fillcolor=lightgray, "
-                 "label=<<B>shaved (%s)</B>: %zu vertices",
-                 identifier, strcmp(identifier, "even") == 0 ? "Even" : "Odd",
-                 pg_set_count(shaved)) >= 0 &&
+                 "  %s [style=\"dashed,filled\", fillcolor=lightgray, "
+                 "label=<<B>shaved (%s)</B>",
+                 node, strcmp(identifier, "even") == 0 ? "Even" : "Odd") >= 0 &&
+         (round == 0 || fprintf(out, ", round %zu", round) >= 0) &&
+         (t == SIZE_MAX || fprintf(out, ", t=%zu", t) >= 0) &&
+         fprintf(out, ": %zu vertices", pg_set_count(shaved)) >= 0 &&
          (labels != AD_DOT_LABEL_SETS ||
           (fputs("<BR/>", out) >= 0 &&
            pg_dot_write_set(out, game, shaved, max_items))) &&
-         fprintf(out, ">];\n  %s%s -> %s_shaved [style=dashed];\n", identifier,
-                 empty_root ? "_empty" : "", identifier) >= 0;
+         fprintf(out, ">];\n  %s%s -> %s [style=dashed];\n", identifier,
+                 empty_root ? "_empty" : "", node) >= 0;
 }
 
 bool ad_tree_write_dot(FILE *out, PGGame const *game, ADResult const *result,
@@ -656,10 +665,13 @@ bool ad_tree_write_dot(FILE *out, PGGame const *game, ADResult const *result,
     char const *identifier = candidate == PG_EVEN ? "even" : "odd";
     ADNode const *root = result->decomposition[candidate];
     PGSet const *region = &result->region[candidate];
+    bool has_shaved = shaved != nullptr && !pg_set_empty(&shaved[candidate]);
+    for (size_t round = 0; round < result->shave_count; round++) {
+      has_shaved |= !pg_set_empty(&result->shaves[round].attracted[candidate]);
+    }
     if (root == nullptr) {
       succeeded =
-          write_empty(out, (PGPlayer)candidate, both, partial,
-                      shaved != nullptr && !pg_set_empty(&shaved[candidate]));
+          write_empty(out, (PGPlayer)candidate, both, partial, has_shaved);
     } else {
       succeeded =
           (!both || fprintf(out, "  result -> %s;\n", identifier) >= 0) &&
@@ -671,9 +683,34 @@ bool ad_tree_write_dot(FILE *out, PGGame const *game, ADResult const *result,
                                    priority_map));
     }
     succeeded = succeeded &&
-                write_shaved(
-                    out, game, shaved == nullptr ? nullptr : &shaved[candidate],
-                    identifier, root == nullptr, labels, max_set_items);
+                write_shaved(out, game,
+                             shaved == nullptr ? nullptr : &shaved[candidate],
+                             identifier, root == nullptr, labels, max_set_items,
+                             0, SIZE_MAX);
+    for (size_t round = 0; succeeded && round < result->shave_count; round++) {
+      ADShaveRound const *shave = result->shaves + round;
+      succeeded = write_shaved(out, game, &shave->attracted[candidate],
+                               identifier, root == nullptr, labels,
+                               max_set_items, round + 1, shave->t);
+      ADNode const *certificate = shave->certified.decomposition[candidate];
+      if (!succeeded || certificate == nullptr) {
+        continue;
+      }
+      char certificate_id[80];
+      (void)snprintf(certificate_id, sizeof(certificate_id), "%s_round_%zu",
+                     identifier, round + 1);
+      PGSet const *dominion = &shave->certified.region[candidate];
+      succeeded =
+          fprintf(out, "  %s_shaved_%zu -> %s;\n", identifier, round + 1,
+                  certificate_id) >= 0 &&
+          (jurdzinski
+               ? write_jurdzinski_node(out, game, dominion, dominion,
+                                       certificate, certificate_id, labels,
+                                       max_set_items, true, true, &ranks)
+               : write_node(out, game, dominion, dominion, certificate,
+                            certificate_id, view, labels, max_set_items, true,
+                            true, priority_map));
+    }
   }
   succeeded =
       succeeded &&

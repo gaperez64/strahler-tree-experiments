@@ -304,7 +304,7 @@ typedef enum {
       stats->player[PG_ODD].first_full_t = best_t[PG_ODD];
       return true;
     }
-    if (t >= stats->t_full) {
+    if (solver->options->iter_shave || t >= stats->t_full) {
       return true;
     }
   }
@@ -329,9 +329,11 @@ typedef enum {
   return true;
 }
 
-bool ad_lift_solve(PGGame const *game, PGSet const *domain,
-                   ADLiftOptions const *options, ADResult *result,
-                   ADLiftSolveStats *stats, ADLiftError *error) {
+[[nodiscard]] static bool solve_once(PGGame const *game, PGSet const *domain,
+                                     PGSet const *host_domain,
+                                     ADLiftOptions const *options,
+                                     ADResult *result, ADLiftSolveStats *stats,
+                                     ADLiftError *error) {
   if (error != nullptr) {
     *error = (ADLiftError){0};
   }
@@ -364,14 +366,14 @@ bool ad_lift_solve(PGGame const *game, PGSet const *domain,
     return false;
   }
 
-  size_t const vertices = pg_set_count(domain);
+  size_t const vertices = pg_set_count(host_domain);
   stats->vertices = vertices;
-  if (vertices == 0) {
+  if (pg_set_empty(domain)) {
     return true;
   }
   uint64_t maximum = 0;
-  for (size_t vertex = pg_set_next(domain, 0); vertex != SIZE_MAX;
-       vertex = pg_set_next(domain, vertex + 1)) {
+  for (size_t vertex = pg_set_next(host_domain, 0); vertex != SIZE_MAX;
+       vertex = pg_set_next(host_domain, vertex + 1)) {
     if (game->vertices[vertex].priority > maximum) {
       maximum = game->vertices[vertex].priority;
     }
@@ -477,5 +479,138 @@ bool ad_lift_solve(PGGame const *game, PGSet const *domain,
   if (!succeeded) {
     ad_result_destroy(result);
   }
+  return succeeded;
+}
+
+[[nodiscard]] static bool empty_residual(PGSet const *remaining,
+                                         ADResult *result) {
+  result->kind =
+      pg_set_empty(remaining) ? AD_RESULT_COMPLETE : AD_RESULT_PARTIAL;
+  return pg_set_init(&result->region[0], remaining->bit_count) &&
+         pg_set_init(&result->region[1], remaining->bit_count) &&
+         pg_set_clone(&result->unresolved, remaining);
+}
+
+bool ad_lift_solve(PGGame const *game, PGSet const *domain,
+                   ADLiftOptions const *options, ADResult *result,
+                   ADLiftSolveStats *stats, ADLiftError *error) {
+  if (error != nullptr) {
+    *error = (ADLiftError){0};
+  }
+  if (options == nullptr || !options->iter_shave) {
+    return solve_once(game, domain, domain, options, result, stats, error);
+  }
+  ADLiftSolveStats local_stats = {0};
+  if (stats == nullptr) {
+    stats = &local_stats;
+  }
+  *stats = (ADLiftSolveStats){0};
+  if (result == nullptr || domain == nullptr) {
+    solve_error(error, "invalid lifting solver input");
+    return false;
+  }
+  *result = (ADResult){0};
+  PGSet remaining = {0};
+  ADResult history = {0};
+  ADLiftOptions round_options = *options;
+  size_t last_winning_t[2] = {0, 0};
+  bool succeeded = false;
+  if (!pg_set_clone(&remaining, domain)) {
+    solve_error(error, "failed to allocate the residual subgame");
+    goto cleanup;
+  }
+  for (;;) {
+    ADLiftSolveStats current = {0};
+    if (!solve_once(game, &remaining, domain, &round_options, result, &current,
+                    error)) {
+      if (current.budget_exhausted && stats->iterations != 0 &&
+          options->mode == AD_LIFT_HOST_ADAPTIVE) {
+        stats->budget_exhausted = true;
+        succeeded = empty_residual(&remaining, result);
+      }
+      goto cleanup;
+    }
+    current.iterations = stats->iterations + !pg_set_empty(&remaining);
+    for (size_t player = 0; player < 2; player++) {
+      current.player[player].total_lifts += stats->player[player].total_lifts;
+      if (options->mode == AD_LIFT_HOST_ADAPTIVE) {
+        if (stats->iterations == 0 || !pg_set_empty(&result->region[player])) {
+          last_winning_t[player] = current.player[player].t;
+        }
+        current.player[player].first_full_t = last_winning_t[player];
+      }
+    }
+    *stats = current;
+    if (options->verify) {
+      ADVerifyError verification = {0};
+      if (!ad_result_verify_partial(game, &remaining, result, &verification)) {
+        solve_error(error, "round verification failed: %s",
+                    verification.message);
+        goto cleanup;
+      }
+    }
+    bool const progress =
+        !pg_set_empty(&result->region[0]) || !pg_set_empty(&result->region[1]);
+    if (result->kind == AD_RESULT_COMPLETE ||
+        (!progress && options->mode != AD_LIFT_HOST_ADAPTIVE)) {
+      succeeded = true;
+      goto cleanup;
+    }
+    ADShaveRound *grown = realloc(
+        history.shaves, (history.shave_count + 1) * sizeof(history.shaves[0]));
+    if (grown == nullptr) {
+      solve_error(error, "failed to record a shaving round");
+      goto cleanup;
+    }
+    history.shaves = grown;
+    ADShaveRound *shave = history.shaves + history.shave_count++;
+    *shave = (ADShaveRound){
+        .certified = *result,
+        .t = options->mode == AD_LIFT_HOST_ADAPTIVE ? stats->player[0].t
+                                                    : SIZE_MAX,
+    };
+    *result = (ADResult){0};
+    for (size_t player = 0; player < 2; player++) {
+      if (!pg_attractor(game, &remaining, &shave->certified.region[player],
+                        (PGPlayer)player, &shave->attracted[player])) {
+        solve_error(error, "failed to attract a certified dominion");
+        goto cleanup;
+      }
+    }
+    /* Removing a dominion's attractor leaves a total subgame. Its winners
+     * remain winners in the original game: exits into a removed opponent
+     * dominion were already attracted, and exits into one's own are winning. */
+    pg_set_subtract_into(&remaining, &shave->attracted[0]);
+    pg_set_subtract_into(&remaining, &shave->attracted[1]);
+    bool const adaptive = options->mode == AD_LIFT_HOST_ADAPTIVE;
+    if (pg_set_empty(&remaining) ||
+        (adaptive && stats->player[0].t >= stats->t_full)) {
+      if (adaptive && pg_set_empty(&remaining)) {
+        stats->adaptive_complete = true;
+        stats->first_complete_t = stats->player[0].t;
+      }
+      succeeded = empty_residual(&remaining, result);
+      goto cleanup;
+    }
+    if (adaptive) {
+      round_options.t = stats->player[0].t + 1;
+    }
+  }
+cleanup:
+  pg_set_destroy(&remaining);
+  if (succeeded) {
+    for (size_t player = 0; player < 2; player++) {
+      stats->player[player].tree =
+          ad_tree_metrics(result->decomposition[player]);
+    }
+    result->shaves = history.shaves;
+    result->shave_count = history.shave_count;
+    history.shaves = nullptr;
+    history.shave_count = 0;
+  } else {
+    solve_error(error, "failed to allocate iterative shaving results");
+    ad_result_destroy(result);
+  }
+  ad_result_destroy(&history);
   return succeeded;
 }

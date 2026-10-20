@@ -294,7 +294,7 @@ class DecompTests(unittest.TestCase):
                         command = invoke.call_args.args[0]
                         self.assertIn("--labels=sets", command)
                         self.assertIn("--max-set-items=8", command)
-                        self.assertEqual("--shave=all" in command, pre)
+                        self.assertEqual("--initial-shave=all" in command, pre)
                         self.assertEqual("--compress" in command, pre)
 
     def test_adaptive_equality_is_enforced(self):
