@@ -5,7 +5,10 @@
 Build commands and requirements are in [README.md](../README.md#build).
 
 Run shell examples from the repository root. Every executable accepts
-`--version`, using the Meson project version (currently `0.1`).
+`--version`, using the Meson project version (currently `0.1`). Meson's
+`vcs_tag()` runs `git describe --tags --always --dirty` in the source directory
+on every build and appends ` (git <describe>)` when available; without Git or
+`.git`, only the Meson version is printed.
 
 CI checks formatting with clang-format 18, treats compiler and clang-tidy
 warnings as errors, enforces 75% line coverage, and runs ASan/UBSan and
@@ -91,29 +94,43 @@ Multi-round progress-measure PNGs show each round in a separate panel.
 
 ## Command reference
 
+Every command accepts `--help` (stdout, exit 0) and `--version`. Use exact
+long option names and attach values with `=`: `--name=value`. Short options,
+abbreviations, and space-separated option values are rejected. Invalid options
+or values exit 2 with one error line and `Try '<prog> --help'.` on stderr.
+Options precede input operands; `--` ends option parsing. Game files and `-`
+for standard input remain positional inputs in `pg2adot` and `pg2pmdot`.
+
+Migration: `genstree` and `lenstree` use `--strahler=K`, `--log-leaves=T`,
+`--height=H`, and `--leaf=L` in place of `-k K`, `-t T`, `-h H`, and `-l L`.
+`genstree` also replaces `-j`, `-d`, and `-p P` with `--count`, `--dot`, and
+`--p-level=P`. `pgfilt -n` becomes `pgfilt --normalize`. Former `-h` help flags
+become `--help`. `str-tree INDEX [P]` becomes `str-tree --index=INDEX [--p-level=P]`.
+
 ### `genstree`
 
-Build `U^k_{t,h}` with required `-k K -t T -h H` (`1 <= K <= H`, `T >= 0`).
-The default output is leaf labels as `Bits` and `Blocks`. Use `-j` for the
-leaf count, `-l L` for one leaf (1-based), `-d` for DOT, or `-p P` to add
-p-level group sizes. Counts saturate at the `unsigned` maximum, reported as
-"at least" that value. Use `--help` for the full option list; `-h` sets height.
+Build `U^k_{t,h}` with required `--strahler=K --log-leaves=T --height=H`
+(`1 <= K <= H`, `T >= 0`).
+The default output is leaf labels as `Bits` and `Blocks`. Use `--count` for the
+leaf count, `--leaf=L` for one leaf (1-based), `--dot` for DOT, or `--p-level=P`
+to add p-level group sizes. Counts saturate at the `unsigned` maximum, reported as
+"at least" that value. Use `--help` for the full option list.
 
 ```sh
-./build/genstree -k 4 -t 2 -h 4 -j
-./build/genstree -k 4 -t 2 -h 4 -d | dot -Tsvg > tree.svg
+./build/genstree --strahler=4 --log-leaves=2 --height=4 --count
+./build/genstree --strahler=4 --log-leaves=2 --height=4 --dot | dot -Tsvg > tree.svg
 ```
 
 ### `lenstree`
 
 The Boost-based implementation computes leaf counts and individual leaf
-labels. It is built when Boost is available. It has no help flag:
-`-k K -t T -h H` are required. It prints the count by default; `-l L` selects
-one leaf (1-based).
+labels. It is built when Boost is available. `--strahler=K`, `--log-leaves=T`,
+and `--height=H` are required. It prints the count by default; `--leaf=L`
+selects one leaf (1-based).
 
 ```sh
-./build/lenstree -k 4 -t 2 -h 4
-./build/lenstree -k 4 -t 2 -h 4 -l 3
+./build/lenstree --strahler=4 --log-leaves=2 --height=4
+./build/lenstree --strahler=4 --log-leaves=2 --height=4 --leaf=3
 ```
 
 ### `pms2dot`
@@ -362,20 +379,20 @@ upstream printer fixes and known Strahler search limit.
 
 ### `str-tree`
 
-Check p-level successors in the tree compiled into `src/str-tree.cc`. This
-command has no help flag.
+Check p-level successors in the tree compiled into `src/str-tree.cc`.
+Use `--help` to list its options.
 
 - With no arguments, check every leaf and its successor.
-- With `INDEX`, check one leaf.
-- With `INDEX P`, compute that leaf's p-level successor.
+- With `--index=INDEX`, check one leaf.
+- With `--index=INDEX --p-level=P`, compute that leaf's p-level successor.
 
-`INDEX` is zero-based. With one index, `P` defaults to `h - 2`; an explicit
-`P` must be between 0 and `h - 1`.
+`INDEX` is zero-based. `--p-level` requires `--index` and defaults to `h - 2`;
+an explicit `P` must be between 0 and `h - 1`.
 
 To compile a different generated tree into this command:
 
 ```sh
-./build/genstree -k 3 -t 2 -h 5 -p 2 > examples/k3t2h5p2.hpp
+./build/genstree --strahler=3 --log-leaves=2 --height=5 --p-level=2 > examples/k3t2h5p2.hpp
 python3 src/convert_out.py examples/k3t2h5p2.hpp
 ```
 

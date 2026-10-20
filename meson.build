@@ -2,7 +2,7 @@ project(
   'strahler-tree-experiments',
   'c',
   'cpp',
-  version : '0.1',
+  version : '0.2',
   meson_version : '>=1.4.0',
   default_options : [
     'warning_level=3',
@@ -27,15 +27,24 @@ version_configuration.set_quoted(
   'STRAHLER_TREE_VERSION',
   meson.project_version(),
 )
-version_header = configure_file(
-  output : 'strahler_tree_version.h',
+version_configuration.set_quoted('STRAHLER_TREE_GIT', '@VCS_TAG@')
+version_template = configure_file(
+  output : 'strahler_tree_version.h.in',
   configuration : version_configuration,
+)
+version_header = vcs_tag(
+  input : version_template,
+  output : 'strahler_tree_version.h',
+  command : [find_program('ci/git-version.sh'), meson.project_source_root()],
+  # Meson replaces an empty fallback with the project version.
+  fallback : 'no git',
 )
 cli_version_lib = static_library(
   'cli_version',
   ['src/cli_version.c', version_header],
 )
 cli_version_dep = declare_dependency(
+  sources : version_header,
   include_directories : source_includes,
   link_with : cli_version_lib,
 )
@@ -343,9 +352,9 @@ test('test_ad_tree_dot', test_ad_tree_dot_exe)
 # intentionally output-agnostic; the regression tests cover stable output.
 test('str_tree_all', str_tree)
 test('genstree_help', genstree, args : ['--help'])
-test('str_tree_one_argument', str_tree, args : ['0'])
-test('str_tree_two_arguments', str_tree, args : ['0', '2'])
-test('pgfilt_help', pgfilt, args : ['-h'])
+test('str_tree_index', str_tree, args : ['--index=0'])
+test('str_tree_index_level', str_tree, args : ['--index=0', '--p-level=2'])
+test('pgfilt_help', pgfilt, args : ['--help'])
 test('pg2adot_help', pg2adot, args : ['--help'])
 test(
   'pg2adot_rejects_bad_adaptive_t',
@@ -443,7 +452,7 @@ test(
   args : ['--tree-file=/nonexistent/host.tree'],
   should_fail : true,
 )
-test('pms2dot_help_exit', pms2dot, args : ['-h'])
+test('pms2dot_help_exit', pms2dot, args : ['--help'])
 check_version = find_program('tests/check-version.sh')
 test(
   'genstree_version',
@@ -477,6 +486,19 @@ if boost_dep.found()
     args : [lenstree, meson.project_version()],
   )
 endif
+cli_programs = [genstree, pgfilt, pms2dot, pg2adot, pg2pmdot, str_tree]
+if boost_dep.found()
+  cli_programs += [lenstree]
+endif
+foreach program : cli_programs
+  test(program.name() + '_cli', python,
+    args : [files('tests/test_cli.py'), program, meson.project_version()],
+    suite : 'python')
+endforeach
+test('source_version', python,
+  args : [files('tests/test_source_version.py'), meson.project_version(), find_program('meson')],
+  suite : 'python', timeout : 120)
+
 run_with_input = find_program('tests/run-with-input.sh')
 test(
   'pgfilt_rejects_missing_semicolon',
@@ -1052,24 +1074,24 @@ foreach ct : genstree_cases
   base_name = 'k' + k + '_t' + t + '_h' + h
 
   test('genstree_' + base_name, run_single_test,
-    args: [genstree, 'tests/golden/' + base_name + '.out', 'tests/actual/' + base_name + '.out', 'EMPTY', '-k', k, '-t', t, '-h', h],
+    args: [genstree, 'tests/golden/' + base_name + '.out', 'tests/actual/' + base_name + '.out', 'EMPTY', '--strahler=' + k, '--log-leaves=' + t, '--height=' + h],
     workdir: meson.project_source_root())
 
   test('genstree_j_' + base_name, run_single_test,
-    args: [genstree, 'tests/golden/j_' + base_name + '.out', 'tests/actual/j_' + base_name + '.out', 'EMPTY', '-k', k, '-t', t, '-h', h, '-j'],
+    args: [genstree, 'tests/golden/j_' + base_name + '.out', 'tests/actual/j_' + base_name + '.out', 'EMPTY', '--strahler=' + k, '--log-leaves=' + t, '--height=' + h, '--count'],
     workdir: meson.project_source_root())
 
   test('genstree_d_' + base_name, run_single_test,
-    args: [genstree, 'tests/golden/d_' + base_name + '.out', 'tests/actual/d_' + base_name + '.out', 'EMPTY', '-k', k, '-t', t, '-h', h, '-d'],
+    args: [genstree, 'tests/golden/d_' + base_name + '.out', 'tests/actual/d_' + base_name + '.out', 'EMPTY', '--strahler=' + k, '--log-leaves=' + t, '--height=' + h, '--dot'],
     workdir: meson.project_source_root())
 
   test('genstree_p1_' + base_name, run_single_test,
-    args: [genstree, 'tests/golden/p1_' + base_name + '.out', 'tests/actual/p1_' + base_name + '.out', 'EMPTY', '-k', k, '-t', t, '-h', h, '-p', '1'],
+    args: [genstree, 'tests/golden/p1_' + base_name + '.out', 'tests/actual/p1_' + base_name + '.out', 'EMPTY', '--strahler=' + k, '--log-leaves=' + t, '--height=' + h, '--p-level=1'],
     workdir: meson.project_source_root())
 
   if boost_dep.found()
     test('lenstree_' + base_name, run_single_test,
-      args: [lenstree, 'tests/golden/len_' + base_name + '.out', 'tests/actual/len_' + base_name + '.out', 'EMPTY', '-k', k, '-t', t, '-h', h],
+      args: [lenstree, 'tests/golden/len_' + base_name + '.out', 'tests/actual/len_' + base_name + '.out', 'EMPTY', '--strahler=' + k, '--log-leaves=' + t, '--height=' + h],
       workdir: meson.project_source_root())
   endif
 endforeach
@@ -1092,7 +1114,7 @@ foreach ct : genstree_l_cases
   l = ct[3]
   name = 'l' + l + '_k' + k + '_t' + t + '_h' + h
   test('genstree_' + name, run_single_test,
-    args: [genstree, 'tests/golden/' + name + '.out', 'tests/actual/' + name + '.out', 'EMPTY', '-k', k, '-t', t, '-h', h, '-l', l],
+    args: [genstree, 'tests/golden/' + name + '.out', 'tests/actual/' + name + '.out', 'EMPTY', '--strahler=' + k, '--log-leaves=' + t, '--height=' + h, '--leaf=' + l],
     workdir: meson.project_source_root())
 endforeach
 
@@ -1352,20 +1374,20 @@ if dot_program.found()
 endif
 
 test('pms2dot_h', run_single_test,
-  args: [pms2dot, 'tests/golden/pms_h.out', 'tests/actual/pms_h.out', 'EMPTY', '-h'],
+  args: [pms2dot, 'tests/golden/pms_h.out', 'tests/actual/pms_h.out', 'EMPTY', '--help'],
   workdir: meson.project_source_root())
 
 error_cases = [
-  ['gen_err_k', genstree, ['-t', '1', '-h', '2']],
-  ['gen_err_k_val', genstree, ['-k', '0', '-t', '1', '-h', '2']],
-  ['gen_err_l', genstree, ['-k', '2', '-t', '1', '-h', '2', '-l', '0']],
+  ['gen_err_k', genstree, ['--log-leaves=1', '--height=2']],
+  ['gen_err_k_val', genstree, ['--strahler=0', '--log-leaves=1', '--height=2']],
+  ['gen_err_l', genstree, ['--strahler=2', '--log-leaves=1', '--height=2', '--leaf=0']],
   ['pms_err_flag', pms2dot, ['-x']],
 ]
 
 if boost_dep.found()
   error_cases += [
-    ['len_err_args', lenstree, ['-k', '1']],
-    ['len_err_k', lenstree, ['-k', '0', '-t', '1', '-h', '2']],
+    ['len_err_args', lenstree, ['--strahler=1']],
+    ['len_err_k', lenstree, ['--strahler=0', '--log-leaves=1', '--height=2']],
   ]
 endif
 

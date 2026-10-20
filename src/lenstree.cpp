@@ -1,11 +1,11 @@
 #include <boost/functional/hash.hpp>
 #include <cassert>
+#include <climits>
 #include <cstdlib>
-#include <cstring>
+#include <getopt.h>
 #include <iostream>
 #include <stack>
 #include <tuple>
-#include <unistd.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -28,6 +28,14 @@ std::unordered_map<std::tuple<int, int, int>, unsigned,
 std::unordered_map<std::tuple<int, int, int>, unsigned,
                    boost::hash<std::tuple<int, int, int>>>
     treeV;
+
+// Leaf counts saturate at UINT_MAX instead of wrapping around.
+static unsigned saturating_leaf_sum(unsigned repeated, unsigned middle) {
+  if (repeated > (UINT_MAX - middle) / 2) {
+    return UINT_MAX;
+  }
+  return repeated * 2 + middle;
+}
 
 unsigned tree_size(int k, int t, int h, bool isU) {
   std::cout << "Looking into k=" << k << ", t=" << t << ", h=" << h
@@ -69,7 +77,7 @@ unsigned tree_size(int k, int t, int h, bool isU) {
       auto son2 = treeU.find(std::make_tuple(tos.k - 1, tos.t, tos.h - 1));
       if (son1 != treeV.end() and son2 != treeU.end()) {
         treeV[std::make_tuple(tos.k, tos.t, tos.h)] =
-            son1->second * 2 + son2->second;
+            saturating_leaf_sum(son1->second, son2->second);
         stack.pop();
       } else {
         stack.push({tos.k - 1, tos.t, tos.h - 1, true});
@@ -87,7 +95,7 @@ unsigned tree_size(int k, int t, int h, bool isU) {
       auto son2 = treeU.find(std::make_tuple(tos.k, tos.t, tos.h - 1));
       if (son1 != treeV.end() and son2 != treeU.end()) {
         treeU[std::make_tuple(tos.k, tos.t, tos.h)] =
-            son1->second * 2 + son2->second;
+            saturating_leaf_sum(son1->second, son2->second);
         stack.pop();
       } else {
         stack.push({tos.k, tos.t, tos.h - 1, true});
@@ -128,13 +136,14 @@ std::pair<std::vector<bool>, std::vector<int>> label_lth_leaf(int k, int t,
         leaf.second.push_back(h - node.h); // Double check!
         node.t--;
         node.isU = false;
-      } else if (size_child1 + size_child2 >= lth_tmp) {
+      } else if (lth_tmp - size_child1 <= size_child2) {
         lth_tmp -= size_child1;
         node.isU = true;
         node.k--;
         node.h--;
       } else {
-        lth_tmp -= size_child1 + size_child2;
+        lth_tmp -= size_child1;
+        lth_tmp -= size_child2;
         leaf.first.push_back(1);
         leaf.second.push_back(h - node.h); // Double check!
         node.isU = false;
@@ -151,12 +160,13 @@ std::pair<std::vector<bool>, std::vector<int>> label_lth_leaf(int k, int t,
         leaf.first.push_back(0);
         leaf.second.push_back(h - node.h); // Double check!
         node.isU = false;
-      } else if (size_child1 + size_child2 >= lth_tmp) {
+      } else if (lth_tmp - size_child1 <= size_child2) {
         lth_tmp -= size_child1;
         node.isU = true;
         node.h--;
       } else {
-        lth_tmp -= size_child1 + size_child2;
+        lth_tmp -= size_child1;
+        lth_tmp -= size_child2;
         leaf.first.push_back(1);
         leaf.second.push_back(h - node.h); // Double check!
         node.isU = false;
@@ -169,21 +179,29 @@ std::pair<std::vector<bool>, std::vector<int>> label_lth_leaf(int k, int t,
   return leaf;
 }
 
-void print_usage(char *argv[]) {
-  char *progname = strrchr(argv[0], '/');
-  progname = progname ? progname + 1 : argv[0];
-  fprintf(stderr, "Usage: %s -k K -t T -h H\n", progname);
-  fputs("  --version Print the program version\n", stderr);
+static void print_usage(FILE *out, char *argv[]) {
+  cli_usage(out, argv[0], "");
+  fputs("  --strahler=K                                Strahler parameter "
+        "(required, 1 <= K <= H)\n"
+        "  --height=H                                  Tree height (required, "
+        "H >= 1)\n"
+        "  --log-leaves=T                              Leaf-budget exponent "
+        "(required, T >= 0)\n"
+        "  --leaf=L                                    Print the L-th leaf "
+        "(1-based; default: count)\n",
+        out);
 }
 
 int main(int argc, char **argv) {
-  int const version_status =
-      cli_handle_version_argument(argc, argv[0], argc > 1 ? argv[1] : nullptr);
-  if (version_status != CLI_VERSION_NOT_REQUESTED) {
-    return version_status;
-  }
-
-  opterr = 0;
+  static struct option const options[] = {
+      {"help", no_argument, nullptr, 1},
+      {"version", no_argument, nullptr, 'v'},
+      {"strahler", required_argument, nullptr, 'k'},
+      {"log-leaves", required_argument, nullptr, 't'},
+      {"height", required_argument, nullptr, 'h'},
+      {"leaf", required_argument, nullptr, 'l'},
+      {nullptr, 0, nullptr, 0},
+  };
   int opt;
   int k = 0;
   int t = 0;
@@ -194,49 +212,58 @@ int main(int argc, char **argv) {
   bool hset = false;
   bool lset = false;
 
-  while ((opt = getopt(argc, argv, "k:t:h:l:")) != -1) {
+  while ((opt = cli_getopt(argc, argv, options)) != -1) {
     switch (opt) {
+    case 1:
+      print_usage(stdout, argv);
+      return EXIT_SUCCESS;
+    case 'v':
+      return cli_print_version(argv[0]);
     case 'k':
       if (!parse_int(optarg, 1, k)) {
-        fputs("K must be a positive integer\n", stderr);
-        return EXIT_FAILURE;
+        return cli_error(argv[0], "--strahler must be a positive integer");
       }
       kset = true;
       break;
     case 't':
       if (!parse_int(optarg, 0, t)) {
-        fputs("T must be a nonnegative integer\n", stderr);
-        return EXIT_FAILURE;
+        return cli_error(argv[0], "--log-leaves must be a nonnegative integer");
       }
       tset = true;
       break;
     case 'h':
       if (!parse_int(optarg, 1, h)) {
-        fputs("H must be a positive integer\n", stderr);
-        return EXIT_FAILURE;
+        return cli_error(argv[0], "--height must be a positive integer");
       }
       hset = true;
       break;
     case 'l':
       if (!parse_int(optarg, 1, l)) {
-        fputs("L must be a positive integer\n", stderr);
-        return EXIT_FAILURE;
+        return cli_error(argv[0], "--leaf must be a positive integer");
       }
       lset = true;
       break;
     default: /* '?' */
-      print_usage(argv);
-      return EXIT_FAILURE;
+      return cli_error(argv[0],
+                       "Unknown option or invalid argument; use --name=value");
     }
   }
 
+  if (optind != argc) {
+    return cli_error(argv[0], "Unexpected operand");
+  }
+  if (hset && kset && h < k) {
+    return cli_error(argv[0], "--height must be at least --strahler");
+  }
   if (!(kset && tset && hset)) {
-    fputs("Expected three arguments\n", stderr);
-    print_usage(argv);
-    return EXIT_FAILURE;
+    return cli_error(argv[0],
+                     "--strahler, --log-leaves and --height are required");
   }
 
   if (lset) {
+    if (std::cmp_greater(l, tree_size(k, t, h, true))) {
+      return cli_error(argv[0], "--leaf exceeds the number of leaves");
+    }
     auto leaf = label_lth_leaf(k, t, h, l);
     std::cout << "Leaf no " << l << " is ";
     std::cout << std::noboolalpha;

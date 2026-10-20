@@ -1,1 +1,2 @@
-K must be a positive integer
+genstree: --strahler must be a positive integer
+Try 'genstree --help'.

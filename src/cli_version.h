@@ -1,17 +1,19 @@
 #ifndef CLI_VERSION_H
 #define CLI_VERSION_H 1
 
+#include <getopt.h>
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define CLI_VERSION_NOT_REQUESTED (-1)
-
-// Return CLI_VERSION_NOT_REQUESTED unless the sole argument is "--version".
-// Otherwise print "PROGRAM VERSION" and return an EXIT_* status.
-[[nodiscard]] int cli_handle_version_argument(int argc,
-                                              char const *program_path,
-                                              char const *argument);
+// Accept exact long names only, with values attached using '='.
+[[nodiscard]] int cli_getopt(int argc, char *argv[],
+                             struct option const options[]);
+void cli_usage(FILE *out, char const *program_path, char const *operands);
+[[nodiscard]] int cli_error(char const *program_path, char const *message);
+[[nodiscard]] int cli_print_version(char const *program_path);
 
 #ifdef __cplusplus
 }

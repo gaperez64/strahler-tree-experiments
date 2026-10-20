@@ -2,7 +2,9 @@
 # Regression harness for the command-line tools
 # Usage:
 #   tests/run-regression.sh                # run tests (via meson)
-#   tests/run-regression.sh --generate-goldens
+#   BUILD_DIR=/path/to/build tests/run-regression.sh --generate-goldens
+
+BUILD_DIR=${BUILD_DIR:-build}
 
 # Decide whether to generate goldens
 GENERATE=0
@@ -15,7 +17,6 @@ fi
 
 if [ "$GENERATE" -eq 0 ]; then
   echo "Running regression tests via meson..."
-  BUILD_DIR="build"
   if [ ! -d "$BUILD_DIR" ]; then
     echo "Error: Build directory '$BUILD_DIR' not found. Please run 'meson setup build'."
     exit 1
@@ -26,68 +27,68 @@ fi
 
 # Locate binaries for golden generation
 GENSTREE_BIN=""
-if [ -x "./build/genstree" ]; then
-  GENSTREE_BIN="./build/genstree"
+if [ -x "$BUILD_DIR/genstree" ]; then
+  GENSTREE_BIN="$BUILD_DIR/genstree"
 elif [ -x "./genstree" ]; then
   GENSTREE_BIN="./genstree"
 elif command -v genstree >/dev/null 2>&1; then
   GENSTREE_BIN="$(command -v genstree)"
 else
-  echo "Error: genstree binary not found in build/ or project root or PATH."
+  echo "Error: genstree binary not found in $BUILD_DIR/ or project root or PATH."
   exit 2
 fi
 
 PMS2DOT_BIN=""
-if [ -x "./build/pms2dot" ]; then
-  PMS2DOT_BIN="./build/pms2dot"
+if [ -x "$BUILD_DIR/pms2dot" ]; then
+  PMS2DOT_BIN="$BUILD_DIR/pms2dot"
 elif [ -x "./pms2dot" ]; then
   PMS2DOT_BIN="./pms2dot"
 elif command -v pms2dot >/dev/null 2>&1; then
   PMS2DOT_BIN="$(command -v pms2dot)"
 else
-  echo "Error: pms2dot binary not found in build/ or project root or PATH."
+  echo "Error: pms2dot binary not found in $BUILD_DIR/ or project root or PATH."
   exit 2
 fi
 
 PGFILT_BIN=""
-if [ -x "./build/pgfilt" ]; then
-  PGFILT_BIN="./build/pgfilt"
+if [ -x "$BUILD_DIR/pgfilt" ]; then
+  PGFILT_BIN="$BUILD_DIR/pgfilt"
 elif [ -x "./pgfilt" ]; then
   PGFILT_BIN="./pgfilt"
 elif command -v pgfilt >/dev/null 2>&1; then
   PGFILT_BIN="$(command -v pgfilt)"
 else
-  echo "Error: pgfilt binary not found in build/ or project root or PATH."
+  echo "Error: pgfilt binary not found in $BUILD_DIR/ or project root or PATH."
   exit 2
 fi
 
 PG2ADOT_BIN=""
-if [ -x "./build/pg2adot" ]; then
-  PG2ADOT_BIN="./build/pg2adot"
+if [ -x "$BUILD_DIR/pg2adot" ]; then
+  PG2ADOT_BIN="$BUILD_DIR/pg2adot"
 elif [ -x "./pg2adot" ]; then
   PG2ADOT_BIN="./pg2adot"
 elif command -v pg2adot >/dev/null 2>&1; then
   PG2ADOT_BIN="$(command -v pg2adot)"
 else
-  echo "Error: pg2adot binary not found in build/ or project root or PATH."
+  echo "Error: pg2adot binary not found in $BUILD_DIR/ or project root or PATH."
   exit 2
 fi
 
 PG2PMDOT_BIN=""
-if [ -x "./build/pg2pmdot" ]; then
-  PG2PMDOT_BIN="./build/pg2pmdot"
+if [ -x "$BUILD_DIR/pg2pmdot" ]; then
+  PG2PMDOT_BIN="$BUILD_DIR/pg2pmdot"
 elif [ -x "./pg2pmdot" ]; then
   PG2PMDOT_BIN="./pg2pmdot"
 elif command -v pg2pmdot >/dev/null 2>&1; then
   PG2PMDOT_BIN="$(command -v pg2pmdot)"
 else
-  echo "Error: pg2pmdot binary not found in build/ or project root or PATH."
+  echo "Error: pg2pmdot binary not found in $BUILD_DIR/ or project root or PATH."
   exit 2
 fi
 
 LENSTREE_BIN=""
-if [ -x "./build/lenstree" ]; then
-  LENSTREE_BIN="./build/lenstree"
+if [ -x "$BUILD_DIR/lenstree" ]; then
+  LENSTREE_BIN="$BUILD_DIR/lenstree"
 elif [ -x "./lenstree" ]; then
   LENSTREE_BIN="./lenstree"
 elif command -v lenstree >/dev/null 2>&1; then
@@ -195,26 +196,26 @@ CASES
 for ct in "${GENSTREE_CASES[@]}"; do
   read -r k t h <<< "$ct"
   name="k${k}_t${t}_h${h}.out"
-  echo "  $GENSTREE_BIN -k $k -t $t -h $h > tests/golden/$name"
-  "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" > "tests/golden/$name" 2>&1
+  echo "  $GENSTREE_BIN --strahler=$k --log-leaves=$t --height=$h > tests/golden/$name"
+  "$GENSTREE_BIN" --strahler="$k" --log-leaves="$t" --height="$h" > "tests/golden/$name" 2>&1
   sanitize_output "tests/golden/$name" "$GENSTREE_BIN"
 
-  echo "  $GENSTREE_BIN -k $k -t $t -h $h -j > tests/golden/j_$name"
-  "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -j > "tests/golden/j_$name" 2>&1
+  echo "  $GENSTREE_BIN --strahler=$k --log-leaves=$t --height=$h --count > tests/golden/j_$name"
+  "$GENSTREE_BIN" --strahler="$k" --log-leaves="$t" --height="$h" --count > "tests/golden/j_$name" 2>&1
   sanitize_output "tests/golden/j_$name" "$GENSTREE_BIN"
 
-  echo "  $GENSTREE_BIN -k $k -t $t -h $h -d > tests/golden/d_$name"
-  "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -d > "tests/golden/d_$name" 2>&1
+  echo "  $GENSTREE_BIN --strahler=$k --log-leaves=$t --height=$h --dot > tests/golden/d_$name"
+  "$GENSTREE_BIN" --strahler="$k" --log-leaves="$t" --height="$h" --dot > "tests/golden/d_$name" 2>&1
   sanitize_output "tests/golden/d_$name" "$GENSTREE_BIN"
 
-  echo "  $GENSTREE_BIN -k $k -t $t -h $h -p 1 > tests/golden/p1_$name"
-  "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -p 1 > "tests/golden/p1_$name" 2>&1
+  echo "  $GENSTREE_BIN --strahler=$k --log-leaves=$t --height=$h --p-level=1 > tests/golden/p1_$name"
+  "$GENSTREE_BIN" --strahler="$k" --log-leaves="$t" --height="$h" --p-level=1 > "tests/golden/p1_$name" 2>&1
   sanitize_output "tests/golden/p1_$name" "$GENSTREE_BIN"
 
-  total=$("$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -j | grep -o '[0-9]\+ leaves' | cut -d' ' -f1)
+  total=$("$GENSTREE_BIN" --strahler="$k" --log-leaves="$t" --height="$h" --count | grep -o '[0-9]\+ leaves' | cut -d' ' -f1)
   for l in 1 $total; do
-    echo "  $GENSTREE_BIN -k $k -t $t -h $h -l $l > tests/golden/l${l}_$name"
-    "$GENSTREE_BIN" -k "$k" -t "$t" -h "$h" -l "$l" > "tests/golden/l${l}_$name" 2>&1
+    echo "  $GENSTREE_BIN --strahler=$k --log-leaves=$t --height=$h --leaf=$l > tests/golden/l${l}_$name"
+    "$GENSTREE_BIN" --strahler="$k" --log-leaves="$t" --height="$h" --leaf="$l" > "tests/golden/l${l}_$name" 2>&1
     sanitize_output "tests/golden/l${l}_$name" "$GENSTREE_BIN"
   done
 done
@@ -313,8 +314,8 @@ echo "  $PG2ADOT_BIN --algorithm=zielonka --stats --player=even --labels=none te
 "$PG2ADOT_BIN" --algorithm=zielonka --stats --player=even --labels=none tests/games/strahler_two.pg > tests/golden/pg2adot_zielonka_stats.out 2>&1
 sanitize_output "tests/golden/pg2adot_zielonka_stats.out" "$PG2ADOT_BIN"
 
-echo "  $PMS2DOT_BIN -h > tests/golden/pms_h.out"
-"$PMS2DOT_BIN" -h > "tests/golden/pms_h.out" 2>&1 || true
+echo "  $PMS2DOT_BIN --help > tests/golden/pms_h.out"
+"$PMS2DOT_BIN" --help > "tests/golden/pms_h.out" 2>&1 || true
 sanitize_output "tests/golden/pms_h.out" "$PMS2DOT_BIN"
 
 echo "  unordered progress measures | $PMS2DOT_BIN --check-order > tests/golden/pms_err_order.out"
@@ -326,25 +327,25 @@ if [ -n "$LENSTREE_BIN" ]; then
   for ct in "${GENSTREE_CASES[@]}"; do
     read -r k t h <<< "$ct"
     name="len_k${k}_t${t}_h${h}.out"
-    echo "  $LENSTREE_BIN -k $k -t $t -h $h > tests/golden/$name"
-    "$LENSTREE_BIN" -k "$k" -t "$t" -h "$h" > "tests/golden/$name" 2>&1
+    echo "  $LENSTREE_BIN --strahler=$k --log-leaves=$t --height=$h > tests/golden/$name"
+    "$LENSTREE_BIN" --strahler="$k" --log-leaves="$t" --height="$h" > "tests/golden/$name" 2>&1
     sanitize_output "tests/golden/$name" "$LENSTREE_BIN"
   done
 fi
 
 echo "Generating error case goldens..."
-"$GENSTREE_BIN" -t 1 -h 2 > /dev/null 2> tests/golden/gen_err_k.out || true
+"$GENSTREE_BIN" --log-leaves=1 --height=2 > /dev/null 2> tests/golden/gen_err_k.out || true
 sanitize_output "tests/golden/gen_err_k.out" "$GENSTREE_BIN"
-"$GENSTREE_BIN" -k 0 -t 1 -h 2 > /dev/null 2> tests/golden/gen_err_k_val.out || true
+"$GENSTREE_BIN" --strahler=0 --log-leaves=1 --height=2 > /dev/null 2> tests/golden/gen_err_k_val.out || true
 sanitize_output "tests/golden/gen_err_k_val.out" "$GENSTREE_BIN"
-"$GENSTREE_BIN" -k 2 -t 1 -h 2 -l 0 > /dev/null 2> tests/golden/gen_err_l.out || true
+"$GENSTREE_BIN" --strahler=2 --log-leaves=1 --height=2 --leaf=0 > /dev/null 2> tests/golden/gen_err_l.out || true
 sanitize_output "tests/golden/gen_err_l.out" "$GENSTREE_BIN"
-"$PMS2DOT_BIN" -x > /dev/null 2> tests/golden/pms_err_flag.out || true
+"$PMS2DOT_BIN" --unknown-option > /dev/null 2> tests/golden/pms_err_flag.out || true
 sanitize_output "tests/golden/pms_err_flag.out" "$PMS2DOT_BIN"
 if [ -n "$LENSTREE_BIN" ]; then
-  "$LENSTREE_BIN" -k 1 > /dev/null 2> tests/golden/len_err_args.out || true
+  "$LENSTREE_BIN" --strahler=1 > /dev/null 2> tests/golden/len_err_args.out || true
   sanitize_output "tests/golden/len_err_args.out" "$LENSTREE_BIN"
-  "$LENSTREE_BIN" -k 0 -t 1 -h 2 > /dev/null 2> tests/golden/len_err_k.out || true
+  "$LENSTREE_BIN" --strahler=0 --log-leaves=1 --height=2 > /dev/null 2> tests/golden/len_err_k.out || true
   sanitize_output "tests/golden/len_err_k.out" "$LENSTREE_BIN"
 fi
 

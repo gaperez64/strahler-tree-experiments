@@ -55,9 +55,9 @@ names with `--backends` (default: all):
 python3 scripts/make_trees.py --backends zielonka,lifting-adaptive+iter --out trees benchmark/
 ```
 
-Run `<cmd> --help` for the full option list (in `genstree`, `-h` is the
-height). [lenstree](docs/developing.md#lenstree) and
-[str-tree](docs/developing.md#str-tree) have no help; see their notes instead.
+Every command accepts `--help` and `--version`.
+`--version` prints the release and, for git builds, the commit.
+Option values use `--name=value`; single-dash options are rejected.
 
 [DECOMP.md](DECOMP.md) has example trees for every backend.
 [ALGOS.md](ALGOS.md) explains how each method builds its trees and how to

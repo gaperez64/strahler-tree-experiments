@@ -15,7 +15,6 @@
 #include "zielonka.h"
 
 enum {
-  EXIT_USAGE = 2,
   EXIT_GAME = 3,
   EXIT_SOLVER = 4,
   EXIT_IO = 5,
@@ -35,46 +34,47 @@ typedef enum {
   ALGORITHM_LIFTING_SYM,
 } Algorithm;
 
-static void usage(FILE *out, char *argv[static 1]) {
-  char *program = strrchr(argv[0], '/');
-  program = program == nullptr ? argv[0] : program + 1;
-  fprintf(
-      out,
-      "Usage: %s [OPTIONS] [FILE]\n"
-      "  -h, --help\n"
-      "  --version                    print the program version\n"
-      "  --player=both|even|odd       default: both\n"
-      "  --view=classic|tree-relative|jurdzinski\n"
-      "                               default: classic\n"
-      "  --labels=counts|sets|none    default: counts\n"
-      "  --max-set-items=N            default: 32\n"
-      "  --priority-mode=original|compact\n"
-      "                               default: original\n"
-      "  --algorithm=lifting|zielonka|zielonka-sym|lifting-sym\n"
-      "                               default: lifting\n"
-      "  --initial-shave=loops,wcwc,single|all|none  default: none\n"
-      "  --iter-shave                  attract and remove dominions between "
-      "lifts\n"
-      "  --compress                   merge consecutive same-parity "
-      "priorities\n"
-      "  --tree-k=K                   lift in U^K_{t,H}; may be partial\n"
-      "  --adaptive-t                 raise t until the result is complete;\n"
-      "                               --tree-k=K caps K\n"
-      "  --adaptive-t=incremental     reuse certified opponent wins as TOP\n"
-      "  --start-t=T                  first t for --adaptive-t; default: 0\n"
-      "  --kary=A                     lift in the full A-ary tree of height "
-      "H;\n"
-      "                               may be partial\n"
-      "  --tree-file=FILE             lift in a leaf-stream host tree; may "
-      "be partial\n"
-      "  --max-host-leaves=N          default: %d\n"
-      "  --stats                      print statistics to stderr\n"
-      "  --no-verify\n",
-      program, DEFAULT_MAX_HOST_LEAVES);
+static void usage(FILE *out, char *argv[]) {
+  cli_usage(out, argv[0], " [FILE]");
+  fprintf(out,
+          "  --player=both|even|odd                      default: both\n"
+          "  --view=classic|tree-relative|jurdzinski     default: classic\n"
+          "  --labels=counts|sets|none                   default: counts\n"
+          "  --max-set-items=N                           default: 32\n"
+          "  --priority-mode=original|compact            default: original\n"
+          "  --algorithm=lifting|zielonka|zielonka-sym|lifting-sym\n"
+          "                                              default: lifting\n"
+          "  --initial-shave=loops,wcwc,single|all|none  default: none\n"
+          "  --iter-shave                                Remove dominions "
+          "between lifts (default: off)\n"
+          "  --compress                                  Merge same-parity "
+          "priorities (default: off)\n"
+          "  --tree-k=K                                  Lift in U^K_{t,H}; "
+          "may be partial\n"
+          "  --adaptive-t                                Raise t until "
+          "complete; --tree-k caps K\n"
+          "  --adaptive-t=incremental                    Reuse certified "
+          "opponent wins as TOP\n"
+          "  --start-t=T                                 First adaptive t "
+          "(default: 0)\n"
+          "  --kary=A                                    Lift in a full A-ary "
+          "tree; may be partial\n"
+          "  --tree-file=FILE                            Leaf-stream host "
+          "tree; may be partial\n"
+          "  --max-host-leaves=N                         Host leaf limit "
+          "(default: %d)\n"
+          "  --stats                                     Print statistics to "
+          "stderr (default: off)\n"
+          "  --no-verify                                 Skip verification "
+          "(default: verify)\n"
+          "Default host: a full Strahler tree. FILE defaults to stdin; - reads "
+          "stdin.\n",
+          DEFAULT_MAX_HOST_LEAVES);
 }
 
 [[nodiscard]] static bool parse_size(char const *text, size_t *value) {
-  if (text == nullptr || text[0] == '-' || text[0] == '\0') {
+  if (text == nullptr || text[0] == '\0' ||
+      strspn(text, "0123456789") != strlen(text)) {
     return false;
   }
   errno = 0;
@@ -240,11 +240,6 @@ static void write_lifting_stats(ADLiftSolveStats const *stats,
 }
 
 int main(int argc, char *argv[argc + 1]) {
-  int const version_status =
-      cli_handle_version_argument(argc, argv[0], argc > 1 ? argv[1] : nullptr);
-  if (version_status != CLI_VERSION_NOT_REQUESTED) {
-    return version_status;
-  }
 
   enum {
     OPTION_PLAYER = 1,
@@ -267,6 +262,7 @@ int main(int argc, char *argv[argc + 1]) {
   };
   static struct option const options[] = {
       {"help", no_argument, nullptr, 'h'},
+      {"version", no_argument, nullptr, 'v'},
       {"player", required_argument, nullptr, OPTION_PLAYER},
       {"view", required_argument, nullptr, OPTION_VIEW},
       {"labels", required_argument, nullptr, OPTION_LABELS},
@@ -309,10 +305,11 @@ int main(int argc, char *argv[argc + 1]) {
   bool print_stats = false;
   bool verify = true;
   PGPreprocessOptions preprocess_options = {0};
-  opterr = 0;
   int option = 0;
-  while ((option = getopt_long(argc, argv, "h", options, nullptr)) != -1) {
+  while ((option = cli_getopt(argc, argv, options)) != -1) {
     switch (option) {
+    case 'v':
+      return cli_print_version(argv[0]);
     case 'h':
       usage(stdout, argv);
       return EXIT_SUCCESS;
@@ -324,8 +321,7 @@ int main(int argc, char *argv[argc + 1]) {
       } else if (strcmp(optarg, "odd") == 0) {
         player = AD_DOT_PLAYER_ODD;
       } else {
-        fputs("Invalid --player value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --player value");
       }
       break;
     case OPTION_VIEW:
@@ -336,8 +332,7 @@ int main(int argc, char *argv[argc + 1]) {
       } else if (strcmp(optarg, "jurdzinski") == 0) {
         view = AD_DOT_VIEW_JURDZINSKI;
       } else {
-        fputs("Invalid --view value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --view value");
       }
       break;
     case OPTION_LABELS:
@@ -348,14 +343,12 @@ int main(int argc, char *argv[argc + 1]) {
       } else if (strcmp(optarg, "none") == 0) {
         labels = AD_DOT_LABEL_NONE;
       } else {
-        fputs("Invalid --labels value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --labels value");
       }
       break;
     case OPTION_MAX_ITEMS:
       if (!parse_size(optarg, &max_set_items)) {
-        fputs("Invalid --max-set-items value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --max-set-items value");
       }
       break;
     case OPTION_PRIORITY_MODE:
@@ -364,8 +357,7 @@ int main(int argc, char *argv[argc + 1]) {
       } else if (strcmp(optarg, "compact") == 0) {
         priority_mode = PRIORITY_MODE_COMPACT;
       } else {
-        fputs("Invalid --priority-mode value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --priority-mode value");
       }
       break;
     case OPTION_NO_VERIFY:
@@ -381,44 +373,41 @@ int main(int argc, char *argv[argc + 1]) {
       } else if (strcmp(optarg, "lifting-sym") == 0) {
         algorithm = ALGORITHM_LIFTING_SYM;
       } else {
-        fputs("Invalid --algorithm value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --algorithm value");
       }
       break;
     case OPTION_TREE_K:
       if (!parse_size(optarg, &tree_k) || tree_k == 0) {
-        fputs("Invalid --tree-k value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --tree-k value");
       }
       break;
     case OPTION_ADAPTIVE_T:
       if (optarg != nullptr && strcmp(optarg, "incremental") != 0) {
-        fputs("Invalid --adaptive-t value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --adaptive-t value");
       }
       adaptive_t = true;
       lift_options.incremental = optarg != nullptr;
       break;
     case OPTION_START_T:
       if (!parse_size(optarg, &start_t)) {
-        fputs("Invalid --start-t value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --start-t value");
       }
       start_t_given = true;
       break;
     case OPTION_KARY:
       if (!parse_size(optarg, &arity) || arity == 0) {
-        fputs("Invalid --kary value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --kary value");
       }
       break;
     case OPTION_TREE_FILE:
+      if (optarg[0] == '\0') {
+        return cli_error(argv[0], "Invalid --tree-file value");
+      }
       tree_path = optarg;
       break;
     case OPTION_MAX_HOST_LEAVES:
       if (!parse_size(optarg, &lift_options.max_host_leaves)) {
-        fputs("Invalid --max-host-leaves value\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid --max-host-leaves value");
       }
       host_limit_given = true;
       break;
@@ -430,46 +419,45 @@ int main(int argc, char *argv[argc + 1]) {
       if (!pg_preprocess_parse_option(
               &preprocess_options,
               option == OPTION_SHAVE ? "initial-shave" : "compress", optarg)) {
-        fputs("Invalid preprocessing option\n", stderr);
-        return EXIT_USAGE;
+        return cli_error(argv[0], "Invalid preprocessing option");
       }
       break;
     case OPTION_ITER_SHAVE:
       lift_options.iter_shave = true;
       break;
     default:
-      usage(stderr, argv);
-      return EXIT_USAGE;
+      return cli_error(argv[0],
+                       "Unknown option or invalid argument; use --name=value");
     }
   }
   if (argc - optind > 1) {
-    usage(stderr, argv);
-    return EXIT_USAGE;
+    return cli_error(argv[0],
+                     "Unknown option or invalid argument; use --name=value");
   }
   bool const strahler_host = tree_k != 0 || adaptive_t;
   if ((strahler_host ? 1 : 0) + (arity != 0 ? 1 : 0) +
           (tree_path != nullptr ? 1 : 0) >
       1) {
-    fputs("Use at most one of --tree-k or --adaptive-t, --kary, and "
-          "--tree-file\n",
-          stderr);
-    return EXIT_USAGE;
+    return cli_error(
+        argv[0],
+        "Use at most one of --tree-k or --adaptive-t, --kary, and --tree-file");
   }
   if (start_t_given && !adaptive_t) {
-    fputs("--start-t requires --adaptive-t\n", stderr);
-    return EXIT_USAGE;
+    return cli_error(argv[0], "--start-t requires --adaptive-t");
   }
   if ((algorithm == ALGORITHM_ZIELONKA ||
        algorithm == ALGORITHM_ZIELONKA_SYM) &&
       (strahler_host || start_t_given || arity != 0 || tree_path != nullptr ||
        host_limit_given || lift_options.iter_shave)) {
-    fprintf(stderr, "Lifting options cannot be used with --algorithm=%s\n",
-            algorithm == ALGORITHM_ZIELONKA ? "zielonka" : "zielonka-sym");
-    return EXIT_USAGE;
+    return cli_error(
+        argv[0],
+        algorithm == ALGORITHM_ZIELONKA
+            ? "Lifting options cannot be used with --algorithm=zielonka"
+            : "Lifting options cannot be used with --algorithm=zielonka-sym");
   }
   if (algorithm == ALGORITHM_LIFTING_SYM && adaptive_t) {
-    fputs("--adaptive-t cannot be used with --algorithm=lifting-sym\n", stderr);
-    return EXIT_USAGE;
+    return cli_error(
+        argv[0], "--adaptive-t cannot be used with --algorithm=lifting-sym");
   }
   lift_options.symmetric = algorithm == ALGORITHM_LIFTING_SYM;
   if (adaptive_t) {
@@ -499,9 +487,10 @@ int main(int argc, char *argv[argc + 1]) {
         ordered_tree_parse_leaf_stream(text, &host_tree, &tree_error);
     free(text);
     if (!parsed) {
-      fprintf(stderr, "%s:%zu:%zu: %s\n", tree_path, tree_error.line,
-              tree_error.column, tree_error.message);
-      return EXIT_USAGE;
+      char message[strlen(tree_path) + sizeof(tree_error.message) + 64];
+      snprintf(message, sizeof(message), "%s:%zu:%zu: %s", tree_path,
+               tree_error.line, tree_error.column, tree_error.message);
+      return cli_error(argv[0], message);
     }
     lift_options.tree = host_tree;
   }

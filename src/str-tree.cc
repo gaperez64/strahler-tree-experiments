@@ -521,11 +521,58 @@ int compare(size_t idxA, size_t idxB, int pindex,
   return 0;
 }
 
+static void print_usage(FILE *out, char *argv[]) {
+  cli_usage(out, argv[0], "");
+  fprintf(out,
+          "  --index=N                                   Check one leaf "
+          "(0-based; default: all)\n"
+          "  --p-level=P                                 Successor level "
+          "(default: %d)\n"
+          "The compiled-in tree has %zu leaves; 0 <= P < %d.\n",
+          h - 2, tree_b.size(), h);
+}
+
 int main(int argc, char *argv[]) {
-  int const version_status =
-      cli_handle_version_argument(argc, argv[0], argc > 1 ? argv[1] : nullptr);
-  if (version_status != CLI_VERSION_NOT_REQUESTED) {
-    return version_status;
+  static struct option const options[] = {
+      {"help", no_argument, nullptr, 'h'},
+      {"version", no_argument, nullptr, 'v'},
+      {"index", required_argument, nullptr, 'i'},
+      {"p-level", required_argument, nullptr, 'p'},
+      {nullptr, 0, nullptr, 0},
+  };
+  int parsed_idx = -1;
+  int level = h - 2;
+  bool level_set = false;
+  int option = 0;
+  while ((option = cli_getopt(argc, argv, options)) != -1) {
+    switch (option) {
+    case 'h':
+      print_usage(stdout, argv);
+      return EXIT_SUCCESS;
+    case 'v':
+      return cli_print_version(argv[0]);
+    case 'i':
+      if (!parse_int(optarg, 0, parsed_idx) ||
+          !std::cmp_less(parsed_idx, tree_b.size())) {
+        return cli_error(argv[0], "--index is out of range");
+      }
+      break;
+    case 'p':
+      if (!parse_int(optarg, 0, level) || !std::cmp_less(level, h)) {
+        return cli_error(argv[0], "--p-level is out of range");
+      }
+      level_set = true;
+      break;
+    default:
+      return cli_error(argv[0],
+                       "Unknown option or invalid argument; use --name=value");
+    }
+  }
+  if (optind != argc) {
+    return cli_error(argv[0], "Unexpected operand; use --index and --p-level");
+  }
+  if (level_set && parsed_idx < 0) {
+    return cli_error(argv[0], "--p-level requires --index");
   }
 
   // Switch out the tree to use here - don't forget to adjust the parameters k,
@@ -533,8 +580,7 @@ int main(int argc, char *argv[]) {
   auto &use_b = tree_b;
   auto &use_d = tree_d;
 
-  // Don't pass parameter = Go through all
-  if (argc == 1) {
+  if (parsed_idx < 0) {
     for (size_t idx = 0; idx < use_b.size(); idx++) {
       tmp_b = use_b[idx];
       tmp_d = use_d[idx];
@@ -563,15 +609,7 @@ int main(int argc, char *argv[]) {
                           : " \033[31mWrong backward comparison!\n\033[0m");
       }
     }
-  }
-  // Pass one parameter = only check that one and print result
-  else if (argc == 2 or argc == 3) {
-    int parsed_idx = 0;
-    if (!parse_int(argv[1], 0, parsed_idx) ||
-        !std::cmp_less(parsed_idx, use_b.size())) {
-      std::cerr << "Tree index is out of range" << std::endl;
-      return 1;
-    }
+  } else {
     size_t const idx = static_cast<size_t>(parsed_idx);
     std::cout << "Searching successor for: ";
     for (auto &&i : use_b[idx]) {
@@ -586,13 +624,7 @@ int main(int argc, char *argv[]) {
     tmp_b = use_b[idx];
     tmp_d = use_d[idx];
 
-    int p = h - 2;
-    if (argc == 3 && (!parse_int(argv[2], 0, p) || !std::cmp_less(p, h))) {
-      std::cerr << "P-level is out of range" << std::endl;
-      return 1;
-    }
-
-    prog_tmp(p);
+    prog_tmp(level);
     std::cout << "Result: ";
     for (auto &&i : tmp_b) {
       std::cout << i;
@@ -613,11 +645,5 @@ int main(int argc, char *argv[]) {
     }
     std::cout << std::endl;
   }
-  // Pass more params = invalid
-  else {
-    std::cout << "Too many params" << std::endl;
-    return 1;
-  }
-
   return 0;
 }
