@@ -66,5 +66,4 @@ shared modules and tests, with the exception below.
 (checkout `51c2640fe650fd18d9331cfe5133cf3605a98c31`; tree printing introduced
 in `504081d`). Copyright 2017-2018 Tom van Dijk, Johannes Kepler University Linz.
 Ported to C23 and modified for tree output, these files remain Apache-2.0;
-see [LICENSE-APACHE-2.0](LICENSE-APACHE-2.0). Relicensing them to MIT requires
-the copyright holders' consent, which has not been obtained.
+see [LICENSE-APACHE-2.0](LICENSE-APACHE-2.0).
