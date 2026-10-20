@@ -53,7 +53,8 @@ also checked against incremental adaptive lifting for the same outcome and
 identical DOT; one copy of the tree is stored. Progress-measure leaf streams
 keep their raw first-occurrence order.
 
-The generator attempts every backend with and without preprocessing on each
+The generator attempts every backend with and without preprocessing and, where
+supported, iterative shaving on each
 game, except measured slow pairs listed in `SKIP_RUNS` in
 `scripts/gen_decomp.py`. These have fixed `skipped (> N s locally)` outcomes.
 A safety timeout aborts generation with a non-zero exit before any outputs
@@ -76,6 +77,17 @@ current and non-zero otherwise. PNG freshness uses the stored DOT hash and
 PNG integrity checks, allowing different Graphviz versions to render the same
 DOT differently. CI checks freshness on PRs and non-main pushes, and refreshes
 generated files on pushes to `main`.
+
+For new benchmarks, use `python3 scripts/make_trees.py GAME_OR_DIR...`.
+It uses the same backend names, limits and metrics, but ignores the examples'
+skip list. Adaptive backends run once, without the inventory comparison.
+`--backends LIST` selects comma-separated DECOMP.md row names;
+`--out DIR` defaults to `trees/`, with one game directory per unique stem and
+`summary.csv` splitting Even/Odd metrics into separate columns. The build,
+timeout, host-limit and Graphviz options match `gen_decomp.py`; `--no-png`
+disables pictures, and missing Graphviz only warns. Progress goes to stderr;
+timeouts and solver errors are recorded per pair and cause a non-zero exit.
+Multi-round progress-measure PNGs show each round in a separate panel.
 
 ## Command reference
 

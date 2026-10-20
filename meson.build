@@ -1452,6 +1452,10 @@ if python3.found()
     args : [files('tests/test_gen_decomp.py'), meson.current_build_dir()],
     suite : 'python',
     depends : [pg2adot, pg2pmdot])
+  test('test_make_trees', python3,
+    args : [files('tests/test_make_trees.py'), meson.current_build_dir()],
+    suite : 'python',
+    depends : [pg2adot, pg2pmdot])
   # Exit 77 skips this live oracle unless OINK_BIN is set at test time.
   test('oink-oracle', python3,
     args : [files('scripts/compare_oink.py'), pg2pmdot,

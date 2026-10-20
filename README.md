@@ -46,6 +46,15 @@ dot -Tsvg decomposition.dot > decomposition.svg
 consecutive distinct priorities of the same parity. Sample games are in
 [tests/games/](tests/games/).
 
+Generate trees for a new benchmark with `scripts/make_trees.py`. It scans files
+or directories recursively and writes trees, statistics and `summary.csv` to
+`trees/`; PNGs are included when Graphviz is available. Select DECOMP.md backend
+names with `--backends` (default: all):
+
+```sh
+python3 scripts/make_trees.py --backends zielonka,lifting-adaptive+iter --out trees benchmark/
+```
+
 Run `<cmd> --help` for the full option list (in `genstree`, `-h` is the
 height). [lenstree](docs/developing.md#lenstree) and
 [str-tree](docs/developing.md#str-tree) have no help; see their notes instead.
