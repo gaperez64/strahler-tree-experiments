@@ -317,13 +317,10 @@ class DecompTests(unittest.TestCase):
               redirect_stdout(io.StringIO())):
             root = Path(directory) / "repo"
             (root / "examples").mkdir(parents=True)
-            (root / "scripts").mkdir()
             shutil.copyfile(ROOT / "examples/Button.tlsf.ehoa.pg",
                             root / "examples/small.gm")
             shutil.copyfile(ROOT / "tests/games/shave_single.pg",
                             root / "examples/all-shaved.pg")
-            shutil.copyfile(ROOT / "scripts/decomp_methods.md",
-                            root / "scripts/decomp_methods.md")
             outputs = [Path(directory) / name for name in ("one", "two")]
             program = fake_dot(Path(directory))
             for output in outputs:
@@ -334,8 +331,15 @@ class DecompTests(unittest.TestCase):
             self.assertEqual(len(list(outputs[0].rglob("*.dot"))), 28)
             self.assertEqual(len(list(outputs[0].rglob("*.leaves"))), 8)
             inventory = (outputs[0] / "DECOMP.md").read_text()
-            self.assertIn("Graphviz", inventory)
-            self.assertIn("dot-sha256", inventory)
+            self.assertIn("[ALGOS.md](ALGOS.md)", inventory)
+            self.assertIn("docs/developing.md#regenerating-example-trees",
+                          inventory)
+            self.assertNotIn("## Methods", inventory)
+            self.assertNotIn("```", inventory)
+            self.assertLess(inventory.index("## Inventory"),
+                            inventory.index("### all-shaved.pg"))
+            self.assertLess(inventory.index("### small.gm"),
+                            inventory.index("## Tree disagreements"))
             self.assertEqual(inventory.count("[PNG](decomp/"), 28)
             for dot in (outputs[0] / "decomp/all-shaved").glob("*+pre.dot"):
                 info = decomp.tree_info(dot.read_text(),

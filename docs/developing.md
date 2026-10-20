@@ -28,11 +28,15 @@ Update the Meson project version before tagging so `--version` matches the relea
 
 ## Regenerating example trees
 
-[DECOMP.md](../DECOMP.md) contains implementation pseudocode, the generated
-inventory of every PGSolver game in `examples/`, and tree disagreements.
-DOT/PNG trees, PM leaf streams, and deterministic statistics are in
-[decomp/](../decomp/). Build release tools, then regenerate with Python 3.10+
-(standard library only) and Graphviz:
+[DECOMP.md](../DECOMP.md) lists the trees for every PGSolver game in
+`examples/` and reports differences in their shapes. [ALGOS.md](../ALGOS.md)
+explains the algorithms and metrics. Edit that page directly; it is maintained
+separately from the generated inventory.
+
+DOT/PNG trees, progress-measure leaf streams, and statistics with timings
+removed are in [decomp/](../decomp/). Build release tools, then regenerate
+with Python 3.10+ (standard library only). Graphviz is needed only for new
+or changed pictures:
 
 ```sh
 meson setup build --reconfigure --buildtype=release -Db_ndebug=true
@@ -43,15 +47,35 @@ python3 scripts/gen_decomp.py --check
 
 `--build-dir DIR` selects the binaries (default `build`); `--timeout SECONDS`
 sets the safety timeout (default 600 per subprocess), and `--max-host-leaves N`
-sets the host limit (default 10000). `--check` checks freshness. Measured slow
-pairs are skipped via `SKIP_RUNS` in `scripts/gen_decomp.py`, with fixed
-`skipped (> N s locally)` outcomes. A safety timeout aborts with a non-zero
-exit and asks you to add the pair to the skip list. Host-limit runs retain
-statistics files and inventory rows, with no tree. There are no vertex cutoffs.
-Set labels show at most 8 vertex IDs per set. Edit the methods in
-[scripts/decomp_methods.md](../scripts/decomp_methods.md), then regenerate.
-CI checks freshness on PRs and non-main pushes, and refreshes generated files
-on pushes to `main`.
+sets the host limit (default 10000). Set labels show at most 8 vertex IDs per
+set. Every run verifies its winning regions and trees. Each adaptive run is
+also checked against incremental adaptive lifting for the same outcome and
+identical DOT; one copy of the tree is stored. Progress-measure leaf streams
+keep their raw first-occurrence order.
+
+The generator attempts every backend with and without preprocessing on each
+game, except measured slow pairs listed in `SKIP_RUNS` in
+`scripts/gen_decomp.py`. These have fixed `skipped (> N s locally)` outcomes.
+A safety timeout aborts generation with a non-zero exit before any outputs
+are updated. Measure that pair locally before adding it to the skip list.
+Host-limit runs keep statistics and inventory rows but discard all tree
+output, including any partial tree returned by an adaptive run. There are
+no vertex cutoffs.
+
+PNG files contain a `dot-sha256` text chunk with the SHA-256 hash of their
+DOT source. A valid PNG with a matching hash is reused unchanged, so
+regenerating only the prose needs no Graphviz installation. New, missing or
+stale pictures require Graphviz; `--dot PATH` selects its executable, with
+`STRAHLER_DOT` as the environment default. The generator renders all needed
+pictures before updating outputs, so a rendering failure leaves the checked-in
+files untouched.
+
+`--check` reruns the tools and reports missing, changed or obsolete outputs
+without writing files or rendering pictures. It exits 0 when everything is
+current and non-zero otherwise. PNG freshness uses the stored DOT hash and
+PNG integrity checks, allowing different Graphviz versions to render the same
+DOT differently. CI checks freshness on PRs and non-main pushes, and refreshes
+generated files on pushes to `main`.
 
 ## Command reference
 

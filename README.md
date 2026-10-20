@@ -49,9 +49,11 @@ Run `<cmd> --help` for the full option list (in `genstree`, `-h` is the
 height). [lenstree](docs/developing.md#lenstree) and
 [str-tree](docs/developing.md#str-tree) have no help; see their notes instead.
 
-[DECOMP.md](DECOMP.md) has example trees for every backend. See [docs/](docs/)
-for research notes and [docs/developing.md](docs/developing.md) for detailed
-command behavior, tree notation, and development instructions.
+[DECOMP.md](DECOMP.md) has example trees for every backend.
+[ALGOS.md](ALGOS.md) explains how each method builds its trees and how to
+read the metrics. See [docs/](docs/) for research notes and
+[docs/developing.md](docs/developing.md) for detailed command behavior,
+tree notation, and development instructions.
 
 ## License
 
