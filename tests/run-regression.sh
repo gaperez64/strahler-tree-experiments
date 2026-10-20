@@ -173,8 +173,9 @@ preprocess_stats|shave_partial|--stats --format=leaves --initial-shave=loops --c
 CASES
 done
 
-while IFS='|' read -r name fixture options; do
-  "$PG2ADOT_BIN" --iter-shave --stats --labels=sets $options \
+while IFS='|' read -r name fixture flags; do
+  read -r -a arguments <<< "$flags"
+  "$PG2ADOT_BIN" --iter-shave --stats --labels=sets "${arguments[@]}" \
     "tests/games/$fixture.pg" > "tests/golden/pg2adot_iter_$name.out" 2>&1
   sanitize_output "tests/golden/pg2adot_iter_$name.out" "$PG2ADOT_BIN"
 done <<'CASES'
