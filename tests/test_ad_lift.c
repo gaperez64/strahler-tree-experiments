@@ -652,6 +652,120 @@ static void test_incremental(void) {
   assert(saved_lifts > 0);
 }
 
+static void check_iter_shave(PGGame const *game) {
+  PGSet domain = full_domain(game);
+  ADResult expected = {0};
+  ZielonkaError error = {0};
+  assert(
+      zielonka_decompose(game, &domain, game->max_priority, &expected, &error));
+  OrderedTreeNode *base = nullptr;
+  OrderedTreeError tree_error = {0};
+  assert(ordered_tree_parse_leaf_stream("|", &base, &tree_error));
+  for (size_t mode = 0; mode < 8; mode++) {
+    ADLiftOptions options = options_for(AD_LIFT_HOST_FULL, 0);
+    options.iter_shave = true;
+    if (mode == 1 || mode == 7) {
+      options.mode = AD_LIFT_HOST_STRAHLER;
+      options.k = 1;
+    } else if (mode == 2) {
+      options.mode = AD_LIFT_HOST_KARY;
+      options.arity = 1;
+    } else if (mode == 3) {
+      options.mode = AD_LIFT_HOST_TREE;
+      options.tree = base;
+    } else if (mode == 4 || mode == 5) {
+      options.mode = AD_LIFT_HOST_ADAPTIVE;
+      options.incremental = mode == 5;
+    }
+    options.symmetric = mode >= 6;
+    ADResult result = solve(game, &domain, &options, nullptr);
+    if (mode == 0 || mode == 4 || mode == 5 || mode == 6) {
+      assert(result.kind == AD_RESULT_COMPLETE);
+    }
+    for (size_t player = 0; player < 2; player++) {
+      PGSet won = {0};
+      assert(pg_set_clone(&won, &result.region[player]));
+      for (size_t round = 0; round < result.shave_count; round++) {
+        pg_set_union_into(&won, &result.shaves[round].attracted[player]);
+      }
+      assert(pg_set_subset(&won, &expected.region[player]));
+      if (result.kind == AD_RESULT_COMPLETE) {
+        assert(pg_set_equal(&won, &expected.region[player]));
+      }
+      pg_set_destroy(&won);
+    }
+    ad_result_destroy(&result);
+  }
+  ordered_tree_destroy(base);
+  ad_result_destroy(&expected);
+  pg_set_destroy(&domain);
+}
+
+static void test_iter_shave(void) {
+  PGGame game = parse(partial_game);
+  PGSet domain = full_domain(&game);
+  ADLiftOptions options = options_for(AD_LIFT_HOST_STRAHLER, 1);
+  options.iter_shave = true;
+  ADLiftSolveStats stats = {0};
+  ADResult result = solve(&game, &domain, &options, &stats);
+  assert(result.kind == AD_RESULT_COMPLETE && stats.iterations == 2);
+  assert(result.shave_count == 1);
+  assert(pg_set_count(&result.shaves[0].attracted[PG_EVEN]) == 3);
+  assert(pg_set_count(&result.region[PG_EVEN]) == 2);
+  /* Both a damaged attractor and a damaged retained certificate must fail. */
+  ADVerifyError verification = {0};
+  pg_set_remove(&result.shaves[0].attracted[PG_EVEN], 0);
+  assert(!ad_result_verify_complete(&game, &domain, &result, &verification));
+  pg_set_add(&result.shaves[0].attracted[PG_EVEN], 0);
+  pg_set_add(&result.shaves[0].certified.unresolved, 0);
+  assert(!ad_result_verify_complete(&game, &domain, &result, &verification));
+  pg_set_remove(&result.shaves[0].certified.unresolved, 0);
+  assert(ad_result_verify_complete(&game, &domain, &result, &verification));
+  ad_result_destroy(&result);
+  options = options_for(AD_LIFT_HOST_ADAPTIVE, 0);
+  options.iter_shave = true;
+  result = solve(&game, &domain, &options, &stats);
+  assert(stats.first_complete_t == 1);
+  assert(stats.player[PG_EVEN].first_full_t == 1);
+  assert(stats.player[PG_ODD].first_full_t == 0);
+  ad_result_destroy(&result);
+  options.max_host_leaves = 1;
+  result = solve(&game, &domain, &options, &stats);
+  assert(result.kind == AD_RESULT_PARTIAL && stats.budget_exhausted);
+  assert(stats.iterations == 1 && result.shave_count == 1);
+  for (size_t player = 0; player < 2; player++) {
+    assert(result.decomposition[player] == nullptr);
+    assert(stats.player[player].tree.nodes == 0);
+    assert(stats.player[player].tree.leaves == 0);
+    assert(stats.player[player].tree.height == 0);
+    assert(stats.player[player].tree.strahler == 0);
+  }
+  ad_result_destroy(&result);
+  pg_set_destroy(&domain);
+  check_iter_shave(&game);
+  pg_game_destroy(&game);
+  for (size_t trial = 0; trial < 60; trial++) {
+    game = random_game(1 + next_random() % 20, 7);
+    check_iter_shave(&game);
+    pg_game_destroy(&game);
+  }
+  char const *const fixtures[] = {
+      "disagree_lifting_leaves",  "disagree_lifting_strahler",
+      "disagree_odd_strahler",    "disagree_shape",
+      "disagree_zielonka_height", "iter_shave",
+  };
+  for (size_t i = 0; i < sizeof(fixtures) / sizeof(fixtures[0]); i++) {
+    char path[128];
+    (void)snprintf(path, sizeof(path), "tests/games/%s.pg", fixtures[i]);
+    FILE *input = fopen(path, "r");
+    PGParseError parse_error = {0};
+    assert(input != nullptr && pg_game_read(input, &game, &parse_error));
+    assert(fclose(input) == 0);
+    check_iter_shave(&game);
+    pg_game_destroy(&game);
+  }
+}
+
 static void test_kary_hosts(void) {
   PGGame game = parse(partial_game);
   PGSet domain = full_domain(&game);
@@ -769,6 +883,7 @@ int main(void) {
   test_materialize_rejects_empty_core();
   test_partial_and_adaptive();
   test_incremental();
+  test_iter_shave();
   test_kary_hosts();
   test_tree_hosts();
   test_solver_inputs();

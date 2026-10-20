@@ -67,6 +67,13 @@ void ad_result_destroy(ADResult *result) {
     ad_node_destroy(result->decomposition[player]);
   }
   pg_set_destroy(&result->unresolved);
+  for (size_t round = 0; round < result->shave_count; round++) {
+    ADShaveRound *shave = result->shaves + round;
+    ad_result_destroy(&shave->certified);
+    pg_set_destroy(&shave->attracted[0]);
+    pg_set_destroy(&shave->attracted[1]);
+  }
+  free(result->shaves);
   *result = (ADResult){0};
 }
 
@@ -403,6 +410,7 @@ bool ad_result_verify_partial(PGGame const *game, PGSet const *domain,
   }
   if (game == nullptr || domain == nullptr || result == nullptr ||
       result->kind > AD_RESULT_PARTIAL ||
+      (result->shave_count != 0 && result->shaves == nullptr) ||
       domain->bit_count != game->vertex_count ||
       result->region[0].bit_count != game->vertex_count ||
       result->region[1].bit_count != game->vertex_count ||
@@ -412,10 +420,45 @@ bool ad_result_verify_partial(PGGame const *game, PGSet const *domain,
   }
   PGSet intersection = {0};
   PGSet rest = {0};
+  PGSet residual = {0};
   if (!pg_set_clone(&intersection, &result->region[0]) ||
       !pg_set_clone(&rest, domain)) {
     verify_error(error, "failed to allocate result verifier sets");
     goto failure;
+  }
+  for (size_t round = 0; round < result->shave_count; round++) {
+    ADShaveRound const *shave = result->shaves + round;
+    if (!ad_result_verify_partial(game, &rest, &shave->certified, error)) {
+      goto failure;
+    }
+    for (size_t player = 0; player < 2; player++) {
+      ADNode const *tree = shave->certified.decomposition[player];
+      PGSet const *region = &shave->certified.region[player];
+      if ((tree != nullptr &&
+           !ad_tree_relative_verify(game, region, tree, error)) ||
+          !pg_attractor(game, &rest, region, (PGPlayer)player, &intersection) ||
+          !pg_set_equal(&intersection, &shave->attracted[player])) {
+        verify_error(error,
+                     "invalid iterative shaving certificate or attractor");
+        goto failure;
+      }
+    }
+    pg_set_subtract_into(&rest, &shave->attracted[0]);
+    pg_set_subtract_into(&rest, &shave->attracted[1]);
+    if (!pg_subgame_is_total(game, &rest)) {
+      verify_error(error, "iterative shaving left a non-total subgame");
+      goto failure;
+    }
+  }
+  if (result->shave_count != 0) {
+    pg_set_move(&residual, &rest);
+    domain = &residual;
+    if (!pg_set_clone(&rest, domain)) {
+      verify_error(error, "failed to allocate result verifier sets");
+      goto failure;
+    }
+    pg_set_clear(&intersection);
+    pg_set_union_into(&intersection, &result->region[0]);
   }
   pg_set_intersect_into(&intersection, &result->region[1]);
   pg_set_subtract_into(&rest, &result->region[0]);
@@ -451,11 +494,13 @@ bool ad_result_verify_partial(PGGame const *game, PGSet const *domain,
   }
   pg_set_destroy(&intersection);
   pg_set_destroy(&rest);
+  pg_set_destroy(&residual);
   return true;
 
 failure:
   pg_set_destroy(&intersection);
   pg_set_destroy(&rest);
+  pg_set_destroy(&residual);
   return false;
 }
 

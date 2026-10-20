@@ -207,15 +207,35 @@ class DecompTests(unittest.TestCase):
             (examples / "nested").mkdir(parents=True)
             game = examples / "nested/game.gm"
             game.write_text('\nparity 80;\nstart 4;\n'
-                            '4 9 0 4,20 "name; with \\"quote\\"";\n'
+                            '4 9 0 4,20 "name; with back\\slash";\n'
                             '20 2 1 4;\n')
             (examples / "fake.pg").write_text("// not a parity game\n")
             (examples / "tree.hpp").write_text("int tree[] = {0};\n")
-            self.assertEqual(decomp.discover_games(root), [game])
+            self.assertEqual(decomp.discover_games([examples]), [game])
             self.assertEqual(decomp.game_info(game), (2, 3, 2, 9))
             (examples / "game.pg").write_text("parity 0;\n0 0 0 0;\n")
             with self.assertRaisesRegex(ValueError, "unique stems"):
-                decomp.discover_games(root)
+                decomp.discover_games([examples])
+
+    def test_metadata_uses_last_vertex_declaration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            game = Path(directory) / "replaced.pg"
+            for records, expected in (
+                ("0 1 1 0;\n0 0 0 0;\n", (1, 1, 1, 0)),
+                ("0 9 1 0,20;\n20 2 1 0;\n00 0 0 0;\n", (2, 2, 2, 2)),
+            ):
+                with self.subTest(records=records):
+                    game.write_text("parity 20;\n" + records)
+                    self.assertEqual(decomp.game_info(game), expected)
+
+    def test_metadata_names_use_literal_backslashes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            game = Path(directory) / "named.pg"
+            game.write_text('parity 0;\n0 0 0 0 "name\\";\n')
+            self.assertEqual(decomp.game_info(game), (1, 1, 1, 0))
+            game.write_text('parity 0;\n0 0 0 0 "escaped\\"quote";\n')
+            with self.assertRaisesRegex(ValueError, "invalid PGSolver vertex record"):
+                decomp.game_info(game)
 
     def test_stable_stats(self):
         self.assertEqual(decomp.stable_stats(
@@ -234,7 +254,7 @@ class DecompTests(unittest.TestCase):
                          [((5, 2, 3, 2), (2, 1, 0, 1, 0)),
                           ((0, 0, 0, 0), ())])
 
-    def test_limits_errors_discard_output_and_timeouts_abort(self):
+    def test_limits_errors_and_timeouts_discard_output(self):
         game = ROOT / "examples/Button.tlsf.ehoa.pg"
         with patch.object(decomp.subprocess, "run") as run:
             for code, stderr, outcome in (
@@ -251,13 +271,11 @@ class DecompTests(unittest.TestCase):
                 self.assertFalse(result.dot)
             run.side_effect = subprocess.TimeoutExpired(
                 "tool", 1, output=b"partial DOT", stderr=b"partial stats")
-            with self.assertRaisesRegex(SystemExit,
-                                        r"Button.*safety timeout.*skip list"):
-                decomp.invoke(["tool"], game, ROOT, BUILD_DIR, 1)
-        with self.assertRaisesRegex(SystemExit, r"safety timeout.*skip list"):
-            decomp.invoke(
-                [sys.executable, "-c", "import time; time.sleep(1)"],
-                game, ROOT, BUILD_DIR, 0.01)
+            self.assertEqual(decomp.invoke(["tool"], game, ROOT, BUILD_DIR, 1),
+                             decomp.Run("timeout (1 s)"))
+        self.assertEqual(decomp.invoke(
+            [sys.executable, "-c", "import time; time.sleep(1)"],
+            game, ROOT, BUILD_DIR, 0.01), decomp.Run("timeout (0.01 s)"))
 
     def test_timeout_aborts_generation_without_syncing_outputs(self):
         with (patch.object(sys, "argv", ["gen_decomp.py"]),
@@ -275,30 +293,32 @@ class DecompTests(unittest.TestCase):
         for name in ("cabp_swp.ehoa.pg", "FairSchedulern=2_compact.gm"):
             game = ROOT / "examples" / name
             for backend in decomp.BACKENDS:
-                for pre in (False, True):
-                    with (self.subTest(game=name, backend=backend.name,
-                                       pre=pre),
-                          patch.object(decomp, "invoke",
-                                       return_value=decomp.Run("host limit"))
-                          as invoke):
-                        result = decomp.run_backend(
-                            backend, pre, game, ROOT, BUILD_DIR, 1, 100)
-                        if (name == "cabp_swp.ehoa.pg" and backend.name in
-                                ("lifting-adaptive", "pm-strahler")):
-                            self.assertEqual(
-                                result, decomp.Run("skipped (> 60 s locally)"))
-                            invoke.assert_not_called()
-                            continue
+                with (self.subTest(game=name, backend=backend.name),
+                      patch.object(decomp, "invoke",
+                                   return_value=decomp.Run("host limit")) as invoke):
+                    result = decomp.run_backend(
+                        backend, game, ROOT, BUILD_DIR, 1, 100, skip_runs=True)
+                    if (name, backend.name) in decomp.SKIP_RUNS:
+                        self.assertEqual(
+                            result, decomp.Run("skipped (> 60 s locally)"))
+                        invoke.assert_not_called()
+                    else:
                         self.assertEqual(result.outcome, "host limit")
-                        invoke.assert_called_once()
                         command = invoke.call_args.args[0]
                         self.assertIn("--labels=sets", command)
                         self.assertIn("--max-set-items=8", command)
-                        self.assertEqual("--shave=all" in command, pre)
-                        self.assertEqual("--compress" in command, pre)
+                        self.assertEqual("--initial-shave=all" in command,
+                                         "+pre" in backend.name)
+                        self.assertEqual("--iter-shave" in command,
+                                         "+iter" in backend.name)
+                        if backend.name.startswith("lifting"):
+                            self.assertIn("--max-host-leaves=100", command)
+                    invoke.reset_mock()
+                    decomp.run_backend(backend, game, ROOT, BUILD_DIR, 1, 100)
+                    invoke.assert_called_once()
 
     def test_adaptive_equality_is_enforced(self):
-        backend = decomp.BACKENDS[1]
+        backend = next(b for b in decomp.BACKENDS if b.name == "lifting-adaptive")
         game = ROOT / "examples/Button.tlsf.ehoa.pg"
         with patch.object(decomp, "invoke", side_effect=[
             decomp.Run("complete", dot="cold"),
@@ -306,7 +326,7 @@ class DecompTests(unittest.TestCase):
         ]):
             with self.assertRaisesRegex(AssertionError,
                                         "adaptive trees differ"):
-                decomp.run_backend(backend, False, game, ROOT, BUILD_DIR,
+                decomp.run_backend(backend, game, ROOT, BUILD_DIR,
                                    1, 100)
 
     @unittest.skipUnless(all((BUILD_DIR / name).is_file()
@@ -317,13 +337,10 @@ class DecompTests(unittest.TestCase):
               redirect_stdout(io.StringIO())):
             root = Path(directory) / "repo"
             (root / "examples").mkdir(parents=True)
-            (root / "scripts").mkdir()
             shutil.copyfile(ROOT / "examples/Button.tlsf.ehoa.pg",
                             root / "examples/small.gm")
             shutil.copyfile(ROOT / "tests/games/shave_single.pg",
                             root / "examples/all-shaved.pg")
-            shutil.copyfile(ROOT / "scripts/decomp_methods.md",
-                            root / "scripts/decomp_methods.md")
             outputs = [Path(directory) / name for name in ("one", "two")]
             program = fake_dot(Path(directory))
             for output in outputs:
@@ -331,19 +348,26 @@ class DecompTests(unittest.TestCase):
                 decomp.generate(root, output, BUILD_DIR, 5, 10_000)
             self.assertEqual(decomp.output_files(outputs[0]),
                              decomp.output_files(outputs[1]))
-            self.assertEqual(len(list(outputs[0].rglob("*.dot"))), 28)
-            self.assertEqual(len(list(outputs[0].rglob("*.leaves"))), 8)
+            self.assertEqual(len(list(outputs[0].rglob("*.dot"))), 48)
+            self.assertEqual(len(list(outputs[0].rglob("*.leaves"))), 16)
             inventory = (outputs[0] / "DECOMP.md").read_text()
-            self.assertIn("Graphviz", inventory)
-            self.assertIn("dot-sha256", inventory)
-            self.assertEqual(inventory.count("[PNG](decomp/"), 28)
+            self.assertIn("[ALGOS.md](ALGOS.md)", inventory)
+            self.assertIn("docs/developing.md#regenerating-example-trees",
+                          inventory)
+            self.assertNotIn("## Methods", inventory)
+            self.assertNotIn("```", inventory)
+            self.assertLess(inventory.index("## Inventory"),
+                            inventory.index("### all-shaved.pg"))
+            self.assertLess(inventory.index("### small.gm"),
+                            inventory.index("## Tree disagreements"))
+            self.assertEqual(inventory.count("[PNG](decomp/"), 48)
             for dot in (outputs[0] / "decomp/all-shaved").glob("*+pre.dot"):
                 info = decomp.tree_info(dot.read_text(),
                                         dot.name.startswith("pm-"))
                 self.assertEqual(info, [((0, 0, 0, 0), ())] * 2)
             self.assertTrue(decomp.sync_outputs(root, outputs[0], True))
             decomp.sync_outputs(root, outputs[0], False, program)
-            self.assertEqual(len(list(root.rglob("*.png"))), 28)
+            self.assertEqual(len(list(root.rglob("*.png"))), 48)
             self.assertFalse(decomp.sync_outputs(root, outputs[1], True))
             stale = root / "decomp/small/obsolete.dot"
             stale.write_text("old")

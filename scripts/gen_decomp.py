@@ -26,7 +26,7 @@ class Backend:
     options: tuple[str, ...]
 
 
-BACKENDS = (
+BASE_BACKENDS = (
     Backend("lifting", "pg2adot", ("--algorithm=lifting",)),
     Backend("lifting-adaptive", "pg2adot",
             ("--algorithm=lifting", "--adaptive-t")),
@@ -36,27 +36,46 @@ BACKENDS = (
     Backend("zielonka", "pg2adot", ("--algorithm=zielonka",)),
     Backend("zielonka-sym", "pg2adot", ("--algorithm=zielonka-sym",)),
 )
+BACKENDS = tuple(
+    Backend(backend.name + ("+pre" if pre else "") +
+            ("+iter" if iterative else ""), backend.binary,
+            backend.options + (("--initial-shave=all", "--compress") if pre else ())
+            + (("--iter-shave",) if iterative else ()))
+    for backend in BASE_BACKENDS
+    for iterative in ((False,) if backend.name.startswith("zielonka")
+                      else (False, True))
+    for pre in (False, True)
+)
 MAX_SET_ITEMS = 8
 # Per-game label overrides belong here if a DOT approaches 2 MB.
 GAME_LABELS = {}
 # Local release runs exceeded 60 s for each pair, with and without preprocessing.
 SKIP_RUNS = {
-    ("cabp_swp.ehoa.pg", "lifting-adaptive", False): 60,
-    ("cabp_swp.ehoa.pg", "lifting-adaptive", True): 60,
-    ("cabp_swp.ehoa.pg", "pm-strahler", False): 60,
-    ("cabp_swp.ehoa.pg", "pm-strahler", True): 60,
+    ("cabp_swp.ehoa.pg", "lifting-adaptive"): 60,
+    ("cabp_swp.ehoa.pg", "lifting-adaptive+pre"): 60,
+    ("cabp_swp.ehoa.pg", "lifting-adaptive+iter"): 60,
+    ("cabp_swp.ehoa.pg", "lifting-adaptive+pre+iter"): 60,
+    ("cabp_swp.ehoa.pg", "pm-strahler"): 60,
+    ("cabp_swp.ehoa.pg", "pm-strahler+pre"): 60,
+    ("cabp_swp.ehoa.pg", "pm-strahler+iter"): 60,
+    ("cabp_swp.ehoa.pg", "pm-strahler+pre+iter"): 60,
 }
 HEADER = re.compile(r"parity\s+\d+\s*;")
 VERTEX = re.compile(
     r'(\d+)\s+(\d+)\s+[01]\s+(\d+(?:\s*,\s*\d+)*)\s*'
-    r'(?:"(?:\\.|[^"\\])*"\s*)?;'
+    r'(?:"[^"]*"\s*)?;'
 )
 
 
-def discover_games(root):
+def discover_games(paths):
     """Recognize games by their first nonempty line, whatever the suffix."""
     games = []
-    for path in sorted((root / "examples").rglob("*")):
+    candidates = set()
+    for path in paths:
+        if not path.exists():
+            raise ValueError(f"input does not exist: {path}")
+        candidates.update(path.rglob("*") if path.is_dir() else [path])
+    for path in sorted(candidates):
         if path.is_file():
             with path.open(encoding="utf-8", errors="replace") as stream:
                 first = next((line.strip() for line in stream
@@ -65,14 +84,13 @@ def discover_games(root):
                 games.append(path)
     stems = [path.stem for path in games]
     if len(stems) != len(set(stems)):
-        raise ValueError("games must have unique stems under examples/")
+        raise ValueError("games must have unique stems for output directories")
     return games
 
 
 def game_info(path):
-    """Count records; the header can mean maximum ID or vertex count."""
-    vertices = edges = 0
-    priorities = set()
+    """Count final declarations; the header can mean maximum ID or vertex count."""
+    vertices = {}
     text = path.read_text(encoding="utf-8")
     text = re.sub(r"\A\s*parity\s+\d+\s*;", "", text)
     text = re.sub(r"\A\s*start\s+\d+\s*;", "", text)
@@ -80,13 +98,13 @@ def game_info(path):
     for match in VERTEX.finditer(text):
         if text[end:match.start()].strip():
             raise ValueError("invalid PGSolver vertex record")
-        vertices += 1
-        priorities.add(int(match[2]))
-        edges += match[3].count(",") + 1
+        vertices[int(match[1])] = (int(match[2]), match[3].count(",") + 1)
         end = match.end()
     if text[end:].strip():
         raise ValueError("invalid PGSolver vertex record")
-    return vertices, edges, len(priorities), max(priorities, default=0)
+    priorities = {priority for priority, _ in vertices.values()}
+    edges = sum(count for _, count in vertices.values())
+    return len(vertices), edges, len(priorities), max(priorities, default=0)
 
 
 def stable_stats(stderr, root, build_dir):
@@ -121,12 +139,7 @@ def invoke(command, game, root, build_dir, timeout):
                 env={**os.environ, "LC_ALL": "C", "LANG": "C"},
             )
     except subprocess.TimeoutExpired:
-        raise SystemExit(
-            f"{game.name}: safety timeout after {timeout:g} s for "
-            f"{' '.join(command)}; measure locally and add this "
-            "(game, backend, pre) pair to the SKIP_RUNS skip list in "
-            "scripts/gen_decomp.py"
-        ) from None
+        return Run(f"timeout ({timeout:g} s)")
     except OSError:
         return Run(f"error: cannot execute {Path(command[0]).name}")
     stats = stable_stats(result.stderr, root, build_dir)
@@ -135,15 +148,16 @@ def invoke(command, game, root, build_dir, timeout):
     if result.returncode:
         first = stats.splitlines()[0] if stats else "process failed"
         return Run("error: " + first, stats)
-    match = re.search(r"\bresult=(complete|partial)\b", stats)
-    if not match:
+    outcomes = re.findall(r"\bresult=(complete|partial)\b", stats)
+    if not outcomes:
         return Run("error: missing result statistics", stats)
-    return Run(match[1], stats, result.stdout)
+    return Run(outcomes[-1], stats, result.stdout)
 
 
-def run_backend(backend, pre, game, root, build_dir, timeout, limit):
-    if (game.name, backend.name, pre) in SKIP_RUNS:
-        seconds = SKIP_RUNS[game.name, backend.name, pre]
+def run_backend(backend, game, root, build_dir, timeout, limit, *, skip_runs=False,
+                compare_adaptive=True):
+    if skip_runs and (game.name, backend.name) in SKIP_RUNS:
+        seconds = SKIP_RUNS[game.name, backend.name]
         return Run(f"skipped (> {seconds:g} s locally)")
     command = [str(build_dir / backend.binary), *backend.options,
                "--player=both", "--stats",
@@ -151,12 +165,10 @@ def run_backend(backend, pre, game, root, build_dir, timeout, limit):
                f"--max-set-items={MAX_SET_ITEMS}"]
     if backend.binary == "pg2adot" and backend.name.startswith("lifting"):
         command.append(f"--max-host-leaves={limit}")
-    if pre:
-        command.extend(("--shave=all", "--compress"))
     run = invoke(command, game, root, build_dir, timeout)
     if run.outcome not in ("complete", "partial"):
         return run
-    if "--adaptive-t" in backend.options:
+    if compare_adaptive and "--adaptive-t" in backend.options:
         incremental = invoke(
             [arg.replace("--adaptive-t", "--adaptive-t=incremental")
              for arg in command], game, root, build_dir, timeout)
@@ -164,7 +176,7 @@ def run_backend(backend, pre, game, root, build_dir, timeout, limit):
             return Run(incremental.outcome, run.stats + incremental.stats)
         assert (run.outcome == incremental.outcome and
                 run.dot == incremental.dot), (
-            f"{game.name}: cold/incremental adaptive trees differ (pre={pre})")
+            f"{game.name}: cold/incremental adaptive trees differ ({backend.name})")
     if backend.binary == "pg2pmdot":
         leaves = invoke(command + ["--format=leaves"], game, root, build_dir,
                         timeout)
@@ -178,14 +190,16 @@ def run_backend(backend, pre, game, root, build_dir, timeout, limit):
 def player_stats(stats):
     players = []
     for player in ("even", "odd"):
-        match = re.search(rf"^(?:\S+ )?{player}: (.+)$", stats, re.MULTILINE)
-        players.append(dict(re.findall(r"(\w+)=(\S+)", match[1]))
-                       if match else {})
+        matches = re.findall(rf"^(?:\S+ )?{player}: (.+)$", stats, re.MULTILINE)
+        players.append(dict(re.findall(r"(\w+)=(\S+)", matches[-1]))
+                       if matches else {})
     return players
 
 
 def tree_info(dot, pm):
     """Read our ordered DOT trees; exclude synthetic and shaved nodes."""
+    if pm:
+        dot = dot.rsplit("digraph ", 1)[-1]
     names = r"n\d+" if pm else r"(?:even|odd)(?:_\d+)*"
     nodes = dict(re.findall(rf"^  ({names}) \[label=(.*);$",
                             dot, re.MULTILINE))
@@ -228,83 +242,145 @@ def pair(values):
     return " / ".join(map(str, values))
 
 
+def run_metrics(backend, run, vertices):
+    """Final trees/parameters, but wins across all shaving rounds."""
+    if not run.dot:
+        return dict(info=None, won=None, parameters=None)
+    pm = backend.binary == "pg2pmdot"
+    info = tree_info(run.dot, pm)
+    stats = player_stats(run.stats)
+    assert all(stats) or vertices == 0 or "residual=0" in run.stats
+    won = []
+    for player, current in zip(("even", "odd"), stats):
+        shaved = re.search(rf"shaved_{player}=(\d+)", run.stats)
+        count = int(shaved[1]) if shaved else 0
+        if "--iter-shave" in backend.options:
+            if pm:
+                rounds = re.findall(rf"^{player}: (.+)$", run.stats, re.MULTILINE)
+                count += sum(int(value) for row in rounds for value in
+                             re.findall(r"\b(?:non_top|attracted)=(\d+)", row))
+            else:
+                count += sum(map(int, re.findall(
+                    rf"^iter-shave: round=.*\b{player}=(\d+)",
+                    run.stats, re.MULTILINE)))
+        else:
+            count += int(current.get("non_top" if pm else "region",
+                                     current.get("dominion", 0)))
+        won.append(count)
+    if run.outcome == "complete":
+        assert sum(won) == vertices, "incomplete regions"
+    parameters = tuple(
+        ", ".join(f"{key}={s[key]}" for key in
+                  ("H", "K", "k", "t", "bits", "depth") if key in s) or "—"
+        for s in stats)
+    return dict(info=info, won=tuple(won), parameters=parameters)
+
+
+def write_run(folder, backend, run):
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / (backend.name + ".stats")).write_text(
+        f"outcome: {run.outcome}\n" + run.stats, encoding="utf-8")
+    for suffix, content in (("dot", run.dot), ("leaves", run.leaves)):
+        path = folder / (backend.name + "." + suffix)
+        if content:
+            path.write_text(content, encoding="utf-8")
+        else:
+            path.unlink(missing_ok=True)
+
+
 def generate(root, destination, build_dir, timeout, limit):
     lines = [
         "# Decompositions\n\n"
-        "Generated by `scripts/gen_decomp.py`; **do not hand-edit**. "
-        "Methods come from "
-        "[the reviewed template](scripts/decomp_methods.md). "
-        "PNGs are rendered with Graphviz and stamped with the DOT SHA-256 "
-        "in a `dot-sha256` text chunk.\n\n",
-        (root / "scripts/decomp_methods.md").read_text(encoding="utf-8"),
-        "\n## Inventory\n\n",
-        "Regenerate with release tools (`--buildtype=release`): "
-        "`python3 scripts/gen_decomp.py`. "
-        f"Defaults: {timeout:g} s "
-        f"safety timeout per subprocess; {limit} host leaves; sets capped at "
-        f"{MAX_SET_ITEMS} IDs. `+pre` adds `--shave=all --compress`. "
-        "Each adaptive result is checked against incremental adaptive; "
-        "identical DOT is stored once. PM leaf streams keep raw order.\n\n",
-        "Metrics and parameters are **Even / Odd**. Heights count nodes. "
-        "Empty trees have zero metrics; synthetic, shaved and unresolved "
-        "nodes are excluded. AD metrics describe residual decompositions; "
-        "PM metrics describe occupied measure prefix trees (including their "
-        "extra root), not minimum game Strahler numbers. Won sizes include "
-        "shaved vertices; partial rows give certified lower bounds. "
-        "Unknown winners are `?`. Every backend is attempted on every game "
-        "except measured slow pairs in `SKIP_RUNS` in "
-        "`scripts/gen_decomp.py`; their skip outcomes are fixed by the table. "
-        "Host-leaf limits remain outcomes, without vertex cutoffs. "
-        "A safety timeout aborts generation; measure locally and add the "
-        "pair to the skip list.\n\n",
+        "This page is generated; do not hand-edit it. See the "
+        "[regeneration instructions](docs/developing.md#regenerating-example-trees).\n\n",
+        "The tables list each example game and the trees found by each backend.\n"
+        "[ALGOS.md](ALGOS.md) explains how the trees are built, their metrics "
+        "and search parameters.\n\n",
+        "Read paired values as Even / Odd, including the parameters. "
+        "Won counts include vertices\n"
+        "solved during preprocessing. Tree metrics cover the remaining game: "
+        "decomposition trees\n"
+        "or the occupied progress-measure trees, including their extra root. "
+        "Heights count nodes.\n"
+        "Empty trees have zero metrics; connector boxes, preprocessed regions "
+        "and unresolved\n"
+        "vertices do not count. These are the metrics of the trees found, "
+        "with no guarantee\n"
+        "that their Strahler numbers are the smallest possible.\n\n",
+        "A `complete` result assigns every vertex to a winner. A `partial` "
+        "result proves wins\n"
+        "for the listed vertices and leaves the rest unresolved. A `host limit` "
+        "means the search\n"
+        "tree exceeded the allowed size; statistics are kept, without a tree. "
+        "A `skipped` row\n"
+        "records a method whose earlier local run exceeded the time shown. "
+        "Unknown winning\n"
+        "counts are `?`; a dash means no value or tree is available. "
+        "Each backend name links\n"
+        "to its run statistics. PNG links open the pictures; DOT links open "
+        "their graph descriptions,\n"
+        "and leaves links list the distinct progress measures.\n\n",
+        "## Preprocessing and shaving\n\n",
+        "The `+pre` rows pass `--initial-shave=all --compress` before running the "
+        "selected solver:\n\n",
+        "1. Compress priority gaps and merge consecutive distinct priorities "
+        "of the same parity, preserving winners. Choose the levels from the "
+        "full input and keep them fixed throughout shaving.\n",
+        "2. Shave simple winning regions in this order: all remaining "
+        "vertices if their priorities have one parity; winning self-loops "
+        "whose owner matches their priority's parity or whose loop is the "
+        "only remaining move; cycles whose vertices are all owned by one "
+        "player and whose highest priority has that player's parity. "
+        "Remove each region's attractor too, Even before Odd: these are the vertices "
+        "from which its winner can force play into the region. Repeat the "
+        "rules until a full pass removes nothing.\n",
+        "3. Run the solver on the remainder. Shaved regions appear separately "
+        "and count towards Won, once per vertex, but are excluded from tree "
+        "metrics. If nothing remains, the result is complete with empty "
+        "trees. Displayed priorities normally use the original scale; a "
+        "merged level uses its largest original priority.\n\n",
+        "Adaptive solvers use the remainder's priority and size bounds. "
+        "Compression and shaving can lower these bounds, allowing lower t "
+        "values and smaller hosts.\n\n",
+        "The `+iter` rows add `--iter-shave`, available only for lifting-based "
+        "backends, including progress measures. After lifting stabilises, "
+        "remove certified dominions and their attractors, then retry the "
+        "remainder. Fixed hosts are reused; adaptive lifting advances to the "
+        "next t on the smaller game, keeping the initial residual's host bounds. "
+        "Shaved rounds show the round and t that certified them; progress "
+        "measures print a graph per round with its parameters. Won counts all "
+        "rounds and initial shaving, including attracted vertices, once each. "
+        "Tree metrics and parameters describe only the final round: the "
+        "residual decomposition or occupied measure tree, excluding earlier "
+        "certificates and attracted vertices. `+pre+iter` combines both steps.\n\n",
+        "Source: [Oink, TACAS 2018](https://arxiv.org/abs/1801.03859), "
+        "trivial dominions and priority compression.\n\n",
+        "## Inventory\n",
     ]
     disagreements = []
-    for game in discover_games(root):
+    for game in discover_games([root / "examples"]):
         vertices, edges, priorities, maximum = game_info(game)
         print(f"{game.relative_to(root)} ({vertices} vertices)", flush=True)
         folder = destination / "decomp" / game.stem
         folder.mkdir(parents=True)
         records = []
         for backend in BACKENDS:
-            for pre in (False, True):
-                name = backend.name + ("+pre" if pre else "")
-                run = run_backend(backend, pre, game, root,
-                                  build_dir, timeout, limit)
-                (folder / (name + ".stats")).write_text(
-                    f"outcome: {run.outcome}\n" + run.stats, encoding="utf-8")
-                info = won = parameters = None
-                if run.dot:
-                    pm = backend.binary == "pg2pmdot"
-                    info = tree_info(run.dot, pm)
-                    stats = player_stats(run.stats)
-                    assert (all(stats) or vertices == 0 or
-                            "residual=0" in run.stats)
-                    shaved = [int(re.search(rf"shaved_{p}=(\d+)",
-                                            run.stats)[1])
-                              if f"shaved_{p}=" in run.stats else 0
-                              for p in ("even", "odd")]
-                    won = tuple(int(s.get("non_top" if pm else "region",
-                                          s.get("dominion", 0))) + shaved[p]
-                                for p, s in enumerate(stats))
-                    if run.outcome == "complete":
-                        assert sum(won) == vertices, "incomplete regions"
-                        assert all(r["won"] == won for r in records
-                                   if r["run"].outcome == "complete"), (
-                                       f"{game.name}: winning sizes disagree")
-                    parameters = pair(
-                        ", ".join(f"{key}={s[key]}" for key in
-                                  ("H", "K", "k", "t", "bits", "depth")
-                                  if key in s)
-                        or "—" for s in stats)
-                    (folder / (name + ".dot")).write_text(
-                        run.dot, encoding="utf-8")
-                    if pm:
-                        (folder / (name + ".leaves")).write_text(
-                            run.leaves, encoding="utf-8")
-                records.append(dict(name=name, backend=backend, pre=pre,
-                                    run=run, info=info, won=won,
-                                    parameters=parameters))
-                print(f"  {name}: {run.outcome}", flush=True)
+            name = backend.name
+            run = run_backend(backend, game, root, build_dir, timeout, limit,
+                              skip_runs=True)
+            if run.outcome.startswith("timeout"):
+                raise SystemExit(
+                    f"{game.name}: safety timeout after {timeout:g} s for {name}; "
+                    "measure locally and add this pair to the SKIP_RUNS skip "
+                    "list in scripts/gen_decomp.py")
+            metrics = run_metrics(backend, run, vertices)
+            if run.outcome == "complete":
+                assert all(r["won"] == metrics["won"] for r in records
+                           if r["run"].outcome == "complete"), (
+                               f"{game.name}: winning sizes disagree")
+            write_run(folder, backend, run)
+            records.append(dict(name=name, backend=backend, run=run, **metrics))
+            print(f"  {name}: {run.outcome}", flush=True)
         complete = next((r["won"] for r in records
                          if r["run"].outcome == "complete"), ("?", "?"))
         lines.extend([
@@ -327,13 +403,15 @@ def generate(root, destination, build_dir, timeout, limit):
                 columns.append(pair(record["won"]))
                 columns.extend(pair(part[0][i] for part in info)
                                for i in range(4))
-                columns.append(record["parameters"])
+                columns.append(pair(record["parameters"]))
                 columns.append(f"[PNG]({link}.png) · [DOT]({link}.dot)")
                 if run.leaves:
                     columns[-1] += f" · [leaves]({link}.leaves)"
             lines.append("| " + " | ".join(columns) + " |\n")
         for left, right in combinations(records, 2):
-            if (left["pre"] != right["pre"] or
+            if (any((flag in left["backend"].options) !=
+                    (flag in right["backend"].options)
+                    for flag in ("--compress", "--iter-shave")) or
                     left["backend"].binary != right["backend"].binary or
                     left["run"].outcome != "complete" or
                     right["run"].outcome != "complete"):
@@ -350,12 +428,19 @@ def generate(root, destination, build_dir, timeout, limit):
                         f"{right['name']} | ordered shape{detail} |\n")
     lines.extend([
         "\n## Tree disagreements\n\n",
-        "Compare complete ordered, unlabelled shapes within each tree family "
-        "and preprocessing mode. Different sets on equal shapes are excluded; "
-        "truncated labels cannot establish set equality. AD and PM trees have "
-        "different meanings, so are not compared to each other. For comparing "
-        "of full vertex sets and smaller witnesses, see "
-        "[the disagreement study](docs/disagreements.md).\n\n",
+        "These pairs produced different tree shapes despite agreeing on the "
+        "winners.\n"
+        "The comparison includes child order and uses only complete results "
+        "with the same\n"
+        "preprocessing and iterative-shaving choices. Decomposition methods are compared with each "
+        "other, as are\n"
+        "progress-measure methods; the two families describe different things. "
+        "Trees with\n"
+        "the same shape are omitted even if their vertex sets differ. "
+        "Shortened labels in\n"
+        "the pictures cannot establish whether full sets match. See "
+        "[the disagreement study](docs/disagreements.md)\n"
+        "for comparisons of full vertex sets and smaller trees.\n\n",
         "| Game | Player | Backend A | Backend B | Differences |\n",
         "| --- | --- | --- | --- | --- |\n",
         *(disagreements or ["| — | — | — | — | No shape disagreements |\n"]),
@@ -396,6 +481,20 @@ def png_dot_hash(png):
 
 
 def render_png(dot, digest, program):
+    graphs = re.findall(rb"^digraph [^\n]*\{\n(.*?)^}\n", dot,
+                        re.MULTILINE | re.DOTALL)
+    if len(graphs) > 1:
+        # Graphviz otherwise concatenates PNGs for multi-round progress measures.
+        clusters = []
+        for index, body in enumerate(graphs):
+            prefix = f"round{index}_".encode("ascii")
+            body = re.sub(rb"(?m)^(  )((?:n\d+|result|unresolved))(?= \[| ->)",
+                          lambda m: m[1] + prefix + m[2], body)
+            body = re.sub(rb"( -> )((?:n\d+|result|unresolved))\b",
+                          lambda m: m[1] + prefix + m[2], body)
+            clusters.append(b"subgraph cluster_" + str(index).encode("ascii")
+                            + b" {\n" + body + b"}\n")
+        dot = b"digraph rounds {\n" + b"".join(clusters) + b"}\n"
     try:
         result = subprocess.run([program, "-Tpng"], input=dot,
                                 capture_output=True, check=True)
@@ -449,23 +548,32 @@ def sync_outputs(root, generated, check, dot="dot"):
     return False
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def add_run_arguments(parser):
     parser.add_argument("--build-dir", type=Path, default=Path("build"))
     parser.add_argument("--timeout", type=float, default=600)
     parser.add_argument("--max-host-leaves", type=int, default=10_000)
     parser.add_argument("--dot", default=os.environ.get("STRAHLER_DOT", "dot"),
                         help="Graphviz executable (default: STRAHLER_DOT or dot)")
-    parser.add_argument("--check", action="store_true")
-    args = parser.parse_args()
+
+
+def validate_run_arguments(parser, args, backends):
     if not math.isfinite(args.timeout) or args.timeout <= 0:
         parser.error("--timeout must be finite and positive")
     if args.max_host_leaves <= 0:
         parser.error("--max-host-leaves must be positive")
     build_dir = args.build_dir.resolve()
-    for binary in {backend.binary for backend in BACKENDS}:
+    for binary in {backend.binary for backend in backends}:
         if not os.access(build_dir / binary, os.X_OK):
             parser.error(f"missing {binary}; run meson compile first")
+    return build_dir
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    add_run_arguments(parser)
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+    build_dir = validate_run_arguments(parser, args, BACKENDS)
     with tempfile.TemporaryDirectory(prefix="gen-decomp-") as directory:
         generated = Path(directory)
         generate(ROOT, generated, build_dir, args.timeout,

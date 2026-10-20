@@ -25,21 +25,32 @@ struct ADNode {
 };
 
 typedef enum {
-  /* The two regions partition the domain, so they are the winning regions. */
+  /* The regions and shaved attractors partition the domain. */
   AD_RESULT_COMPLETE,
-  /* The regions are disjoint certified dominions, and unresolved is the rest
-   * of the domain. Nothing is claimed about who wins there. */
+  /* The regions and shaved attractors certify disjoint winners; unresolved
+   * is the rest of the domain, with no claim about who wins there. */
   AD_RESULT_PARTIAL,
 } ADResultKind;
 
-/* region[p] is decomposed by decomposition[p], which is nullptr exactly when
- * the region is empty. */
+typedef struct ADShaveRound ADShaveRound;
+
+/* region[p] is the final residual dominion, decomposed by decomposition[p].
+ * Earlier certified dominions and their attracted winners are in shaves. */
 typedef struct {
   PGSet region[2];
   PGSet unresolved;
   ADNode *decomposition[2];
   ADResultKind kind;
+  size_t shave_count;
+  ADShaveRound *shaves;
 } ADResult;
+
+struct ADShaveRound {
+  ADResult certified;
+  PGSet attracted[2];
+  /* SIZE_MAX for fixed hosts. */
+  size_t t;
+};
 
 typedef struct {
   size_t nodes;
@@ -89,7 +100,9 @@ void ad_tree_relative_parts_destroy(ADTreeRelativeParts *parts);
 
 /* Each nonempty region must be an opponent trap in domain with a verified
  * classic decomposition, the regions must be disjoint, and unresolved must be
- * the rest of domain. Complete results pass as well. */
+ * the rest of domain. Shaving certificates and their exact attractors are
+ * checked in order before the residual result. Complete results pass as well.
+ */
 [[nodiscard]] bool ad_result_verify_partial(PGGame const *game,
                                             PGSet const *domain,
                                             ADResult const *result,

@@ -1,0 +1,42 @@
+# round 1 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 2 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 3 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 4 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 5 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 6 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 7 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 8 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 9 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 10 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 11 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 12 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 13 bits=1
+even: 
+odd: e,1|e,e|e,0|1,e|
+# round 14 bits=1
+even: 
+odd: e,1|e,e|e,0|

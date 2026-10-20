@@ -311,7 +311,8 @@ test_ad_lift_exe = executable(
   ['tests/test_ad_lift.c', 'tests/reference_solver.c'],
   dependencies : [ad_lift_dep, zielonka_dep],
 )
-test('test_ad_lift', test_ad_lift_exe, timeout : 120)
+test('test_ad_lift', test_ad_lift_exe, timeout : 120,
+  workdir : meson.project_source_root())
 
 python = find_program('python3')
 test(
@@ -378,8 +379,22 @@ test(
 )
 foreach invalid_shave : ['bad', 'loops,', 'all,loops', 'none,wcwc']
   test('pg2adot_rejects_shave_' + invalid_shave, pg2adot,
-    args : ['--shave=' + invalid_shave], should_fail : true)
+    args : ['--initial-shave=' + invalid_shave, files('tests/games/strahler_two.pg')],
+    should_fail : true)
 endforeach
+foreach removed : ['--shave=all', '--incremental']
+  foreach program : [pg2adot, pg2pmdot]
+    test(program.name() + '_rejects_removed_' + removed, program,
+      args : [removed, files('tests/games/strahler_two.pg')], should_fail : true)
+  endforeach
+endforeach
+foreach algorithm : ['zielonka', 'zielonka-sym']
+  test('pg2adot_rejects_iter_shave_' + algorithm, pg2adot,
+    args : ['--algorithm=' + algorithm, '--iter-shave',
+      files('tests/games/strahler_two.pg')], should_fail : true)
+endforeach
+test('pg2adot_rejects_iter_shave_argument', pg2adot,
+  args : ['--iter-shave=all', files('tests/games/strahler_two.pg')], should_fail : true)
 test(
   'pg2adot_rejects_zero_tree_k',
   pg2adot,
@@ -473,6 +488,26 @@ test(
 # Regression Tests
 run_single_test = find_program('tests/run-single-test.sh')
 
+foreach name, arguments : {
+  'fixed' : ['strahler_two', ['--tree-k=1']],
+  'kary' : ['strahler_two', ['--kary=1', '--view=jurdzinski']],
+  'tree' : ['iter_shave', ['--tree-file=tests/trees/chain_three.tree', '--view=tree-relative']],
+  'adaptive' : ['strahler_two', ['--adaptive-t']],
+  'incremental' : ['strahler_two', ['--adaptive-t=incremental']],
+  'sym' : ['strahler_two', ['--algorithm=lifting-sym', '--tree-k=1']],
+  'capped' : ['strahler_two', ['--adaptive-t', '--tree-k=1']],
+  'limit' : ['strahler_two', ['--adaptive-t', '--max-host-leaves=1']],
+  'pre' : ['shave_partial', ['--initial-shave=loops', '--compress', '--adaptive-t']],
+  'empty' : ['shave_single', ['--initial-shave=all', '--adaptive-t']],
+  'no_progress' : ['disagree_lifting_strahler', ['--kary=1']],
+}
+  test('pg2adot_iter_' + name, run_single_test,
+    args : [pg2adot, 'tests/golden/pg2adot_iter_' + name + '.out',
+      'tests/actual/pg2adot_iter_' + name + '.out',
+      '@tests/games/' + arguments[0] + '.pg', '--iter-shave', '--stats',
+      '--labels=sets'] + arguments[1], workdir : meson.project_source_root())
+endforeach
+
 foreach algorithm : ['zielonka-sym', 'lifting-sym']
   foreach name, arguments : {
     'sets' : ['pg2adot_sets', ['--labels=sets', '--max-set-items=1']],
@@ -520,14 +555,14 @@ foreach name, arguments : {
 endforeach
 
 preprocess_cases = {
-  'shave_loops' : ['shave_loops', ['--shave=loops', '--labels=sets']],
-  'shave_wcwc' : ['shave_wcwc', ['--shave=wcwc', '--labels=sets']],
-  'shave_single' : ['shave_single', ['--shave=single', '--labels=sets']],
+  'shave_loops' : ['shave_loops', ['--initial-shave=loops', '--labels=sets']],
+  'shave_wcwc' : ['shave_wcwc', ['--initial-shave=wcwc', '--labels=sets']],
+  'shave_single' : ['shave_single', ['--initial-shave=single', '--labels=sets']],
   'shave_relative' : ['shave_wcwc', [
-    '--shave=loops,wcwc', '--view=tree-relative', '--labels=sets',
+    '--initial-shave=loops,wcwc', '--view=tree-relative', '--labels=sets',
     '--max-set-items=2',
   ]],
-  'shave_empty_jurdzinski' : ['shave_single', ['--shave=all', '--view=jurdzinski']],
+  'shave_empty_jurdzinski' : ['shave_single', ['--initial-shave=all', '--view=jurdzinski']],
   'compress_original' : ['compress', ['--compress', '--labels=sets']],
   'compress_compact' : ['compress', ['--compress', '--priority-mode=compact']],
   'compress_jurdzinski' : ['compress', ['--compress', '--view=jurdzinski']],
@@ -546,19 +581,19 @@ foreach algorithm : ['lifting', 'zielonka']
     args : [pg2adot, 'tests/golden/pg2adot_shave_stats_' + algorithm + '.out',
       'tests/actual/pg2adot_shave_stats_' + algorithm + '.out',
       '@tests/games/shave_single.pg', '--algorithm=' + algorithm,
-      '--shave=all', '--compress', '--stats', '--labels=none'],
+      '--initial-shave=all', '--compress', '--stats', '--labels=none'],
     workdir : meson.project_source_root())
 endforeach
 test('pg2adot_shave_empty_adaptive', run_single_test,
   args : [pg2adot, 'tests/golden/pg2adot_shave_single.out',
     'tests/actual/pg2adot_shave_empty_adaptive.out',
-    '@tests/games/shave_single.pg', '--shave=single', '--adaptive-t',
+    '@tests/games/shave_single.pg', '--initial-shave=single', '--adaptive-t',
     '--max-host-leaves=0', '--labels=sets'],
   workdir : meson.project_source_root())
 test('pg2adot_shave_partial', run_single_test,
   args : [pg2adot, 'tests/golden/pg2adot_shave_partial.out',
     'tests/actual/pg2adot_shave_partial.out', '@tests/games/shave_partial.pg',
-    '--shave=loops', '--tree-k=1', '--labels=sets'],
+    '--initial-shave=loops', '--tree-k=1', '--labels=sets'],
   workdir : meson.project_source_root())
 
 test(
@@ -1353,7 +1388,7 @@ test('pg2pmdot_version', check_version,
   args : [pg2pmdot, meson.project_version()])
 foreach bad : [
   ['--algorithm=bad'], ['--format=bad'], ['--player=bad'], ['--labels=bad'],
-  ['--priority-mode=bad'], ['--shave=loops,'], ['--k=0', '--t=0'], ['--k=1'],
+  ['--priority-mode=bad'], ['--initial-shave=loops,'], ['--k=0', '--t=0'], ['--k=1'],
   ['--t=1'], ['--bits=1'], ['--algorithm=succinct', '--k=1', '--t=1'],
   ['--algorithm=succinct', '--bits=-1'], ['--k=999999999999999999999', '--t=1'],
   ['--max-set-items=x'], ['--bits=x'], ['--k=1', '--t=x'],
@@ -1370,14 +1405,15 @@ pm_cases = {
   'leaves': ['--format=leaves', 'tests/games/pm_cycle.pg'],
   'partial': ['--labels=sets', 'tests/games/strahler_two.pg'],
   'partial_leaves': ['--format=leaves', 'tests/games/strahler_two.pg'],
-  'incremental': ['--incremental', '--labels=sets', 'tests/games/strahler_two.pg'],
-  'incremental_leaves': ['--incremental', '--format=leaves', 'tests/games/strahler_two.pg'],
-  'shave_compress': ['--shave=loops', '--compress', '--labels=sets', 'tests/games/shave_partial.pg'],
-  'shave_empty': ['--shave=all', '--compress', '--labels=sets', 'tests/games/shave_single.pg'],
+  'incremental': ['--iter-shave', '--labels=sets', 'tests/games/strahler_two.pg'],
+  'incremental_leaves': ['--iter-shave', '--format=leaves', 'tests/games/strahler_two.pg'],
+  'iter_stats': ['--iter-shave', '--stats', '--format=leaves', 'tests/games/strahler_two.pg'],
+  'shave_compress': ['--initial-shave=loops', '--compress', '--labels=sets', 'tests/games/shave_partial.pg'],
+  'shave_empty': ['--initial-shave=all', '--compress', '--labels=sets', 'tests/games/shave_single.pg'],
   'compress_original': ['--compress', '--labels=sets', 'tests/games/compress.pg'],
   'compress_compact': ['--compress', '--priority-mode=compact', 'tests/games/compress.pg'],
   'stats': ['--stats', '--format=leaves', 'tests/games/pm_cycle.pg'],
-  'preprocess_stats': ['--stats', '--format=leaves', '--shave=loops', '--compress', 'tests/games/shave_partial.pg'],
+  'preprocess_stats': ['--stats', '--format=leaves', '--initial-shave=loops', '--compress', 'tests/games/shave_partial.pg'],
 }
 foreach algorithm : ['strahler', 'succinct']
   foreach name, arguments : pm_cases
@@ -1389,7 +1425,7 @@ foreach algorithm : ['strahler', 'succinct']
         'tests/actual/pm_' + algorithm + '_' + name + '.out', 'EMPTY',
         '--algorithm=' + algorithm] + arguments,
       workdir : meson.project_source_root())
-    if dot_program.found() and name not in ['leaves', 'partial_leaves', 'incremental_leaves', 'stats', 'preprocess_stats']
+    if dot_program.found() and name not in ['leaves', 'partial_leaves', 'incremental_leaves', 'iter_stats', 'stats', 'preprocess_stats']
       test('pg2pmdot_' + algorithm + '_' + name + '_dot_syntax', dot_program,
         suite : 'graphviz',
         args : ['-Tdot', '-o', '/dev/null', files('tests/golden/pm_' + algorithm + '_' + name + '.out')])
@@ -1414,6 +1450,10 @@ python3 = find_program('python3', required : false)
 if python3.found()
   test('test_gen_decomp', python3,
     args : [files('tests/test_gen_decomp.py'), meson.current_build_dir()],
+    suite : 'python',
+    depends : [pg2adot, pg2pmdot])
+  test('test_make_trees', python3,
+    args : [files('tests/test_make_trees.py'), meson.current_build_dir()],
     suite : 'python',
     depends : [pg2adot, pg2pmdot])
   # Exit 77 skips this live oracle unless OINK_BIN is set at test time.

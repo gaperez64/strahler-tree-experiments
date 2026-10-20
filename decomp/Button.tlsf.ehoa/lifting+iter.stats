@@ -1,0 +1,6 @@
+outcome: complete
+lifting: vertices=7 t_full=2 result=complete
+iter-shave: rounds=1
+iter-shave: round=1 shaved=7 even=4 odd=3
+lifting even: root_level=2 H=2 k_full=2 host=strahler K=2 t=2 host_nodes=8 host_leaves=7 positions=24 rounds=22 lifts=38 top=3 region=4 tree_nodes=1 tree_leaves=1 tree_height=1 strahler=1
+lifting odd: root_level=3 H=2 k_full=2 host=strahler K=2 t=2 host_nodes=8 host_leaves=7 positions=24 rounds=15 lifts=56 top=4 region=3 tree_nodes=2 tree_leaves=1 tree_height=2 strahler=1

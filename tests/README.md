@@ -34,6 +34,13 @@ Meson builds the C unit tests and runs the command-line regression cases.
   labelling verifier and materialization failures, and covers adaptive-t,
   full `A`-ary, tree, and host-limit modes. The full `n`-ary host is also
   compared with the exhaustive solver.
+  Iterative shaving is checked against Zielonka on 60 seeded random games
+  and all disagreement fixtures, including fixed, k-ary, file, adaptive,
+  seeded adaptive, and symmetric hosts. Complete results must match both
+  winning regions; partial results must certify only correct winners.
+  Corrupted round certificates and attractors are rejected. CLI goldens
+  cover two-round fixed lifting, both adaptive modes, lifting-sym, no
+  progress, exhausted budgets, initial shaving, and renamed flag rejection.
 - `test_zielonka.c` checks exact classic and tree-relative decomposition
   witnesses and metrics, verifies literal priority-gap wrappers, and compares
   fixed-seed random games with an exhaustive positional-strategy solver.
@@ -196,12 +203,12 @@ This avoids Oink's unspecified ordering of equal-priority vertices, which can
 change untruncated Strahler tails even when winning regions agree. Oink keeps
 its default parity-preserving priority renumbering. Stream runs disable
 single-parity, self-loop and winner-controlled-cycle preprocessing. Ours uses
-`--incremental --format=leaves`; succinct fixes `--bits=ceil(log2(n))` to match
+`--iter-shave --format=leaves`; succinct fixes `--bits=ceil(log2(n))` to match
 `--sspm`, rather than our default bounded schedule. The comparison selects the
 last round's last-run player (Oink's counter player is our winner's opponent)
 and checks a multiset of the exact printed branches, retaining multiplicities.
 It also checks the final parameters and winning regions. With preprocessing
-enabled, Oink's solution file is compared with our full `--shave=all` regions.
+enabled, Oink's solution file is compared with our full `--initial-shave=all` regions.
 Oink's `--sol` reads a solution; `--output` writes one.
 
 The `oink-oracle` CI job builds `vfluegel/oink`, branch `print-pms`, pinned to

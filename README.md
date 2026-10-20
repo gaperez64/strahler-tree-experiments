@@ -35,23 +35,35 @@ standard input. For example:
 
 ```sh
 ./build/pg2adot --algorithm=lifting --adaptive-t game.pg > decomposition.dot
-./build/pg2adot --algorithm=zielonka --shave=all --compress game.pg > decomposition.dot
-./build/pg2pmdot --algorithm=strahler --shave=all --compress game.pg > measures.dot
+./build/pg2adot --algorithm=zielonka --initial-shave=all --compress game.pg > decomposition.dot
+./build/pg2pmdot --algorithm=strahler --initial-shave=all --compress game.pg > measures.dot
+./build/pg2adot --adaptive-t --iter-shave game.pg > decomposition.dot
 ./build/pg2pmdot --algorithm=succinct --labels=sets game.pg > measures.dot
 dot -Tsvg decomposition.dot > decomposition.svg
 ```
 
-`--shave=all` removes simple dominions before solving. `--compress` merges
+`--initial-shave=all` removes simple dominions before solving. `--compress` merges
 consecutive distinct priorities of the same parity. Sample games are in
 [tests/games/](tests/games/).
+
+Generate trees for a new benchmark with `scripts/make_trees.py`. It scans files
+or directories recursively and writes trees, statistics and `summary.csv` to
+`trees/`; PNGs are included when Graphviz is available. Select DECOMP.md backend
+names with `--backends` (default: all):
+
+```sh
+python3 scripts/make_trees.py --backends zielonka,lifting-adaptive+iter --out trees benchmark/
+```
 
 Run `<cmd> --help` for the full option list (in `genstree`, `-h` is the
 height). [lenstree](docs/developing.md#lenstree) and
 [str-tree](docs/developing.md#str-tree) have no help; see their notes instead.
 
-[DECOMP.md](DECOMP.md) has example trees for every backend. See [docs/](docs/)
-for research notes and [docs/developing.md](docs/developing.md) for detailed
-command behavior, tree notation, and development instructions.
+[DECOMP.md](DECOMP.md) has example trees for every backend.
+[ALGOS.md](ALGOS.md) explains how each method builds its trees and how to
+read the metrics. See [docs/](docs/) for research notes and
+[docs/developing.md](docs/developing.md) for detailed command behavior,
+tree notation, and development instructions.
 
 ## License
 

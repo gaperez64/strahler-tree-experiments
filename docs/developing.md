@@ -28,11 +28,15 @@ Update the Meson project version before tagging so `--version` matches the relea
 
 ## Regenerating example trees
 
-[DECOMP.md](../DECOMP.md) contains implementation pseudocode, the generated
-inventory of every PGSolver game in `examples/`, and tree disagreements.
-DOT/PNG trees, PM leaf streams, and deterministic statistics are in
-[decomp/](../decomp/). Build release tools, then regenerate with Python 3.10+
-(standard library only) and Graphviz:
+[DECOMP.md](../DECOMP.md) lists the trees for every PGSolver game in
+`examples/` and reports differences in their shapes. [ALGOS.md](../ALGOS.md)
+explains the algorithms and metrics. Edit that page directly; it is maintained
+separately from the generated inventory.
+
+DOT/PNG trees, progress-measure leaf streams, and statistics with timings
+removed are in [decomp/](../decomp/). Build release tools, then regenerate
+with Python 3.10+ (standard library only). Graphviz is needed only for new
+or changed pictures:
 
 ```sh
 meson setup build --reconfigure --buildtype=release -Db_ndebug=true
@@ -43,15 +47,47 @@ python3 scripts/gen_decomp.py --check
 
 `--build-dir DIR` selects the binaries (default `build`); `--timeout SECONDS`
 sets the safety timeout (default 600 per subprocess), and `--max-host-leaves N`
-sets the host limit (default 10000). `--check` checks freshness. Measured slow
-pairs are skipped via `SKIP_RUNS` in `scripts/gen_decomp.py`, with fixed
-`skipped (> N s locally)` outcomes. A safety timeout aborts with a non-zero
-exit and asks you to add the pair to the skip list. Host-limit runs retain
-statistics files and inventory rows, with no tree. There are no vertex cutoffs.
-Set labels show at most 8 vertex IDs per set. Edit the methods in
-[scripts/decomp_methods.md](../scripts/decomp_methods.md), then regenerate.
-CI checks freshness on PRs and non-main pushes, and refreshes generated files
-on pushes to `main`.
+sets the host limit (default 10000). Set labels show at most 8 vertex IDs per
+set. Every run verifies its winning regions and trees. Each adaptive run is
+also checked against incremental adaptive lifting for the same outcome and
+identical DOT; one copy of the tree is stored. Progress-measure leaf streams
+keep their raw first-occurrence order.
+
+The generator attempts every backend with and without preprocessing and, where
+supported, iterative shaving on each
+game, except measured slow pairs listed in `SKIP_RUNS` in
+`scripts/gen_decomp.py`. These have fixed `skipped (> N s locally)` outcomes.
+A safety timeout aborts generation with a non-zero exit before any outputs
+are updated. Measure that pair locally before adding it to the skip list.
+Host-limit runs keep statistics and inventory rows but discard all tree
+output, including any partial tree returned by an adaptive run. There are
+no vertex cutoffs.
+
+PNG files contain a `dot-sha256` text chunk with the SHA-256 hash of their
+DOT source. A valid PNG with a matching hash is reused unchanged, so
+regenerating only the prose needs no Graphviz installation. New, missing or
+stale pictures require Graphviz; `--dot PATH` selects its executable, with
+`STRAHLER_DOT` as the environment default. The generator renders all needed
+pictures before updating outputs, so a rendering failure leaves the checked-in
+files untouched.
+
+`--check` reruns the tools and reports missing, changed or obsolete outputs
+without writing files or rendering pictures. It exits 0 when everything is
+current and non-zero otherwise. PNG freshness uses the stored DOT hash and
+PNG integrity checks, allowing different Graphviz versions to render the same
+DOT differently. CI checks freshness on PRs and non-main pushes, and refreshes
+generated files on pushes to `main`.
+
+For new benchmarks, use `python3 scripts/make_trees.py GAME_OR_DIR...`.
+It uses the same backend names, limits and metrics, but ignores the examples'
+skip list. Adaptive backends run once, without the inventory comparison.
+`--backends LIST` selects comma-separated DECOMP.md row names;
+`--out DIR` defaults to `trees/`, with one game directory per unique stem and
+`summary.csv` splitting Even/Odd metrics into separate columns. The build,
+timeout, host-limit and Graphviz options match `gen_decomp.py`; `--no-png`
+disables pictures, and missing Graphviz only warns. Progress goes to stderr;
+timeouts and solver errors are recorded per pair and cause a non-zero exit.
+Multi-round progress-measure PNGs show each round in a separate panel.
 
 ## Command reference
 
@@ -132,13 +168,22 @@ standard input. The default algorithm is attractor-decomposition lifting.
 - `--algorithm=lifting|zielonka|zielonka-sym|lifting-sym` selects the solver;
   the default is `lifting`. `zielonka` runs enhanced Zielonka. All four share
   preprocessing, statistics and verification.
-- `--shave=LIST` solves and removes dominions before building either tree.
+- `--initial-shave=LIST` solves and removes dominions before building either tree.
   Use a comma list of `single` (all remaining priorities have one parity),
   `loops` (winning self-loops, including forced losing-owner loops), and
   `wcwc` (winner-controlled winning cycles), or `all` / `none` alone.
   The default is `none`. Each discovered dominion is removed with its winner's
   attractor in the current game. Rules run in the order single, loops, wcwc,
   repeating to a fixpoint as removals expose further dominions.
+- `--iter-shave` attracts and removes certified dominions after lifting
+  stabilises. Fixed hosts are reused until complete or a round makes no
+  progress; both adaptive modes advance to the next t on the smaller game.
+  It also supports `lifting-sym`; Zielonka variants reject it. DOT retains
+  each shaved region's round, adaptive t, and certified decomposition, plus
+  the final residual decomposition. Verification replays the certificates
+  and attractors; `--stats` lists rounds and vertices shaved per round.
+  Restricted hosts can still end partial. `--shave` has been removed in
+  favour of `--initial-shave`; there is no alias.
 - `--compress` merges consecutive distinct priorities of the same parity,
   following Oink's priority compression. This is stronger than gap removal.
   `--priority-mode` still controls only display: in `original` mode a merged
@@ -251,12 +296,12 @@ holding that measure. The tool reads a PGSolver file, `-`, or standard input.
 ./build/pg2pmdot --k=1 --t=1 game.pg > partial.dot
 ./build/pg2pmdot --algorithm=succinct --bits=0 game.pg > partial.dot
 ./build/pg2pmdot --format=leaves game.pg
-./build/pg2pmdot --incremental --shave=all --compress game.pg
+./build/pg2pmdot --iter-shave --initial-shave=all --compress game.pg
 ```
 
 `--algorithm=strahler|succinct` defaults to `strahler`. Both algorithms share
 `pg2adot`'s `--player`, `--labels`, `--max-set-items`, `--priority-mode`,
-`--shave`, `--compress`, `--stats`, `--no-verify`, and `--version` options.
+`--initial-shave`, `--compress`, `--stats`, `--no-verify`, and `--version` options.
 Priorities are made gap-free internally. DOT's `p` labels identify the counter
 priority of each component, on the original scale by default. Preprocessing
 keeps shaved vertices in separate shaded nodes; they have no progress measure.
@@ -290,7 +335,8 @@ standard error. Verification checks the actual truncated progress condition
 on every edge (one successor for the winner, all for its opponent) and checks
 dominion closure using the shared attractor code.
 
-`--incremental` follows Oink's removal semantics: run odd counters first,
+`--iter-shave` (formerly `--incremental`, with no alias) follows Oink's
+removal semantics: run odd counters first,
 remove Even's non-top dominion and its attractor, then run even counters on
 the remaining game. It prints a separate DOT graph for every round. Roots
 show that round's parameters; an `attracted` node lists removed vertices that

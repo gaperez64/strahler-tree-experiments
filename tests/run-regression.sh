@@ -125,17 +125,17 @@ while IFS='|' read -r name fixture flags; do
   "$PG2ADOT_BIN" "${arguments[@]}" "tests/games/$fixture.pg" \
     > "tests/golden/pg2adot_$name.out" 2>&1
 done <<'CASES'
-shave_loops|shave_loops|--shave=loops --labels=sets
-shave_wcwc|shave_wcwc|--shave=wcwc --labels=sets
-shave_single|shave_single|--shave=single --labels=sets
-shave_relative|shave_wcwc|--shave=loops,wcwc --view=tree-relative --labels=sets --max-set-items=2
-shave_empty_jurdzinski|shave_single|--shave=all --view=jurdzinski
+shave_loops|shave_loops|--initial-shave=loops --labels=sets
+shave_wcwc|shave_wcwc|--initial-shave=wcwc --labels=sets
+shave_single|shave_single|--initial-shave=single --labels=sets
+shave_relative|shave_wcwc|--initial-shave=loops,wcwc --view=tree-relative --labels=sets --max-set-items=2
+shave_empty_jurdzinski|shave_single|--initial-shave=all --view=jurdzinski
 compress_original|compress|--compress --labels=sets
 compress_compact|compress|--compress --priority-mode=compact
 compress_jurdzinski|compress|--compress --view=jurdzinski
-shave_partial|shave_partial|--shave=loops --tree-k=1 --labels=sets
-shave_stats_lifting|shave_single|--algorithm=lifting --shave=all --compress --stats --labels=none
-shave_stats_zielonka|shave_single|--algorithm=zielonka --shave=all --compress --stats --labels=none
+shave_partial|shave_partial|--initial-shave=loops --tree-k=1 --labels=sets
+shave_stats_lifting|shave_single|--algorithm=lifting --initial-shave=all --compress --stats --labels=none
+shave_stats_zielonka|shave_single|--algorithm=zielonka --initial-shave=all --compress --stats --labels=none
 sym_h4|thesis_h4|--algorithm=zielonka-sym --stats --player=even --labels=none
 sym_f4|thesis_f4|--algorithm=zielonka-sym --stats --player=even --labels=none
 sym_lifting_stats|strahler_two|--algorithm=lifting-sym --kary=1 --stats --player=even --labels=none
@@ -161,16 +161,36 @@ none|split_winners|--labels=none
 leaves|pm_cycle|--format=leaves
 partial|strahler_two|--labels=sets
 partial_leaves|strahler_two|--format=leaves
-incremental|strahler_two|--incremental --labels=sets
-incremental_leaves|strahler_two|--incremental --format=leaves
-shave_compress|shave_partial|--shave=loops --compress --labels=sets
-shave_empty|shave_single|--shave=all --compress --labels=sets
+incremental|strahler_two|--iter-shave --labels=sets
+incremental_leaves|strahler_two|--iter-shave --format=leaves
+iter_stats|strahler_two|--iter-shave --stats --format=leaves
+shave_compress|shave_partial|--initial-shave=loops --compress --labels=sets
+shave_empty|shave_single|--initial-shave=all --compress --labels=sets
 compress_original|compress|--compress --labels=sets
 compress_compact|compress|--compress --priority-mode=compact
 stats|pm_cycle|--stats --format=leaves
-preprocess_stats|shave_partial|--stats --format=leaves --shave=loops --compress
+preprocess_stats|shave_partial|--stats --format=leaves --initial-shave=loops --compress
 CASES
 done
+
+while IFS='|' read -r name fixture flags; do
+  read -r -a arguments <<< "$flags"
+  "$PG2ADOT_BIN" --iter-shave --stats --labels=sets "${arguments[@]}" \
+    "tests/games/$fixture.pg" > "tests/golden/pg2adot_iter_$name.out" 2>&1
+  sanitize_output "tests/golden/pg2adot_iter_$name.out" "$PG2ADOT_BIN"
+done <<'CASES'
+fixed|strahler_two|--tree-k=1
+kary|strahler_two|--kary=1 --view=jurdzinski
+tree|iter_shave|--tree-file=tests/trees/chain_three.tree --view=tree-relative
+adaptive|strahler_two|--adaptive-t
+incremental|strahler_two|--adaptive-t=incremental
+sym|strahler_two|--algorithm=lifting-sym --tree-k=1
+capped|strahler_two|--adaptive-t --tree-k=1
+limit|strahler_two|--adaptive-t --max-host-leaves=1
+pre|shave_partial|--initial-shave=loops --compress --adaptive-t
+empty|shave_single|--initial-shave=all --adaptive-t
+no_progress|disagree_lifting_strahler|--kary=1
+CASES
 
 for ct in "${GENSTREE_CASES[@]}"; do
   read -r k t h <<< "$ct"

@@ -1,0 +1,9 @@
+# round 1 k=1 t=1
+even: 
+odd: 
+# round 2 k=2 t=1
+even: 1,e,e,e,e|e,01,e,e,e|01,e,e,e,e|0,e,e,e,e|11,e,e,e,e|e,00,e,e,e|e,0,e,e,e|00,e,e,e,e|10,e,e,e,e|
+odd: 
+# round 3 k=2 t=2
+even: 0,e,e,e,e|001,e,e,e,e|00,e,e,e,e|000,e,e,e,e|
+odd: 

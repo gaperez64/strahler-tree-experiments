@@ -1,0 +1,2 @@
+outcome: host limit
+Solver failed: the Even host U^8_{12,8} has 113213439 leaves, more than the limit of 10000

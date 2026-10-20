@@ -1,0 +1,14 @@
+outcome: complete
+preprocess: residual=5583 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0
+iter-shave: rounds=1 shaved=0
+strahler: round=1 result=partial unresolved=5583
+even: k=1 t=1 depth=5 vertices=5583 lifts=5583 attempts=133204 non_top=0 top=5583 attracted=0
+odd: k=1 t=1 depth=6 vertices=5583 lifts=5583 attempts=133204 non_top=0 top=5583 attracted=0
+iter-shave: rounds=2 shaved=5320
+strahler: round=2 result=partial unresolved=263
+even: k=2 t=1 depth=5 vertices=5583 lifts=7936 attempts=88985 non_top=5089 top=494 attracted=231
+odd: k=2 t=1 depth=6 vertices=263 lifts=2006 attempts=10006 non_top=0 top=263 attracted=0
+iter-shave: rounds=3 shaved=263
+strahler: round=3 result=complete unresolved=0
+even: k=2 t=2 depth=5 vertices=263 lifts=158 attempts=689 non_top=263 top=0 attracted=0
+odd: k=2 t=2 depth=6 vertices=0 lifts=0 attempts=0 non_top=0 top=0 attracted=0

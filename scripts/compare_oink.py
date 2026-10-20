@@ -149,8 +149,8 @@ def compare(args, game, algorithm, scratch):
             expected = solution(sol.read_text(), count)
             if any(expected.get(v) != p for v, p in partial.items()):
                 failures.append("unsound partial Strahler solution")
-        options = ["--shave=all"] if shave else []
-        mode = [] if shave else ["--incremental"]
+        options = ["--initial-shave=all"] if shave else []
+        mode = [] if shave else ["--iter-shave"]
         dot = run(ours + mode + options + ["--labels=sets",
                   f"--max-set-items={count}", str(path)], args.timeout)
         transcripts += [f"shave={shave}\n{log}\n{dot}"]
@@ -159,7 +159,7 @@ def compare(args, game, algorithm, scratch):
         if shave and len(expected) != count:
             failures.append("incomplete shaved solution")
         if not shave:
-            leaves = run(ours + ["--incremental", "--format=leaves",
+            leaves = run(ours + ["--iter-shave", "--format=leaves",
                                  str(path)],
                          args.timeout)
             transcripts.append(leaves)
