@@ -11,7 +11,7 @@
 #include "pg_preprocess.h"
 #include "pm_tree_dot.h"
 
-enum { EXIT_USAGE = 2, EXIT_GAME = 3, EXIT_SOLVER = 4, EXIT_IO = 5 };
+enum { EXIT_GAME = 3, EXIT_SOLVER = 4, EXIT_IO = 5 };
 
 typedef struct {
   PGGame const *game;
@@ -25,35 +25,37 @@ typedef struct {
   bool incremental;
 } Output;
 
-static void usage(FILE *out, char const *program) {
-  fprintf(out,
-          "Usage: %s [OPTIONS] [FILE|-]\n"
-          "  --algorithm=strahler|succinct  default: strahler\n"
-          "  --format=dot|leaves           default: dot\n"
-          "  --player=both|even|odd        default: both\n"
-          "  --labels=counts|sets|none     default: counts\n"
-          "  --max-set-items=N             default: 32\n"
-          "  --priority-mode=original|compact  default: original\n"
-          "  --initial-shave=single,loops,wcwc|all|none  default: none\n"
-          "  --compress                    merge consecutive same-parity "
-          "priorities\n"
-          "  --k=K --t=T                   fixed Strahler parameters; may be "
-          "partial\n"
-          "  --bits=B                      fixed succinct bit budget; may be "
-          "partial\n"
-          "  --iter-shave                 remove dominions between runs; "
-          "print every round\n"
-          "  --stats                       print parameters and lifting "
-          "statistics to stderr\n"
-          "  --no-verify                    skip progress-measure and dominion "
-          "checks\n"
-          "  -h, --help\n"
-          "  --version\n",
-          program);
+static void usage(FILE *out, char *argv[]) {
+  cli_usage(out, argv[0], " [FILE]");
+  fputs("  --algorithm=strahler|succinct               default: strahler\n"
+        "  --format=dot|leaves                         default: dot\n"
+        "  --player=both|even|odd                      default: both\n"
+        "  --labels=counts|sets|none                   default: counts\n"
+        "  --max-set-items=N                           default: 32\n"
+        "  --priority-mode=original|compact            default: original\n"
+        "  --initial-shave=single,loops,wcwc|all|none  default: none\n"
+        "  --compress                                  Merge same-parity "
+        "priorities (default: off)\n"
+        "  --k=K                                       Fixed Strahler "
+        "parameter; requires --t\n"
+        "  --t=T                                       Fixed leaf-budget "
+        "exponent; requires --k\n"
+        "  --bits=B                                    Fixed succinct bit "
+        "budget; may be partial\n"
+        "  --iter-shave                                Remove dominions "
+        "between runs (default: off)\n"
+        "  --stats                                     Print statistics to "
+        "stderr (default: off)\n"
+        "  --no-verify                                 Skip verification "
+        "(default: verify)\n"
+        "Default parameters guarantee a complete result. FILE defaults to "
+        "stdin; - reads stdin.\n",
+        out);
 }
 
 static bool parse_size(char const *text, size_t *value) {
-  if (text == nullptr || text[0] == '-' || text[0] == '\0') {
+  if (text == nullptr || text[0] == '\0' ||
+      strspn(text, "0123456789") != strlen(text)) {
     return false;
   }
   errno = 0;
@@ -132,11 +134,6 @@ static bool write_output(PMResult const result[static 2],
 }
 
 int main(int argc, char *argv[argc + 1]) {
-  int const version =
-      cli_handle_version_argument(argc, argv[0], argc > 1 ? argv[1] : nullptr);
-  if (version != CLI_VERSION_NOT_REQUESTED) {
-    return version;
-  }
   enum {
     OPT_ALGORITHM = 256,
     OPT_FORMAT,
@@ -155,6 +152,7 @@ int main(int argc, char *argv[argc + 1]) {
   };
   static struct option const options[] = {
       {"help", no_argument, nullptr, 'h'},
+      {"version", no_argument, nullptr, 'v'},
       {"algorithm", required_argument, nullptr, OPT_ALGORITHM},
       {"format", required_argument, nullptr, OPT_FORMAT},
       {"player", required_argument, nullptr, OPT_PLAYER},
@@ -180,14 +178,13 @@ int main(int argc, char *argv[argc + 1]) {
   bool k_given = false;
   bool t_given = false;
   bool bits_given = false;
-  char const *program = strrchr(argv[0], '/');
-  program = program == nullptr ? argv[0] : program + 1;
-  opterr = 0;
   int option = 0;
-  while ((option = getopt_long(argc, argv, "h", options, nullptr)) != -1) {
+  while ((option = cli_getopt(argc, argv, options)) != -1) {
     switch (option) {
+    case 'v':
+      return cli_print_version(argv[0]);
     case 'h':
-      usage(stdout, program);
+      usage(stdout, argv);
       return EXIT_SUCCESS;
     case OPT_ALGORITHM:
       if (strcmp(optarg, "strahler") == 0) {
@@ -348,8 +345,6 @@ cleanup:
   pg_game_destroy(&game);
   return status;
 invalid:
-  fputs("Invalid or incompatible option (Strahler requires both --k and --t)\n",
-        stderr);
-  usage(stderr, program);
-  return EXIT_USAGE;
+  return cli_error(argv[0], "Invalid or incompatible option; use --name=value "
+                            "(Strahler requires both --k and --t)");
 }

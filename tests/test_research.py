@@ -54,7 +54,7 @@ class ResearchTests(unittest.TestCase):
                         (2, 1, 5), (3, 2, 4), (4, 3, 4)]:
             dot = subprocess.run(
                 [*self.runner.prefix, str(BINARY.parent / 'genstree'),
-                 '-k', str(k), '-t', str(t), '-h', str(h), '-d'],
+                 f'--strahler={k}', f'--log-leaves={t}', f'--height={h}', '--dot'],
                 capture_output=True, text=True, check=True, timeout=90).stdout
             children = {}
             for parent, child in re.findall(r'(\d+) -- (\d+)', dot):

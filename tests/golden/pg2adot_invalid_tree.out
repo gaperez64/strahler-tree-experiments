@@ -1,1 +1,2 @@
-tests/trees/invalid.tree:2:1: missing final '|'
+pg2adot: tests/trees/invalid.tree:2:1: missing final '|'
+Try 'pg2adot --help'.

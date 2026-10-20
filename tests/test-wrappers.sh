@@ -26,7 +26,7 @@ chmod +x "$scratch/wrapper"
 export STRAHLER_TEST_WRAPPER="$scratch/wrapper"
 
 tests/run-single-test.sh "$genstree" tests/golden/j_k2_t1_h2.out \
-  "$scratch/actual" EMPTY -k 2 -t 1 -h 2 -j
+  "$scratch/actual" EMPTY --strahler=2 --log-leaves=1 --height=2 --count
 tests/run-with-input.sh tests/games/sparse.pg "$pgfilt" > /dev/null
 tests/check-version.sh "$genstree" "$version"
 test "$(wc -l < "$WRAPPER_LOG")" -eq 3

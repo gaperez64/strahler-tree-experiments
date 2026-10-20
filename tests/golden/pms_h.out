@@ -1,9 +1,14 @@
-Usage: pms2dot [--check-order|--reorder] [-h]
-  -h, --help     Print this message.
-  --version      Print the program version.
-  --check-order  Reject branches outside bitstring-vector order.
-  --reorder      Sort branches into bitstring-vector order.
-The program receives progress measures ending with '|' via stdin. Each
-progress measure is a comma-separated sequence of bitstrings. The
-bitstring order is infinite-binary-tree DFS order (0 beta < e < 1 beta);
+Usage: pms2dot [OPTIONS]
+
+Option values use --name=value.
+
+Options:
+  --help                                      Print this message
+  --version                                   Print the program version
+  --check-order                               Reject branches outside bitstring-vector order
+  --reorder                                   Sort branches into bitstring-vector order
+Read progress measures ending with | from standard input.
+Each measure is a comma-separated vector of bitstrings.
+Default: preserve input order. --check-order and --reorder are exclusive.
+Bitstrings use infinite-binary-tree DFS order (0 beta < e < 1 beta);
 vectors are compared lexicographically.

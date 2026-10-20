@@ -13,8 +13,6 @@
 #include "stree.h"
 #include "utrees.h"
 
-enum { USAGE_ERROR = 2 };
-
 [[nodiscard]] static bool parse_int(char const *text, int minimum,
                                     int *result) {
   assert(text != nullptr);
@@ -23,7 +21,8 @@ enum { USAGE_ERROR = 2 };
   errno = 0;
   char *end = nullptr;
   long const value = strtol(text, &end, 10);
-  if (errno == ERANGE || end == text || *end != '\0' || value < minimum ||
+  if (text[0] == '\0' || strspn(text, "0123456789") != strlen(text) ||
+      errno == ERANGE || end == text || *end != '\0' || value < minimum ||
       value > INT_MAX) {
     return false;
   }
@@ -32,17 +31,24 @@ enum { USAGE_ERROR = 2 };
   return true;
 }
 
-static void print_usage(FILE *out, char *argv[static 1]) {
-  char *progname = strrchr(argv[0], '/');
-  progname = progname ? progname + 1 : argv[0];
-  fprintf(out, "Usage: %s -k K -t T -h H [-j -l L -d -p P]\n", progname);
-  fputs("  --help  Print this message\n", out);
-  fputs("  --version Print the program version\n", out);
-  fputs("  -j      Print only the leaf count\n", out);
-  fputs("  -l L    Print the L-th leaf\n", out);
-  fputs("  -d      Print the tree in DOT format\n", out);
-  fputs("  -p P    Print the partition at p-level P\n", out);
-  fputs("With -p or no output option, leaf labels are printed.\n", out);
+static void print_usage(FILE *out, char *argv[]) {
+  cli_usage(out, argv[0], "");
+  fputs("  --strahler=K                                Strahler parameter "
+        "(required, 1 <= K <= H)\n"
+        "  --height=H                                  Tree height (required, "
+        "H >= 1)\n"
+        "  --log-leaves=T                              Leaf-budget exponent "
+        "(required, T >= 0)\n"
+        "  --count                                     Print only the leaf "
+        "count (default: leaf labels)\n"
+        "  --leaf=L                                    Print the L-th leaf "
+        "(1-based)\n"
+        "  --dot                                       Print the tree in DOT "
+        "format (default: off)\n"
+        "  --p-level=P                                 Print the partition at "
+        "p-level P (P >= 1)\n"
+        "With --p-level or no output option, leaf labels are printed.\n",
+        out);
 }
 
 static void print_bits(char const labels[static 1]) {
@@ -117,18 +123,19 @@ static void print_blocks(char const labels[static 1]) {
 }
 
 int main(int argc, char *argv[argc + 1]) {
-  int const version_status =
-      cli_handle_version_argument(argc, argv[0], argc > 1 ? argv[1] : nullptr);
-  if (version_status != CLI_VERSION_NOT_REQUESTED) {
-    return version_status;
-  }
-
   static struct option const long_options[] = {
       {"help", no_argument, nullptr, 1},
+      {"version", no_argument, nullptr, 'v'},
+      {"strahler", required_argument, nullptr, 'k'},
+      {"log-leaves", required_argument, nullptr, 't'},
+      {"height", required_argument, nullptr, 'h'},
+      {"count", no_argument, nullptr, 'j'},
+      {"leaf", required_argument, nullptr, 'l'},
+      {"dot", no_argument, nullptr, 'd'},
+      {"p-level", required_argument, nullptr, 'p'},
       {nullptr, 0, nullptr, 0},
   };
 
-  opterr = 0;
   int k = 0;
   int t = 0;
   int h = 0;
@@ -141,16 +148,16 @@ int main(int argc, char *argv[argc + 1]) {
   bool print_dot = false;
 
   int option = 0;
-  while ((option = getopt_long(argc, argv, "k:t:h:jdp:l:", long_options,
-                               nullptr)) != -1) {
+  while ((option = cli_getopt(argc, argv, long_options)) != -1) {
     switch (option) {
+    case 'v':
+      return cli_print_version(argv[0]);
     case 1:
       print_usage(stdout, argv);
       return EXIT_SUCCESS;
     case 'l':
       if (!parse_int(optarg, 1, &leaf_number)) {
-        fputs("L must be a positive integer\n", stderr);
-        return USAGE_ERROR;
+        return cli_error(argv[0], "--leaf must be a positive integer");
       }
       break;
     case 'j':
@@ -161,50 +168,44 @@ int main(int argc, char *argv[argc + 1]) {
       break;
     case 'p':
       if (!parse_int(optarg, 1, &p)) {
-        fputs("P must be a positive integer\n", stderr);
-        return USAGE_ERROR;
+        return cli_error(argv[0], "--p-level must be a positive integer");
       }
       break;
     case 'k':
       if (!parse_int(optarg, 1, &k)) {
-        fputs("K must be a positive integer\n", stderr);
-        return USAGE_ERROR;
+        return cli_error(argv[0], "--strahler must be a positive integer");
       }
       k_set = true;
       break;
     case 't':
       if (!parse_int(optarg, 0, &t)) {
-        fputs("T must be a nonnegative integer\n", stderr);
-        return USAGE_ERROR;
+        return cli_error(argv[0], "--log-leaves must be a nonnegative integer");
       }
       t_set = true;
       break;
     case 'h':
       if (!parse_int(optarg, 1, &h)) {
-        fputs("H must be a positive integer\n", stderr);
-        return USAGE_ERROR;
+        return cli_error(argv[0], "--height must be a positive integer");
       }
       h_set = true;
       break;
     default:
-      print_usage(stderr, argv);
-      return USAGE_ERROR;
+      return cli_error(argv[0],
+                       "Unknown option or invalid argument; use --name=value");
     }
   }
 
   if (optind != argc) {
-    print_usage(stderr, argv);
-    return USAGE_ERROR;
+    return cli_error(argv[0],
+                     "Unknown option or invalid argument; use --name=value");
   }
 
   if (!(k_set && t_set && h_set)) {
-    fputs("Some arguments are missing!\n", stderr);
-    print_usage(stderr, argv);
-    return USAGE_ERROR;
+    return cli_error(argv[0],
+                     "--strahler, --log-leaves and --height are required");
   }
   if (h < k) {
-    fputs("H must be greater than or equal to K\n", stderr);
-    return USAGE_ERROR;
+    return cli_error(argv[0], "--height must be at least --strahler");
   }
 
   unsigned const total = stree_count_leaves(k, t, h);
@@ -215,8 +216,7 @@ int main(int argc, char *argv[argc + 1]) {
 
   if (leaf_number > 0) {
     if ((unsigned)leaf_number > total) {
-      fputs("L exceeds the number of leaves\n", stderr);
-      return USAGE_ERROR;
+      return cli_error(argv[0], "--leaf exceeds the number of leaves");
     }
     if (total == UINT_MAX) {
       fputs("The tree has too many leaves to index\n", stderr);

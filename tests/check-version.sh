@@ -9,7 +9,8 @@ fi
 binary=$1
 expected_version=$2
 read -r -a wrapper <<< "${STRAHLER_TEST_WRAPPER:-}"
-actual=$(${wrapper[@]+"${wrapper[@]}"} "$binary" --version)
+actual=$(${wrapper[@]+"${wrapper[@]}"} "$binary" --version |
+  sed 's/ (git [^)]*)$//')
 expected="${binary##*/} ${expected_version}"
 
 if [[ "$actual" != "$expected" ]]; then

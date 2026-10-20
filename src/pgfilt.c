@@ -9,39 +9,25 @@
 #include "cli_version.h"
 #include "pg_game.h"
 
-enum { USAGE_ERROR = 2 };
-
 typedef enum {
   PRIORITY_MODE_ORIGINAL,
   PRIORITY_MODE_COMPACT,
 } PriorityMode;
 
-static void print_usage(FILE *out, char *argv[static 1]) {
-  char *program = strrchr(argv[0], '/');
-  program = program == nullptr ? argv[0] : program + 1;
-  fprintf(out,
-          "Usage: %s [--normalize] "
-          "[--priority-mode=original|compact]\n",
-          program);
-  fputs("Read one PGSolver game from standard input.\n", out);
-  fputs("  -h, --help       Print this message\n", out);
-  fputs("  -n, --normalize  Write canonical PGSolver format\n", out);
-  fputs("  --priority-mode=original|compact\n"
-        "                   Choose priority values in the output (default: "
-        "original)\n",
+static void print_usage(FILE *out, char *argv[]) {
+  cli_usage(out, argv[0], "");
+  fputs("  --normalize                                 Write canonical "
+        "PGSolver format (default: summary)\n"
+        "  --priority-mode=original|compact            Choose output "
+        "priorities (default: original)\n"
+        "Read one PGSolver game from standard input.\n",
         out);
-  fputs("  --version         Print the program version\n", out);
 }
 
 int main(int argc, char *argv[argc + 1]) {
-  int const version_status =
-      cli_handle_version_argument(argc, argv[0], argc > 1 ? argv[1] : nullptr);
-  if (version_status != CLI_VERSION_NOT_REQUESTED) {
-    return version_status;
-  }
-
   static struct option const options[] = {
       {"help", no_argument, nullptr, 'h'},
+      {"version", no_argument, nullptr, 'v'},
       {"normalize", no_argument, nullptr, 'n'},
       {"priority-mode", required_argument, nullptr, 1},
       {nullptr, 0, nullptr, 0},
@@ -49,10 +35,11 @@ int main(int argc, char *argv[argc + 1]) {
 
   bool normalize = false;
   PriorityMode priority_mode = PRIORITY_MODE_ORIGINAL;
-  opterr = 0;
   int option = 0;
-  while ((option = getopt_long(argc, argv, "hn", options, nullptr)) != -1) {
+  while ((option = cli_getopt(argc, argv, options)) != -1) {
     switch (option) {
+    case 'v':
+      return cli_print_version(argv[0]);
     case 'h':
       print_usage(stdout, argv);
       return EXIT_SUCCESS;
@@ -65,18 +52,17 @@ int main(int argc, char *argv[argc + 1]) {
       } else if (strcmp(optarg, "compact") == 0) {
         priority_mode = PRIORITY_MODE_COMPACT;
       } else {
-        fputs("Invalid --priority-mode value\n", stderr);
-        return USAGE_ERROR;
+        return cli_error(argv[0], "Invalid --priority-mode value");
       }
       break;
     default:
-      print_usage(stderr, argv);
-      return USAGE_ERROR;
+      return cli_error(argv[0],
+                       "Unknown option or invalid argument; use --name=value");
     }
   }
   if (optind != argc) {
-    print_usage(stderr, argv);
-    return USAGE_ERROR;
+    return cli_error(argv[0],
+                     "Unknown option or invalid argument; use --name=value");
   }
 
   PGGame game = {0};

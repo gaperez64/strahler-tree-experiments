@@ -6,80 +6,66 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 #include "cli_version.h"
 #include "ordered_tree.h"
 
-enum { USAGE_ERROR = 2, OPT_CHECK_ORDER = 256, OPT_REORDER };
+enum { OPT_CHECK_ORDER = 256, OPT_REORDER };
 
 static void print_usage(FILE *out, char *argv[]) {
-  char *progname = strrchr(argv[0], '/');
-  progname = progname ? progname + 1 : argv[0];
-  fprintf(out, "Usage: %s [--check-order|--reorder] [-h]\n", progname);
-  fputs("  -h, --help     Print this message.\n", out);
-  fputs("  --version      Print the program version.\n", out);
-  fputs("  --check-order  Reject branches outside bitstring-vector order.\n",
+  cli_usage(out, argv[0], "");
+  fputs("  --check-order                               Reject branches outside "
+        "bitstring-vector order\n"
+        "  --reorder                                   Sort branches into "
+        "bitstring-vector order\n"
+        "Read progress measures ending with | from standard input.\nEach "
+        "measure is a comma-separated vector of bitstrings.\nDefault: preserve "
+        "input order. --check-order and --reorder are exclusive.\nBitstrings "
+        "use infinite-binary-tree DFS order (0 beta < e < 1 beta);\nvectors "
+        "are compared lexicographically.\n",
         out);
-  fputs("  --reorder      Sort branches into bitstring-vector order.\n", out);
-  fputs("The program receives progress measures ending with '|' via stdin. "
-        "Each\n",
-        out);
-  fputs("progress measure is a comma-separated sequence of bitstrings. The\n",
-        out);
-  fputs("bitstring order is infinite-binary-tree DFS order "
-        "(0 beta < e < 1 beta);\n",
-        out);
-  fputs("vectors are compared lexicographically.\n", out);
 }
 
 int main(int argc, char *argv[argc + 1]) {
-  int const version_status =
-      cli_handle_version_argument(argc, argv[0], argc > 1 ? argv[1] : nullptr);
-  if (version_status != CLI_VERSION_NOT_REQUESTED) {
-    return version_status;
-  }
-
-  opterr = 0;
   int opt;
   OrderedTreeBranchOrder branch_order = ORDERED_TREE_PRESERVE_INPUT_ORDER;
   static struct option const long_options[] = {
       {"help", no_argument, nullptr, 'h'},
+      {"version", no_argument, nullptr, 'v'},
       {"check-order", no_argument, nullptr, OPT_CHECK_ORDER},
       {"reorder", no_argument, nullptr, OPT_REORDER},
       {nullptr, 0, nullptr, 0},
   };
 
-  while ((opt = getopt_long(argc, argv, "h", long_options, nullptr)) != -1) {
+  while ((opt = cli_getopt(argc, argv, long_options)) != -1) {
     switch (opt) {
+    case 'v':
+      return cli_print_version(argv[0]);
     case 'h':
       print_usage(stdout, argv);
       return EXIT_SUCCESS;
     case OPT_CHECK_ORDER:
       if (branch_order == ORDERED_TREE_REORDER_VECTOR_ORDER) {
-        fputs("--check-order and --reorder are mutually exclusive\n", stderr);
-        print_usage(stderr, argv);
-        return USAGE_ERROR;
+        return cli_error(argv[0],
+                         "--check-order and --reorder are mutually exclusive");
       }
       branch_order = ORDERED_TREE_CHECK_VECTOR_ORDER;
       break;
     case OPT_REORDER:
       if (branch_order == ORDERED_TREE_CHECK_VECTOR_ORDER) {
-        fputs("--check-order and --reorder are mutually exclusive\n", stderr);
-        print_usage(stderr, argv);
-        return USAGE_ERROR;
+        return cli_error(argv[0],
+                         "--check-order and --reorder are mutually exclusive");
       }
       branch_order = ORDERED_TREE_REORDER_VECTOR_ORDER;
       break;
     default: /* '?' */
-      print_usage(stderr, argv);
-      return USAGE_ERROR;
+      return cli_error(argv[0],
+                       "Unknown option or invalid argument; use --name=value");
     }
   }
   if (optind != argc) {
-    print_usage(stderr, argv);
-    return USAGE_ERROR;
+    return cli_error(argv[0],
+                     "Unknown option or invalid argument; use --name=value");
   }
 
   size_t buf_size = 0;

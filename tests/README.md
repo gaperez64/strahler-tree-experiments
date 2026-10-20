@@ -5,6 +5,11 @@ Meson builds the C unit tests and runs the command-line regression cases.
 - `test_stree.c` tests the reusable Strahler-tree generator.
 - `test_cli_parse.cpp` checks the shared C++ CLI integer parser, including
   overflow and malformed arguments.
+- `test_cli.py` checks each executable's help, version, long options, error
+  status and diagnostics, rejection of short options and bad values, and
+  leaf selection when counts saturate.
+- `test_source_version.py` builds a source copy inside an unrelated tagged
+  checkout and checks that its version has no Git suffix.
 - `test-wrappers.sh` checks wrapper forwarding and propagation of memory-check
   failures through the golden harness.
 - `test_ordered_tree.c` tests the owned compact-leaf tree, including stable
