@@ -13,7 +13,7 @@ bool pg_preprocess_parse_option(PGPreprocessOptions *options, char const *name,
     options->compress = true;
     return true;
   }
-  if (strcmp(name, "shave") != 0 || value == nullptr) {
+  if (strcmp(name, "initial-shave") != 0 || value == nullptr) {
     return false;
   }
   unsigned rules = 0;

@@ -1,0 +1,15 @@
+preprocess: residual=0 shaved_even=3 shaved_odd=0 single=3 loops=0 wcwc=0
+lifting: vertices=0 t_full=0 result=complete
+iter-shave: rounds=0
+lifting: first_complete_t=none budget_exhausted=no
+digraph attractor_decompositions {
+  graph [rankdir=TB, ordering=out];
+  node [shape=box];
+  result [label="result (synthetic)"];
+  even_empty [label=<<B>Even</B>: no residual decomposition; see shaved vertices>];
+  result -> even_empty;
+  even_shaved [style="dashed,filled", fillcolor=lightgray, label=<<B>shaved (Even)</B>: 3 vertices<BR/>{0,1,2}>];
+  even_empty -> even_shaved [style=dashed];
+  odd_empty [label=<<B>Odd</B>: <I>W</I> = empty; no decomposition>];
+  result -> odd_empty;
+}

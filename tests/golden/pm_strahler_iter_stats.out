@@ -1,0 +1,14 @@
+iter-shave: rounds=1 shaved=3
+strahler: round=1 result=partial unresolved=2
+even: k=1 t=1 depth=2 vertices=5 lifts=3 attempts=8 non_top=2 top=3 attracted=1
+odd: k=1 t=1 depth=2 vertices=2 lifts=2 attempts=4 non_top=0 top=2 attracted=0
+iter-shave: rounds=2 shaved=2
+strahler: round=2 result=complete unresolved=0
+even: k=2 t=1 depth=2 vertices=2 lifts=0 attempts=2 non_top=2 top=0 attracted=0
+odd: k=2 t=1 depth=2 vertices=0 lifts=0 attempts=0 non_top=0 top=0 attracted=0
+# round 1 k=1 t=1
+even: 0,e|
+odd: 
+# round 2 k=2 t=1
+even: 00,e|
+odd: 

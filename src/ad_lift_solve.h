@@ -54,6 +54,8 @@ typedef struct {
   bool verify;
   /* ADAPTIVE: seed TOP with the previously certified opponent dominion. */
   bool incremental;
+  /* Attract and remove certified dominions between stabilized runs. */
+  bool iter_shave;
   /* Algorithm 9; adaptive hosts are not supported. */
   bool symmetric;
 } ADLiftOptions;
@@ -94,15 +96,19 @@ typedef struct {
   /* A host was not built because it exceeded max_host_leaves. With ADAPTIVE,
    * the result then holds the dominions found before that. */
   bool budget_exhausted;
+  /* Stabilized attempts with iter_shave, including a final empty verdict. */
+  size_t iterations;
 } ADLiftSolveStats;
 
 /* Priorities above this bound are rejected, as in zielonka_decompose, to keep
  * the recursive tree code within a safe depth. */
 enum { AD_LIFT_MAX_PRIORITY = 1024 };
 
-/* The result is complete exactly when the two dominions cover domain, which a
- * universal host guarantees; otherwise it is partial. domain must induce a
- * total subgame. stats may be nullptr. If an adaptive run stops at the leaf
+/* The result is complete when the dominions and earlier shaved attractors
+ * cover domain; a universal host guarantees this. domain must induce a total
+ * subgame. Fixed iter_shave runs reuse the original hosts; adaptive runs keep
+ * the original t schedule and priority bounds on shrinking subgames.
+ * stats may be nullptr. If an adaptive run stops at the leaf
  * limit, it still succeeds, stats->budget_exhausted is set, and error holds
  * the limit message. */
 [[nodiscard]]

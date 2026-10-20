@@ -25,8 +25,8 @@ typedef struct {
   PGPriorityMap priority_map;
 } PGPreprocessResult;
 
-/* Shared parser for the long options "shave" and "compress". Invalid input
- * leaves options unchanged. all/none must appear alone. */
+/* Shared parser for the long options "initial-shave" and "compress". Invalid
+ * input leaves options unchanged. all/none must appear alone. */
 [[nodiscard]] bool pg_preprocess_parse_option(PGPreprocessOptions *options,
                                               char const *name,
                                               char const *value);

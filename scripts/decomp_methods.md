@@ -198,7 +198,7 @@ For bits = 1, ..., ceil(log2(n)) (zero for zero/one-vertex games), or fixed bits
 Verify edge progress and dominion closure; draw/dump distinct measures as above
 ```
 
-The PM CLI also supports `--incremental` (unused by this inventory): remove
+The PM CLI also supports `--iter-shave` (unused by this inventory): remove
 Even's non-TOP dominion and its attractor before running Odd on the remainder;
 print each round separately. Succinct repeats a bit budget after progress.
 Strahler uses Oink's smaller outer k bound, without the full-game extra root,

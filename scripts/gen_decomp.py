@@ -152,7 +152,7 @@ def run_backend(backend, pre, game, root, build_dir, timeout, limit):
     if backend.binary == "pg2adot" and backend.name.startswith("lifting"):
         command.append(f"--max-host-leaves={limit}")
     if pre:
-        command.extend(("--shave=all", "--compress"))
+        command.extend(("--initial-shave=all", "--compress"))
     run = invoke(command, game, root, build_dir, timeout)
     if run.outcome not in ("complete", "partial"):
         return run
@@ -242,7 +242,7 @@ def generate(root, destination, build_dir, timeout, limit):
         "`python3 scripts/gen_decomp.py`. "
         f"Defaults: {timeout:g} s "
         f"safety timeout per subprocess; {limit} host leaves; sets capped at "
-        f"{MAX_SET_ITEMS} IDs. `+pre` adds `--shave=all --compress`. "
+        f"{MAX_SET_ITEMS} IDs. `+pre` adds `--initial-shave=all --compress`. "
         "Each adaptive result is checked against incremental adaptive; "
         "identical DOT is stored once. PM leaf streams keep raw order.\n\n",
         "Metrics and parameters are **Even / Odd**. Heights count nodes. "

@@ -202,7 +202,7 @@ For bits = 1, ..., ceil(log2(n)) (zero for zero/one-vertex games), or fixed bits
 Verify edge progress and dominion closure; draw/dump distinct measures as above
 ```
 
-The PM CLI also supports `--incremental` (unused by this inventory): remove
+The PM CLI also supports `--iter-shave` (unused by this inventory): remove
 Even's non-TOP dominion and its attractor before running Odd on the remainder;
 print each round separately. Succinct repeats a bit budget after progress.
 Strahler uses Oink's smaller outer k bound, without the full-game extra root,
@@ -239,7 +239,7 @@ its largest original priority. Compression changes neither winners nor parity.
 
 ## Inventory
 
-Regenerate with release tools (`--buildtype=release`): `python3 scripts/gen_decomp.py`. Defaults: 600 s safety timeout per subprocess; 10000 host leaves; sets capped at 8 IDs. `+pre` adds `--shave=all --compress`. Each adaptive result is checked against incremental adaptive; identical DOT is stored once. PM leaf streams keep raw order.
+Regenerate with release tools (`--buildtype=release`): `python3 scripts/gen_decomp.py`. Defaults: 600 s safety timeout per subprocess; 10000 host leaves; sets capped at 8 IDs. `+pre` adds `--initial-shave=all --compress`. Each adaptive result is checked against incremental adaptive; identical DOT is stored once. PM leaf streams keep raw order.
 
 Metrics and parameters are **Even / Odd**. Heights count nodes. Empty trees have zero metrics; synthetic, shaved and unresolved nodes are excluded. AD metrics describe residual decompositions; PM metrics describe occupied measure prefix trees (including their extra root), not minimum game Strahler numbers. Won sizes include shaved vertices; partial rows give certified lower bounds. Unknown winners are `?`. Every backend is attempted on every game except measured slow pairs in `SKIP_RUNS` in `scripts/gen_decomp.py`; their skip outcomes are fixed by the table. Host-leaf limits remain outcomes, without vertex cutoffs. A safety timeout aborts generation; measure locally and add the pair to the skip list.
 

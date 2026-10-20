@@ -132,13 +132,22 @@ standard input. The default algorithm is attractor-decomposition lifting.
 - `--algorithm=lifting|zielonka|zielonka-sym|lifting-sym` selects the solver;
   the default is `lifting`. `zielonka` runs enhanced Zielonka. All four share
   preprocessing, statistics and verification.
-- `--shave=LIST` solves and removes dominions before building either tree.
+- `--initial-shave=LIST` solves and removes dominions before building either tree.
   Use a comma list of `single` (all remaining priorities have one parity),
   `loops` (winning self-loops, including forced losing-owner loops), and
   `wcwc` (winner-controlled winning cycles), or `all` / `none` alone.
   The default is `none`. Each discovered dominion is removed with its winner's
   attractor in the current game. Rules run in the order single, loops, wcwc,
   repeating to a fixpoint as removals expose further dominions.
+- `--iter-shave` attracts and removes certified dominions after lifting
+  stabilises. Fixed hosts are reused until complete or a round makes no
+  progress; both adaptive modes advance to the next t on the smaller game.
+  It also supports `lifting-sym`; Zielonka variants reject it. DOT retains
+  each shaved region's round, adaptive t, and certified decomposition, plus
+  the final residual decomposition. Verification replays the certificates
+  and attractors; `--stats` lists rounds and vertices shaved per round.
+  Restricted hosts can still end partial. `--shave` has been removed in
+  favour of `--initial-shave`; there is no alias.
 - `--compress` merges consecutive distinct priorities of the same parity,
   following Oink's priority compression. This is stronger than gap removal.
   `--priority-mode` still controls only display: in `original` mode a merged
@@ -251,12 +260,12 @@ holding that measure. The tool reads a PGSolver file, `-`, or standard input.
 ./build/pg2pmdot --k=1 --t=1 game.pg > partial.dot
 ./build/pg2pmdot --algorithm=succinct --bits=0 game.pg > partial.dot
 ./build/pg2pmdot --format=leaves game.pg
-./build/pg2pmdot --incremental --shave=all --compress game.pg
+./build/pg2pmdot --iter-shave --initial-shave=all --compress game.pg
 ```
 
 `--algorithm=strahler|succinct` defaults to `strahler`. Both algorithms share
 `pg2adot`'s `--player`, `--labels`, `--max-set-items`, `--priority-mode`,
-`--shave`, `--compress`, `--stats`, `--no-verify`, and `--version` options.
+`--initial-shave`, `--compress`, `--stats`, `--no-verify`, and `--version` options.
 Priorities are made gap-free internally. DOT's `p` labels identify the counter
 priority of each component, on the original scale by default. Preprocessing
 keeps shaved vertices in separate shaded nodes; they have no progress measure.
@@ -290,7 +299,8 @@ standard error. Verification checks the actual truncated progress condition
 on every edge (one successor for the winner, all for its opponent) and checks
 dominion closure using the shared attractor code.
 
-`--incremental` follows Oink's removal semantics: run odd counters first,
+`--iter-shave` (formerly `--incremental`, with no alias) follows Oink's
+removal semantics: run odd counters first,
 remove Even's non-top dominion and its attractor, then run even counters on
 the remaining game. It prints a separate DOT graph for every round. Roots
 show that round's parameters; an `attracted` node lists removed vertices that
