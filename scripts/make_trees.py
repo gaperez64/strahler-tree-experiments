@@ -39,7 +39,7 @@ def main():
     fields = ["game", "backend", "outcome", "vertices", "edges",
               "distinct_priorities", "maximum_priority"]
     fields += [f"{metric}_{player}" for metric in
-               ("won", "nodes", "leaves", "height", "strahler", "parameters")
+               ("won", *decomp.TREE_METRICS, "parameters")
                for player in ("even", "odd")]
     fields.append("tree")
     args.out.mkdir(parents=True, exist_ok=True)
@@ -60,7 +60,7 @@ def main():
                     args.timeout, args.max_host_leaves, compare_adaptive=False)
                 metrics = decomp.run_metrics(backend, run, vertices)
                 folder = args.out / game.stem
-                decomp.write_run(folder, backend, run)
+                decomp.write_run(folder, backend, run, metrics["info"])
                 png = folder / (backend.name + ".png")
                 if dot and run.dot:
                     source = run.dot.encode("utf-8")
@@ -75,8 +75,9 @@ def main():
                     for p, player in enumerate(("even", "odd")):
                         row[f"won_{player}"] = metrics["won"][p]
                         row[f"parameters_{player}"] = metrics["parameters"][p]
-                        for i, metric in enumerate(("nodes", "leaves", "height", "strahler")):
-                            row[f"{metric}_{player}"] = metrics["info"][p][0][i]
+                        for metric in decomp.TREE_METRICS:
+                            row[f"{metric}_{player}"] = decomp.format_metric(
+                                metric, metrics["info"][p][0][metric])
                     row["tree"] = f"{game.stem}/{backend.name}.dot"
                 writer.writerow(row)
                 print(f"{game}: {backend.name}: {run.outcome}", file=sys.stderr, flush=True)

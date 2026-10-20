@@ -6,8 +6,9 @@ decompositions and progress measures of parity games, based on
 
 ## Build
 
-Requires Meson 1.4+, Ninja, a C23 compiler (Clang 18+, GCC 14+, or recent Apple Clang), and a C++20 compiler.
-Boost enables `lenstree`; Graphviz renders DOT and enables DOT syntax tests. macOS: `brew install boost graphviz meson ninja`.
+Build with Meson 1.4+, Ninja, a C23 compiler (Clang 18+, GCC 14+, or recent
+Apple Clang), and a C++20 compiler. Boost enables `lenstree`; Graphviz renders
+DOT and enables DOT syntax tests. On macOS: `brew install boost graphviz meson ninja`.
 
 ```sh
 meson setup build
@@ -30,8 +31,8 @@ Executables go in `build/`. Release binaries for `linux-x86_64` and
 | `pg2pmdot` | Compute Strahler or succinct progress measures; write DOT or leaf streams. |
 | `str-tree` | Check p-level successors in a compiled-in example tree. |
 
-`pg2adot` and `pg2pmdot` read a PGSolver file; `-` or no filename reads
-standard input. For example:
+`pg2adot` and `pg2pmdot` read a PGSolver file. Use `-` or omit the filename to
+read standard input:
 
 ```sh
 ./build/pg2adot --algorithm=lifting --adaptive-t game.pg > decomposition.dot
@@ -47,9 +48,9 @@ consecutive distinct priorities of the same parity. Sample games are in
 [tests/games/](tests/games/).
 
 Generate trees for a new benchmark with `scripts/make_trees.py`. It scans files
-or directories recursively and writes trees, statistics and `summary.csv` to
-`trees/`; PNGs are included when Graphviz is available. Select DECOMP.md backend
-names with `--backends` (default: all):
+or directories recursively and writes trees, run statistics, per-tree `.metrics`
+files and `summary.csv` to `trees/`; PNGs are included when Graphviz is available.
+Choose backends by their DECOMP.md names with `--backends` (default: all):
 
 ```sh
 python3 scripts/make_trees.py --backends zielonka,lifting-adaptive+iter --out trees benchmark/

@@ -248,11 +248,42 @@ class DecompTests(unittest.TestCase):
     def test_tree_metrics_exclude_placeholders(self):
         ad = (ROOT / "tests/golden/pg2adot_sets.out").read_text()
         pm = (ROOT / "tests/golden/pm_strahler_sets.out").read_text()
-        self.assertEqual(decomp.tree_info(ad, False),
+        fields = ("nodes", "leaves", "height", "strahler")
+
+        def original_info(dot, progress_measures):
+            return [(tuple(metrics[name] for name in fields), shape)
+                    for metrics, shape in decomp.tree_info(dot, progress_measures)]
+
+        self.assertEqual(original_info(ad, False),
                          [((0, 0, 0, 0), ()), ((3, 2, 2, 2), (2, 0, 0))])
-        self.assertEqual(decomp.tree_info(pm, True),
+        self.assertEqual(original_info(pm, True),
                          [((5, 2, 3, 2), (2, 1, 0, 1, 0)),
                           ((0, 0, 0, 0), ())])
+
+    def test_tree_metrics(self):
+        children = dict(root=["a", "b", "c"], a=["d", "e"], b=[],
+                        c=["f"], d=[], e=[], f=["g", "h"], g=[], h=[])
+        expected = dict(nodes=9, leaves=5, internal_nodes=4, height=4, width=3,
+                        max_arity=3, mean_internal_arity=2, branching_nodes=3,
+                        min_leaf_depth=2, mean_leaf_depth=3.2, strahler=3)
+        metrics, shape = decomp.tree_metrics(children, "root")
+        self.assertEqual(metrics, expected)
+        self.assertEqual(shape, (3, 2, 0, 0, 0, 1, 2, 0, 0))
+        self.assertEqual(decomp.tree_metrics(children, None),
+                         (dict.fromkeys(expected, 0), ()))
+        self.assertEqual(decomp.tree_metrics(dict(root=[]), "root"), (
+            dict(nodes=1, leaves=1, internal_nodes=0, height=1, width=1,
+                 max_arity=0, mean_internal_arity=0, branching_nodes=0,
+                 min_leaf_depth=1, mean_leaf_depth=1, strahler=1), (0,)))
+        path, _ = decomp.tree_metrics(dict(root=["a"], a=["b"], b=[]), "root")
+        self.assertEqual((path["height"], path["min_leaf_depth"],
+                          path["mean_leaf_depth"]), (3, 3, 3))
+        # Progress measures retain the extra root above the occupied prefix tree.
+        children["extra"] = ["root"]
+        self.assertEqual(decomp.tree_metrics(children, "extra"), (
+            {**expected, "nodes": 10, "internal_nodes": 5, "height": 5,
+             "mean_internal_arity": 1.8, "min_leaf_depth": 3,
+             "mean_leaf_depth": 4.2}, (1, *shape)))
 
     def test_limits_errors_and_timeouts_discard_output(self):
         game = ROOT / "examples/Button.tlsf.ehoa.pg"
@@ -350,6 +381,7 @@ class DecompTests(unittest.TestCase):
                              decomp.output_files(outputs[1]))
             self.assertEqual(len(list(outputs[0].rglob("*.dot"))), 48)
             self.assertEqual(len(list(outputs[0].rglob("*.leaves"))), 16)
+            self.assertEqual(len(list(outputs[0].rglob("*.metrics"))), 48)
             inventory = (outputs[0] / "DECOMP.md").read_text()
             self.assertIn("[ALGOS.md](ALGOS.md)", inventory)
             self.assertIn("docs/developing.md#regenerating-example-trees",
@@ -361,23 +393,31 @@ class DecompTests(unittest.TestCase):
             self.assertLess(inventory.index("### small.gm"),
                             inventory.index("## Tree disagreements"))
             self.assertEqual(inventory.count("[PNG](decomp/"), 48)
+            self.assertEqual(inventory.count("[metrics](decomp/"), 48)
+            self.assertIn("Height E / O | Parameters E / O | Tree |", inventory)
+            self.assertNotIn("Strahler E / O", inventory)
             for dot in (outputs[0] / "decomp/all-shaved").glob("*+pre.dot"):
                 info = decomp.tree_info(dot.read_text(),
                                         dot.name.startswith("pm-"))
-                self.assertEqual(info, [((0, 0, 0, 0), ())] * 2)
+                self.assertEqual(info,
+                                 [(dict.fromkeys(decomp.TREE_METRICS, 0), ())] * 2)
             self.assertTrue(decomp.sync_outputs(root, outputs[0], True))
             decomp.sync_outputs(root, outputs[0], False, program)
             self.assertEqual(len(list(root.rglob("*.png"))), 48)
             self.assertFalse(decomp.sync_outputs(root, outputs[1], True))
             stale = root / "decomp/small/obsolete.dot"
             stale.write_text("old")
+            stale_metrics = stale.with_suffix(".metrics")
+            stale_metrics.write_text("old")
             (root / "DECOMP.md").write_text("stale inventory")
             (root / "decomp/small/lifting.dot").unlink()
+            (root / "decomp/small/lifting.metrics").unlink()
             before = decomp.output_files(root)
             report = io.StringIO()
             with redirect_stdout(report):
                 self.assertTrue(decomp.sync_outputs(root, outputs[1], True))
-            for name in ("DECOMP.md", "obsolete.dot", "lifting.dot"):
+            for name in ("DECOMP.md", "obsolete.dot", "lifting.dot",
+                         "obsolete.metrics", "lifting.metrics"):
                 self.assertIn(name, report.getvalue())
             self.assertEqual(before, decomp.output_files(root))
             decomp.sync_outputs(root, outputs[1], False, program)

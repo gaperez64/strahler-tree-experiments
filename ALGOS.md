@@ -12,26 +12,81 @@ into smaller regions and their attractors. A progress-measure tree groups
 vertices by their final progress labels, with shared leading parts of labels
 forming shared branches.
 
-[DECOMP.md](DECOMP.md) shows the resulting trees and explains
-[preprocessing and shaving](DECOMP.md#preprocessing-and-shaving) for the
-`+pre` variants. The tree metrics are:
+[DECOMP.md](DECOMP.md) shows example trees with these metrics:
 
 | Metric | Meaning |
 | --- | --- |
-| Nodes | Number of nodes in the result tree. Several game vertices can belong to one tree node. |
-| Leaves | Number of tree nodes with no children. |
-| Height | Number of nodes on the longest path from the root to a leaf. |
-| Strahler number | A leaf has value 1. At an internal node, take the largest child value and add 1 if at least two children share that largest value. The root's value measures branching. |
+| `nodes` | Number of nodes in the result tree. Several game vertices can belong to one tree node. |
+| `leaves` | Number of tree nodes with no children. |
+| `internal_nodes` | Number of tree nodes with at least one child. |
+| `height` | Number of nodes on the longest path from the root to a leaf. |
+| `width` | Largest number of nodes on one level. |
+| `max_arity` | Largest number of children of one node. |
+| `mean_internal_arity` | Mean number of children over internal nodes; zero if there are none. |
+| `branching_nodes` | Number of tree nodes with at least two children. |
+| `min_leaf_depth` | Fewest nodes on a path from the root to a leaf. |
+| `mean_leaf_depth` | Mean number of nodes on a path from the root to a leaf, over all leaves. |
+| `strahler` | A leaf has value 1. At an internal node, take the largest child value and add 1 if at least two children share that largest value. The tree's value is the root's value. |
 
-An empty tree has zero for all four metrics. Preprocessed regions and display
-connectors are excluded. The metrics describe the tree found by a method;
-they do not establish the smallest possible Strahler number for the game.
-Progress-measure trees include an extra root, so their heights and node counts
-have a different meaning from those of decomposition trees.
+Each tree's `.metrics` file has one line per field, with `even=` and `odd=`
+values. Depth counts nodes from the root (depth 1); means have three decimal
+places. An empty tree has zero for every metric. Metrics cover only the final
+round, excluding connector boxes, shaved regions and unresolved vertices.
+Progress-measure trees include an extra root, so their depths, heights and node
+counts have a different meaning from those of decomposition trees.
+
+Each player's Strahler number is the smallest Strahler number among that
+player's attractor decompositions; the game's Strahler number is the larger of
+the two. For a complete result without shaving, the larger of the reported Even
+and Odd values is an upper bound for the game's.
+With shaving or partial results, the metrics describe only the represented
+residual region.
+
+## Preprocessing and shaving
+
+The `+pre` rows run `--initial-shave=all --compress` before the selected solver:
+
+1. Compress priority gaps and merge consecutive distinct priorities of the
+   same parity, preserving winners. Choose the levels from the full input
+   and keep them fixed throughout shaving.
+2. Shave simple winning regions in this order: the whole remainder if its
+   priorities have one parity; winning self-loops whose owner matches their
+   priority's parity or whose loop is the only remaining move; cycles whose
+   vertices are all owned by one player and whose highest priority has that
+   player's parity. Remove each region's attractor too, Even before Odd.
+   Repeat until a full pass removes nothing.
+3. Run the solver on the remainder. If nothing remains, the result is
+   complete with empty trees.
+
+The `+iter` rows add `--iter-shave`, available only for lifting-based backends,
+including progress measures:
+
+1. Run lifting until the labels stabilise. Take the certified dominions:
+   regions where a player can keep play inside and force a win.
+2. Remove those dominions and their attractors, recording their winners.
+3. Retry on the remainder. Fixed host bounds stay the same; adaptive lifting advances
+   to the next t, keeping the initial remainder's host bounds.
+
+Progress measures process Even's dominion and attractor before running Odd on
+the remainder.
+
+Removing a dominion's attractor leaves a subgame whose winners remain winners
+in the full game. Exits into one's own removed region are winning; vertices
+where the opponent could force an exit into its region were already attracted
+out.
+
+Adaptive solvers use the priority and size bounds left by initial preprocessing.
+Compression and shaving can lower these bounds, allowing lower t values and
+smaller hosts. Iterative shaving reduces the game searched in later rounds.
+The `+pre+iter` rows combine both steps. Won counts all rounds and their
+attractors once per vertex; tree metrics and parameters describe only the
+final round, excluding earlier certificates and attracted vertices.
+
+Source: [Oink, TACAS 2018](https://arxiv.org/abs/1801.03859), trivial dominions and priority compression.
 
 ## Zielonka: `zielonka`
 
-This method builds complete decomposition trees by recursively solving smaller
+Zielonka builds complete decomposition trees by recursively solving smaller
 games and removing winning regions. It appends regions in removal order and
 reuses the final recursive tree, so its tree can differ from a lifting result.
 
@@ -70,8 +125,8 @@ Source: [Raghavan's thesis](https://thejaswiniraghavan.github.io/PhD_Thesis.pdf)
 
 ## Symmetric Zielonka: `zielonka-sym`
 
-This method builds complete decomposition trees while retaining both players'
-search labels across recursive calls. Remembered labels can settle a remaining
+Symmetric Zielonka builds complete decomposition trees and keeps both players'
+search labels across recursive calls. Those labels can settle a remaining
 subgame before all search branches have been visited.
 
 1. Give each player a search tree with enough branches for the whole game.
@@ -132,16 +187,16 @@ Source: [Raghavan's thesis](https://thejaswiniraghavan.github.io/PhD_Thesis.pdf)
 
 ## Attractor-decomposition lifting: `lifting` and `lifting-adaptive`
 
-These methods find decomposition trees by repeatedly advancing vertex labels
-within a host, or search tree, that has room for candidate decompositions.
+Lifting finds decomposition trees by repeatedly advancing vertex labels
+within a host, a search tree with room for candidate decompositions.
 `lifting` uses one host per player; `lifting-adaptive` tries a sequence of
 hosts, starting small.
 
 1. If the remaining game is empty, return empty trees. Otherwise choose a
    host for each player. In a Strahler host, H counts node levels according
    to the priority bounds, K bounds its Strahler number, and t controls its
-   size allowance. The default
-   `lifting` hosts are large enough to cover every winning region.
+   size allowance. The default `lifting` hosts are large enough to cover
+   every winning region.
    Alternatives can restrict K, fix the number of children, or supply a
    chosen tree shape, and may leave vertices unresolved.
 2. For `lifting-adaptive`, start t at the smaller of the chosen starting
@@ -169,8 +224,8 @@ hosts, starting small.
    for Even, then Odd, on the whole remaining game.
 6. For each player, the vertices below TOP form a certified winning region.
    Turn the occupied host positions into a decomposition and discard empty
-   branches. The displayed tree is this occupied result; its metrics do not
-   count the unused parts of the host.
+   branches. The displayed tree and its metrics cover only the occupied host
+   positions.
 7. Stop with a complete result when the two regions cover the remaining
    game. Otherwise, an adaptive run tries the next host and repeats from
    step 3, remembering the first t at which each player's largest region was
@@ -207,7 +262,7 @@ Source: [Raghavan's thesis](https://thejaswiniraghavan.github.io/PhD_Thesis.pdf)
 
 ## Symmetric lifting: `lifting-sym`
 
-This method lets the two players' decomposition searches guide each other
+Symmetric lifting lets the two players' decomposition searches guide each other
 within a fixed pair of hosts. It retains labels through recursion and finishes
 with separate lifting passes to certify the winning regions.
 
@@ -271,9 +326,9 @@ Source: [Raghavan's thesis](https://thejaswiniraghavan.github.io/PhD_Thesis.pdf)
 
 ## Strahler progress-measure lifting: `pm-strahler`
 
-This method assigns progress measures to vertices and draws the tree of the
-distinct final measures. Its search varies both the allowed Strahler number
-and a size allowance, producing a different kind of tree from a decomposition.
+Strahler progress-measure lifting assigns measures to vertices and draws the
+tree of distinct final measures. The search varies the allowed Strahler number
+and a size allowance. Its result is a different kind of tree from a decomposition.
 
 1. Start the search at k equal to 1 and t equal to 1. Here k bounds the
    candidate measure tree's Strahler number and t supplies its size allowance.
@@ -327,9 +382,9 @@ Source: [The Strahler Number of a Parity Game](https://arxiv.org/abs/2003.08627)
 
 ## Succinct progress-measure lifting: `pm-succinct`
 
-This also builds a tree from distinct progress measures, using a total bit
-budget shared across their components. It increases that budget instead of
-searching over the Strahler method's two parameters.
+Succinct lifting builds a tree from distinct progress measures with a total
+bit budget shared across their components. The search increases that budget
+instead of varying the Strahler method's two parameters.
 
 1. Start with a budget of one bit, using zero for a game with at most one
    vertex, or use the chosen fixed budget. The bits value in the inventory

@@ -1,8 +1,8 @@
 # Symmetric recursion: corrected entry condition
 
-This is the implementation's correction to Lemma 8.2.1, item 4 (thesis printed
-page 141), not a claim that the printed condition holds. The correction applies
-to both Algorithms 8 and 9, with the players exchanged at each recursive call.
+The implementation corrects Lemma 8.2.1, item 4 (thesis printed page 141).
+The printed condition fails on the two-vertex game below. The correction
+applies to Algorithms 8 and 9, with the players exchanged at each recursive call.
 
 In a call `solve(G, P, a, b)`, the lower player P has node a at level h; the
 higher player Q has node b at level h+1. Write
@@ -22,7 +22,7 @@ total and, for a recursive child, a trap for the caller's lower player in R.
 Keep the lemma's other entry requirements: `D_P <= A_P` and `D_Q <= A_Q`
 pointwise, where A is the respective least valid labelling on the original
 active domain, and the two boundary conditions excluding a forced visit to
-earlier labels before crossing the corresponding side boundary (items 2–3,
+earlier labels before crossing the corresponding side boundary (items 2 to 3,
 with the players swapped when necessary). Mere membership in these intervals
 does not imply the upper bounds or the boundary conditions.
 
@@ -56,10 +56,10 @@ moves `B ∩ U` to `c^S`, so the updated c-core in R is exactly U'. Meanwhile
 the caller's labels remain in its a-core or a-side. This gives the corrected
 entry equality after swapping players. This closure is an added operation.
 
-For its upper bound, note the loop's frontier invariant: every vertex still
+For the upper bound, the loop's frontier invariant says that every vertex still
 in R has Q label at least c. This holds for the first child after the higher
 top fibre is moved; after each iteration, Move advances the preceding child's
-side fibre outside the returned attractor. Consequently `R \ U` has Q labels
+side fibre outside the returned attractor. Thus `R \ U` has Q labels
 at least `c^S`, not earlier labels. Since `D_Q <= A_Q`, those targets are
 outside the least Q c-core. The entry trap and earlier-label boundary conditions
 allow its Q-strategy to stay in that core within R, so P cannot attract any
@@ -85,8 +85,8 @@ At every entry, debug assertions check totality and both label intervals.
 
 Before certification, debug builds independently run ordinary lifting from
 the least compatible labels and assert `D_P(v) <= A_P(v)` for every active
-vertex and both players. This checks the raw labels, not labels repaired by
-certification, and the independent run is excluded from solver statistics.
+vertex and both players. The check uses raw labels before certification can
+repair them. The independent run is excluded from solver statistics.
 To keep this check cheap, it is limited to games with at most 12 vertices
 and hosts with at most 4096 nodes; it covers the boundary regression and the
 small random-game suite. Larger games rely on the argument above and final
@@ -97,16 +97,15 @@ certificate verification. Defining NDEBUG omits these assertions and debug runs.
 `src/ad_sym.c` shares the player-swapped recursion for Algorithms 8 and 9:
 `is_ad` implements Proposition 7.2.1; `assign`/`move` implement Proposition
 7.2.3's ⊕/smallMove; `set_side` implements Remark 5. `solve` follows Algorithm
-8 lines 2–26 / Algorithm 9 lines 2–24. Algorithm 8's loop stops on a valid
+8 lines 2 to 26 / Algorithm 9 lines 2 to 24. Algorithm 8's loop stops on a valid
 residual; Algorithm 9 exhausts the supplied children. Empty subgames never
 recurse. `ad_lift_solve.c` shares host selection; `ad_lift_continue` certifies
 Algorithm 9's final labels without resetting their progress. The original
 `ad_lift.c` computes Algorithm 5's least decomposition using Proposition 7.2.1
-short lifts, rather than Algorithm 5's recursive restart schedule.
+short lifts in place of Algorithm 5's recursive restart schedule.
 
-The corrected Lemma 8.2.1 entry condition allows the **higher player's side
-fibre**: the current game lies in the lower player's core and the union of the
-higher player's core and side. The printed intersection of both cores fails on
+The corrected condition allows the higher player's side fibre. The printed
+intersection of both cores fails on
 `0 1 0 0; 1 0 0 1,0;`. See [the entry invariant and proof sketch](#proof-sketch)
 for the precise condition, trap closure, and the debug check that raw labels stay
 below the independently computed least valid labelling before certification.

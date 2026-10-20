@@ -5,7 +5,7 @@
 Build commands and requirements are in [README.md](../README.md#build).
 
 Run shell examples from the repository root. Every executable accepts
-`--version`, using the Meson project version (currently `0.1`). Meson's
+`--version`, using the Meson project version. Meson's
 `vcs_tag()` runs `git describe --tags --always --dirty` in the source directory
 on every build and appends ` (git <describe>)` when available; without Git or
 `.git`, only the Meson version is printed.
@@ -33,13 +33,15 @@ Update the Meson project version before tagging so `--version` matches the relea
 
 [DECOMP.md](../DECOMP.md) lists the trees for every PGSolver game in
 `examples/` and reports differences in their shapes. [ALGOS.md](../ALGOS.md)
-explains the algorithms and metrics. Edit that page directly; it is maintained
-separately from the generated inventory.
+explains the algorithms and metrics. Edit ALGOS.md directly.
 
-DOT/PNG trees, progress-measure leaf streams, and statistics with timings
-removed are in [decomp/](../decomp/). Build release tools, then regenerate
-with Python 3.10+ (standard library only). Graphviz is needed only for new
-or changed pictures:
+DOT/PNG trees, progress-measure leaf streams, run statistics with timings
+removed (`.stats`), and final tree statistics (`.metrics`) are in
+[decomp/](../decomp/). The inventory tables show nodes, leaves and height;
+the Tree column links to all metrics, including Strahler, width and arity.
+Both [DECOMP.md](../DECOMP.md) and [ALGOS.md](../ALGOS.md) define them.
+Build release tools, then regenerate with Python 3.10+ (standard library only).
+Graphviz is needed only for new or changed pictures:
 
 ```sh
 meson setup build --reconfigure --buildtype=release -Db_ndebug=true
@@ -56,10 +58,10 @@ also checked against incremental adaptive lifting for the same outcome and
 identical DOT; one copy of the tree is stored. Progress-measure leaf streams
 keep their raw first-occurrence order.
 
-The generator attempts every backend with and without preprocessing and, where
-supported, iterative shaving on each
-game, except measured slow pairs listed in `SKIP_RUNS` in
-`scripts/gen_decomp.py`. These have fixed `skipped (> N s locally)` outcomes.
+The generator tries every backend on each game, with and without preprocessing
+and, where supported, iterative shaving. It skips measured slow pairs listed
+in `SKIP_RUNS` in `scripts/gen_decomp.py`. These have fixed
+`skipped (> N s locally)` outcomes.
 A safety timeout aborts generation with a non-zero exit before any outputs
 are updated. Measure that pair locally before adding it to the skip list.
 Host-limit runs keep statistics and inventory rows but discard all tree
@@ -76,19 +78,25 @@ files untouched.
 
 `--check` reruns the tools and reports missing, changed or obsolete outputs
 without writing files or rendering pictures. It exits 0 when everything is
-current and non-zero otherwise. PNG freshness uses the stored DOT hash and
-PNG integrity checks, allowing different Graphviz versions to render the same
-DOT differently. CI checks freshness on PRs and non-main pushes, and refreshes
-generated files on pushes to `main`.
+current and non-zero otherwise. It checks PNG integrity and the stored DOT hash;
+different Graphviz versions may render the same DOT differently. CI checks
+freshness on PRs and non-main pushes, and refreshes generated files on pushes
+to `main`.
 
 For new benchmarks, use `python3 scripts/make_trees.py GAME_OR_DIR...`.
 It uses the same backend names, limits and metrics, but ignores the examples'
-skip list. Adaptive backends run once, without the inventory comparison.
+skip list. Adaptive backends run once, without the inventory's cold/incremental
+comparison.
 `--backends LIST` selects comma-separated DECOMP.md row names;
 `--out DIR` defaults to `trees/`, with one game directory per unique stem and
-`summary.csv` splitting Even/Odd metrics into separate columns. The build,
-timeout, host-limit and Graphviz options match `gen_decomp.py`; `--no-png`
-disables pictures, and missing Graphviz only warns. Progress goes to stderr;
+`summary.csv` splitting Even/Odd metrics into separate columns. Every tree has
+the same `.metrics` file as the inventory. The CSV includes each `.metrics`
+field with `_even` and `_odd` suffixes, alongside wins, parameters, game
+metadata, outcome and the DOT path. Means have three decimal places in both
+formats; metrics and parameters describe the final round, while wins include
+all shaving rounds and their attractors. The build, timeout, host-limit and
+Graphviz options match `gen_decomp.py`; `--no-png` disables pictures, and missing
+Graphviz only warns. Progress goes to stderr;
 timeouts and solver errors are recorded per pair and cause a non-zero exit.
 Multi-round progress-measure PNGs show each round in a separate panel.
 
@@ -294,7 +302,7 @@ the shared attractor code in place of Oink's SCC implementation.
   | dot -Tsvg > jurdzinski.svg
 ```
 
-The repository includes small sample games under `tests/games/`, for example:
+Small sample games are in `tests/games/`:
 
 ```sh
 ./build/pg2adot tests/games/ordered_two_children.pg
@@ -353,9 +361,9 @@ on every edge (one successor for the winner, all for its opponent) and checks
 dominion closure using the shared attractor code.
 
 `--iter-shave` (formerly `--incremental`, with no alias) follows Oink's
-removal semantics: run odd counters first,
-remove Even's non-top dominion and its attractor, then run even counters on
-the remaining game. It prints a separate DOT graph for every round. Roots
+removal order: run odd counters first, remove Even's non-top dominion and its
+attractor, then run even counters on the remaining game. It prints a separate
+DOT graph for every round. Roots
 show that round's parameters; an `attracted` node lists removed vertices that
 have no finite measure. Succinct repeats a bit budget if it made progress;
 Strahler keeps Oink's original outer bound

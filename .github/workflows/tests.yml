@@ -36,7 +36,7 @@ jobs:
           "$RUNNER_TEMP/actionlint" .github/workflows/*.yml
 
       - name: Check Python syntax
-        run: python3 -m py_compile src/convert_out.py scripts/compare_oink.py scripts/gen_decomp.py tests/test_gen_decomp.py
+        run: python3 -m py_compile src/convert_out.py scripts/compare_oink.py scripts/gen_decomp.py scripts/make_trees.py tests/test_gen_decomp.py tests/test_make_trees.py
 
   decomp:
     name: Tracked decompositions
