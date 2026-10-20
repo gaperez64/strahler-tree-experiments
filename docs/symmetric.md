@@ -107,7 +107,7 @@ short lifts, rather than Algorithm 5's recursive restart schedule.
 The corrected Lemma 8.2.1 entry condition allows the **higher player's side
 fibre**: the current game lies in the lower player's core and the union of the
 higher player's core and side. The printed intersection of both cores fails on
-`0 1 0 0; 1 0 0 1,0;`. See [the entry invariant and proof sketch](docs/symmetric.md)
+`0 1 0 0; 1 0 0 1,0;`. See [the entry invariant and proof sketch](#proof-sketch)
 for the precise condition, trap closure, and the debug check that raw labels stay
 below the independently computed least valid labelling before certification.
 
