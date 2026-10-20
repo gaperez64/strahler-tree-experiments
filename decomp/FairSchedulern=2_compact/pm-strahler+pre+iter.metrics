@@ -1,0 +1,11 @@
+nodes: even=21 odd=0
+leaves: even=4 odd=0
+internal_nodes: even=17 odd=0
+height: even=6 odd=0
+width: even=4 odd=0
+max_arity: even=4 odd=0
+mean_internal_arity: even=1.176 odd=0.000
+branching_nodes: even=1 odd=0
+min_leaf_depth: even=6 odd=0
+mean_leaf_depth: even=6.000 odd=0.000
+strahler: even=2 odd=0

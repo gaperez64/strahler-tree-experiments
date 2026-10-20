@@ -41,12 +41,14 @@ class MakeTreesTests(unittest.TestCase):
         self.assertIn("k=2", metrics["parameters"][0])
         self.assertEqual(metrics["info"], decomp.tree_info(
             "digraph " + source.rsplit("digraph ", 1)[-1], True))
-        self.assertEqual(metrics["info"][0][0], (3, 1, 3, 1))
+        self.assertEqual(tuple(metrics["info"][0][0][name] for name in
+                               ("nodes", "leaves", "height", "strahler")), (3, 1, 3, 1))
         ad = (ROOT / "tests/golden/pg2adot_iter_pre.out").read_text()
         backend = next(b for b in decomp.BACKENDS if b.name == "lifting-adaptive+pre+iter")
         metrics = decomp.run_metrics(backend, decomp.Run("complete", ad, ad), 7)
         self.assertEqual(metrics["won"], (7, 0))
-        self.assertEqual(metrics["info"][0][0], (2, 1, 2, 1))
+        self.assertEqual(tuple(metrics["info"][0][0][name] for name in
+                               ("nodes", "leaves", "height", "strahler")), (2, 1, 2, 1))
         with tempfile.TemporaryDirectory() as directory:
             dot = fake_dot(Path(directory))
             png = decomp.render_png(source.encode(), "a" * 64, dot)
@@ -65,7 +67,13 @@ class MakeTreesTests(unittest.TestCase):
                   ROOT / "tests/games/strahler_two.pg")[1:]),
               patch.object(decomp, "invoke", return_value=decomp.Run("timeout (1 s)")),
               redirect_stderr(io.StringIO())):
+            folder = Path(directory) / "strahler_two"
+            folder.mkdir()
+            stale_metrics = folder / "zielonka.metrics"
+            stale_metrics.write_text("old")
             self.assertEqual(make_trees.main(), 1)
+            self.assertFalse(stale_metrics.exists())
+            self.assertFalse(list(Path(directory).rglob("*.metrics")))
             with (Path(directory) / "summary.csv").open() as stream:
                 rows = list(csv.DictReader(stream))
             self.assertEqual(len(rows), 2)
@@ -122,6 +130,10 @@ class MakeTreesTests(unittest.TestCase):
                 self.assertEqual(tuple(row[key] for key in (
                     "vertices", "edges", "distinct_priorities", "maximum_priority",
                     "won_even", "won_odd")), ("1", "1", "1", "0", "1", "0"))
+                self.assertEqual(tuple(row[key] for key in (
+                    "height_even", "min_leaf_depth_even", "mean_leaf_depth_even",
+                    "min_leaf_depth_odd", "mean_leaf_depth_odd")),
+                    ("1", "1", "1.000", "0", "0.000"))
                 self.assertTrue((out / row["tree"]).is_file())
 
     @unittest.skipUnless(all((BUILD_DIR / name).is_file()
@@ -158,6 +170,15 @@ class MakeTreesTests(unittest.TestCase):
                         path = out / row["tree"]
                         self.assertTrue(path.is_file())
                         self.assertIn("outcome: complete", path.with_suffix(".stats").read_text())
+                        lines = path.with_suffix(".metrics").read_text().splitlines()
+                        self.assertEqual([line.split(":")[0] for line in lines],
+                                         list(decomp.TREE_METRICS))
+                        for line in lines:
+                            metric, values = line.split(": ")
+                            for player, value in (part.split("=") for part in values.split()):
+                                self.assertEqual(row[f"{metric}_{player}"], value)
+                                if metric.startswith("mean_"):
+                                    self.assertRegex(value, r"^\d+\.\d{3}$")
                         self.assertEqual(path.with_suffix(".png").exists(), mode == "png")
                         if mode == "png":
                             self.assertIsNotNone(decomp.png_dot_hash(path.with_suffix(".png").read_bytes()))

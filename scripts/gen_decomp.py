@@ -2,6 +2,7 @@
 """Regenerate decomp/ and DECOMP.md from the built, verified game tools."""
 
 import argparse
+from collections import Counter
 from dataclasses import dataclass
 from hashlib import sha256
 from itertools import combinations
@@ -17,6 +18,11 @@ import zlib
 ROOT = Path(__file__).resolve().parents[1]
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 PNG_HASH_CHUNK = b"tEXtdot-sha256\0"
+TREE_METRICS = (
+    "nodes", "leaves", "internal_nodes", "height", "width", "max_arity",
+    "mean_internal_arity", "branching_nodes", "min_leaf_depth",
+    "mean_leaf_depth", "strahler",
+)
 
 
 @dataclass(frozen=True)
@@ -196,6 +202,42 @@ def player_stats(stats):
     return players
 
 
+def tree_metrics(children, root):
+    """Return subtree metrics and preorder arities; None denotes an empty tree."""
+    if root is None:
+        return dict.fromkeys(TREE_METRICS, 0), ()
+    order, leaf_depths = [], []
+    widths = Counter()
+    stack = [(root, 1)]
+    while stack:
+        name, depth = stack.pop()
+        order.append(name)
+        widths[depth] += 1
+        if not children[name]:
+            leaf_depths.append(depth)
+        stack.extend((child, depth + 1) for child in reversed(children[name]))
+    strahler = {}
+    for name in reversed(order):
+        parts = [strahler[child] for child in children[name]]
+        maximum = max(parts, default=1)
+        strahler[name] = maximum + (parts.count(maximum) >= 2)
+    arities = tuple(len(children[name]) for name in order)
+    internal = len(order) - len(leaf_depths)
+    return dict(
+        nodes=len(order), leaves=len(leaf_depths), internal_nodes=internal,
+        height=len(widths), width=max(widths.values()), max_arity=max(arities),
+        mean_internal_arity=sum(arities) / internal if internal else 0,
+        branching_nodes=sum(arity >= 2 for arity in arities),
+        min_leaf_depth=min(leaf_depths),
+        mean_leaf_depth=sum(leaf_depths) / len(leaf_depths),
+        strahler=strahler[root],
+    ), arities
+
+
+def format_metric(name, value):
+    return f"{value:.3f}" if name.startswith("mean_") else str(value)
+
+
 def tree_info(dot, pm):
     """Read our ordered DOT trees; exclude synthetic and shaved nodes."""
     if pm:
@@ -213,28 +255,9 @@ def tree_info(dot, pm):
         root = next((name for name, label in nodes.items()
                      if (label.startswith('"' + player.title() + " (")
                          if pm else name == player)), None)
-        if root is None or "no non-top measures" in nodes[root]:
-            result.append(((0, 0, 0, 0), ()))
-            continue
-        order, stack = [], [root]
-        while stack:
-            name = stack.pop()
-            order.append(name)
-            stack.extend(reversed(children[name]))
-        metrics = {}
-        for name in reversed(order):
-            parts = [metrics[child] for child in children[name]]
-            if not parts:
-                metrics[name] = (1, 1, 1, 1)
-            else:
-                maximum = max(part[3] for part in parts)
-                metrics[name] = (
-                    1 + sum(part[0] for part in parts),
-                    sum(part[1] for part in parts),
-                    1 + max(part[2] for part in parts),
-                    maximum + (sum(part[3] == maximum for part in parts) > 1),
-                )
-        result.append((metrics[root], tuple(len(children[n]) for n in order)))
+        if root is not None and "no non-top measures" in nodes[root]:
+            root = None
+        result.append(tree_metrics(children, root))
     return result
 
 
@@ -276,11 +299,16 @@ def run_metrics(backend, run, vertices):
     return dict(info=info, won=tuple(won), parameters=parameters)
 
 
-def write_run(folder, backend, run):
+def write_run(folder, backend, run, info):
     folder.mkdir(parents=True, exist_ok=True)
     (folder / (backend.name + ".stats")).write_text(
         f"outcome: {run.outcome}\n" + run.stats, encoding="utf-8")
-    for suffix, content in (("dot", run.dot), ("leaves", run.leaves)):
+    metrics = "" if info is None else "".join(
+        f"{name}: even={format_metric(name, info[0][0][name])} "
+        f"odd={format_metric(name, info[1][0][name])}\n"
+        for name in TREE_METRICS)
+    for suffix, content in (("dot", run.dot), ("leaves", run.leaves),
+                            ("metrics", metrics)):
         path = folder / (backend.name + "." + suffix)
         if content:
             path.write_text(content, encoding="utf-8")
@@ -293,33 +321,60 @@ def generate(root, destination, build_dir, timeout, limit):
         "# Decompositions\n\n"
         "This page is generated; do not hand-edit it. See the "
         "[regeneration instructions](docs/developing.md#regenerating-example-trees).\n\n",
-        "The tables list each example game and the trees found by each backend.\n"
-        "[ALGOS.md](ALGOS.md) explains how the trees are built, their metrics "
-        "and search parameters.\n\n",
-        "Read paired values as Even / Odd, including the parameters. "
-        "Won counts include vertices\n"
-        "solved during preprocessing. Tree metrics cover the remaining game: "
-        "decomposition trees\n"
-        "or the occupied progress-measure trees, including their extra root. "
-        "Heights count nodes.\n"
-        "Empty trees have zero metrics; connector boxes, preprocessed regions "
-        "and unresolved\n"
-        "vertices do not count. These are the metrics of the trees found, "
-        "with no guarantee\n"
-        "that their Strahler numbers are the smallest possible.\n\n",
-        "A `complete` result assigns every vertex to a winner. A `partial` "
-        "result proves wins\n"
-        "for the listed vertices and leaves the rest unresolved. A `host limit` "
-        "means the search\n"
-        "tree exceeded the allowed size; statistics are kept, without a tree. "
-        "A `skipped` row\n"
-        "records a method whose earlier local run exceeded the time shown. "
-        "Unknown winning\n"
-        "counts are `?`; a dash means no value or tree is available. "
-        "Each backend name links\n"
-        "to its run statistics. PNG links open the pictures; DOT links open "
-        "their graph descriptions,\n"
-        "and leaves links list the distinct progress measures.\n\n",
+        "[ALGOS.md](ALGOS.md) explains how each backend builds its trees.\n\n",
+        "| Column | Meaning |\n"
+        "| --- | --- |\n"
+        "| Backend | Solver and shaving variant; the name links to its run statistics. |\n"
+        "| Outcome | `complete` assigns every vertex to a winner; `partial` proves "
+        "the listed wins and leaves the rest unresolved. `host limit` means the "
+        "search tree exceeded the allowed size; statistics are kept without a "
+        "tree. `skipped` means an earlier local run exceeded the time shown. |\n"
+        "| Won | Number of game vertices certified as wins, including all shaving "
+        "rounds and their attractors, once per vertex. |\n"
+        "| Nodes | Number of nodes in the result tree. Several game vertices can "
+        "belong to one tree node. |\n"
+        "| Leaves | Number of tree nodes with no children. |\n"
+        "| Height | Number of nodes on the longest path from the root to a leaf. |\n"
+        "| Parameters | Final search bounds: lifting uses `H` (host height), "
+        "`K` (Strahler bound), `t` (size allowance); `pm-strahler` uses `k` "
+        "(Strahler bound), `t` (size allowance), `depth` (number of measure "
+        "levels); `pm-succinct` uses `bits` (bit budget per measure) and `depth`. "
+        "Zielonka methods have no search parameters. |\n"
+        "| Tree | PNG links open the pictures; DOT links open their graph "
+        "descriptions; leaves links list the distinct progress measures; "
+        "metrics links give the final tree statistics. |\n\n",
+        "Paired values, including parameters, use Even / Odd (E / O). Unknown\n"
+        "winning counts are `?`; a dash means no value or tree is available.\n\n",
+        "Tree metrics cover the remaining game's decomposition trees or occupied\n"
+        "progress-measure trees, including their extra root. Empty trees have "
+        "zero metrics;\n"
+        "connector boxes, shaved regions and unresolved vertices do not count.\n\n",
+        "The `.metrics` files have one line per field, with `even=` and `odd=` "
+        "values.\n"
+        "Depth counts nodes from the root (depth 1); means have three decimal "
+        "places.\n\n"
+        "- `nodes`: Number of nodes in the result tree. Several game vertices "
+        "can belong to one tree node.\n"
+        "- `leaves`: Number of tree nodes with no children.\n"
+        "- `internal_nodes`: Number of tree nodes with at least one child.\n"
+        "- `height`: Number of nodes on the longest path from the root to a leaf.\n"
+        "- `width`: Largest number of nodes on one level.\n"
+        "- `max_arity`: Largest number of children of one node.\n"
+        "- `mean_internal_arity`: Mean number of children over internal nodes; "
+        "zero if there are none.\n"
+        "- `branching_nodes`: Number of tree nodes with at least two children.\n"
+        "- `min_leaf_depth`: Fewest nodes on a path from the root to a leaf.\n"
+        "- `mean_leaf_depth`: Mean number of nodes on a path from the root to a leaf, "
+        "over all leaves.\n"
+        "- `strahler`: A leaf has value 1. At an internal node, take the largest "
+        "child value and add 1 if at least two children share that largest value. "
+        "The tree's value is the root's value.\n\n"
+        "Each player's Strahler number is the smallest Strahler number among that\n"
+        "player's attractor decompositions; the game's Strahler number is the larger of\n"
+        "the two. For a complete result without shaving, the larger of the reported Even\n"
+        "and Odd values is an upper bound for the game's.\n"
+        "With shaving or partial results, the metrics describe only the represented\n"
+        "residual region.\n\n",
         "## Preprocessing and shaving\n\n",
         "The `+pre` rows pass `--initial-shave=all --compress` before running the "
         "selected solver:\n\n",
@@ -331,12 +386,12 @@ def generate(root, destination, build_dir, timeout, limit):
         "whose owner matches their priority's parity or whose loop is the "
         "only remaining move; cycles whose vertices are all owned by one "
         "player and whose highest priority has that player's parity. "
-        "Remove each region's attractor too, Even before Odd: these are the vertices "
-        "from which its winner can force play into the region. Repeat the "
+        "Remove each region's attractor too, Even before Odd. The attractor contains "
+        "the vertices from which its winner can force play into the region. Repeat the "
         "rules until a full pass removes nothing.\n",
         "3. Run the solver on the remainder. Shaved regions appear separately "
-        "and count towards Won, once per vertex, but are excluded from tree "
-        "metrics. If nothing remains, the result is complete with empty "
+        "and count towards Won, once per vertex. Tree metrics exclude them. "
+        "If nothing remains, the result is complete with empty "
         "trees. Displayed priorities normally use the original scale; a "
         "merged level uses its largest original priority.\n\n",
         "Adaptive solvers use the remainder's priority and size bounds. "
@@ -345,14 +400,18 @@ def generate(root, destination, build_dir, timeout, limit):
         "The `+iter` rows add `--iter-shave`, available only for lifting-based "
         "backends, including progress measures. After lifting stabilises, "
         "remove certified dominions and their attractors, then retry the "
-        "remainder. Fixed hosts are reused; adaptive lifting advances to the "
-        "next t on the smaller game, keeping the initial residual's host bounds. "
+        "remainder. Fixed host bounds stay the same. Adaptive lifting advances to the "
+        "next t on the smaller game, keeping the initial residual's host bounds.\n\n"
         "Shaved rounds show the round and t that certified them; progress "
-        "measures print a graph per round with its parameters. Won counts all "
+        "measures print a graph per round with its parameters.\n\n"
+        "Won counts all "
         "rounds and initial shaving, including attracted vertices, once each. "
         "Tree metrics and parameters describe only the final round: the "
         "residual decomposition or occupied measure tree, excluding earlier "
-        "certificates and attracted vertices. `+pre+iter` combines both steps.\n\n",
+        "certificates and attracted vertices.\n\n"
+        "Progress measures process Even's "
+        "dominion and attractor before running Odd on the remainder. "
+        "`+pre+iter` combines both steps.\n\n",
         "Source: [Oink, TACAS 2018](https://arxiv.org/abs/1801.03859), "
         "trivial dominions and priority compression.\n\n",
         "## Inventory\n",
@@ -378,7 +437,7 @@ def generate(root, destination, build_dir, timeout, limit):
                 assert all(r["won"] == metrics["won"] for r in records
                            if r["run"].outcome == "complete"), (
                                f"{game.name}: winning sizes disagree")
-            write_run(folder, backend, run)
+            write_run(folder, backend, run, metrics["info"])
             records.append(dict(name=name, backend=backend, run=run, **metrics))
             print(f"  {name}: {run.outcome}", flush=True)
         complete = next((r["won"] for r in records
@@ -390,23 +449,24 @@ def generate(root, destination, build_dir, timeout, limit):
             f"| {vertices} | {edges} | {priorities} | {maximum} | "
             f"{pair(complete)} |\n\n",
             "| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | "
-            "Height E / O | Strahler E / O | Parameters E / O | Tree |\n",
-            "| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n",
+            "Height E / O | Parameters E / O | Tree |\n",
+            "| --- | --- | --- | --- | --- | --- | --- | --- |\n",
         ])
         for record in records:
             name, run, info = record["name"], record["run"], record["info"]
             link = f"decomp/{game.stem}/{name}"
             columns = [f"[{name}]({link}.stats)", run.outcome]
             if info is None:
-                columns.extend(["—"] * 7)
+                columns.extend(["—"] * 6)
             else:
                 columns.append(pair(record["won"]))
-                columns.extend(pair(part[0][i] for part in info)
-                               for i in range(4))
+                columns.extend(pair(part[0][name] for part in info)
+                               for name in ("nodes", "leaves", "height"))
                 columns.append(pair(record["parameters"]))
                 columns.append(f"[PNG]({link}.png) · [DOT]({link}.dot)")
                 if run.leaves:
                     columns[-1] += f" · [leaves]({link}.leaves)"
+                columns[-1] += f" · [metrics]({link}.metrics)"
             lines.append("| " + " | ".join(columns) + " |\n")
         for left, right in combinations(records, 2):
             if (any((flag in left["backend"].options) !=
@@ -418,9 +478,10 @@ def generate(root, destination, build_dir, timeout, limit):
                 continue
             for player, (a, b) in enumerate(zip(left["info"], right["info"])):
                 if a[1] != b[1]:
-                    changed = [label for i, label in enumerate(
-                        ("nodes", "leaves", "height", "Strahler"))
-                        if a[0][i] != b[0][i]]
+                    changed = [label for name, label in (
+                        ("nodes", "nodes"), ("leaves", "leaves"),
+                        ("height", "height"), ("strahler", "Strahler"))
+                        if a[0][name] != b[0][name]]
                     player_name = "Even" if player == 0 else "Odd"
                     detail = "; " + ", ".join(changed) if changed else ""
                     disagreements.append(
@@ -428,17 +489,12 @@ def generate(root, destination, build_dir, timeout, limit):
                         f"{right['name']} | ordered shape{detail} |\n")
     lines.extend([
         "\n## Tree disagreements\n\n",
-        "These pairs produced different tree shapes despite agreeing on the "
-        "winners.\n"
-        "The comparison includes child order and uses only complete results "
-        "with the same\n"
-        "preprocessing and iterative-shaving choices. Decomposition methods are compared with each "
-        "other, as are\n"
-        "progress-measure methods; the two families describe different things. "
-        "Trees with\n"
-        "the same shape are omitted even if their vertex sets differ. "
-        "Shortened labels in\n"
-        "the pictures cannot establish whether full sets match. See "
+        "These pairs agree on the winners but differ in ordered tree shape. Only\n"
+        "complete results with matching preprocessing and iterative-shaving choices\n"
+        "are compared. Decomposition methods are compared with each other, as are\n"
+        "progress-measure methods, because the two families describe different things.\n\n"
+        "Trees with the same shape are omitted even if their vertex sets differ.\n"
+        "Shortened picture labels cannot establish whether full sets match. See\n"
         "[the disagreement study](docs/disagreements.md)\n"
         "for comparisons of full vertex sets and smaller trees.\n\n",
         "| Game | Player | Backend A | Backend B | Differences |\n",

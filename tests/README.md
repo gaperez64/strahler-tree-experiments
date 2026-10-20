@@ -10,6 +10,11 @@ Meson builds the C unit tests and runs the command-line regression cases.
   leaf selection when counts saturate.
 - `test_source_version.py` builds a source copy inside an unrelated tagged
   checkout and checks that its version has no Git suffix.
+- `test_gen_decomp.py` checks every tree metric on hand-built, empty and
+  progress-measure trees, including node-based leaf depths. It also checks
+  deterministic inventory and `.metrics` generation, stale outputs and PNG reuse.
+- `test_make_trees.py` checks batch generation, final-round metrics, agreement
+  between `.metrics` files and CSV columns, solver errors and optional Graphviz.
 - `test-wrappers.sh` checks wrapper forwarding and propagation of memory-check
   failures through the golden harness.
 - `test_ordered_tree.c` tests the owned compact-leaf tree, including stable
@@ -126,7 +131,7 @@ tests compare complete label arrays and trees with cold lifting, including
 partial results, start values, caps and host budgets.
 
 `test_ad_sym` compares all four solvers against the enumerating reference on
-600 deterministic random games (up to 12 vertices and priorities 0–6), with
+600 deterministic random games (up to 12 vertices and priorities 0 to 6), with
 and without shaving/compression. Restricted unary, binary, and uneven file
 hosts must agree with ordinary lifting's certified dominions; every classic
 and tree-relative decomposition verifies. `thesis_h4/h8.pg` and `thesis_f4/f8.pg`
@@ -151,11 +156,10 @@ meson test -C build --print-errorlogs
 ```
 
 `ci/check-valgrind.sh build` runs the native tests under Valgrind, excluding
-the `python` and `graphviz` suites, using exit code 99 to fail even expected-failure
-cases on memory errors. Python and Graphviz tests still run in the regular test
-job. The script sets
-`STRAHLER_TEST_WRAPPER` so golden, stdin, and version harnesses also wrap their
-child binaries. Wrapper arguments are whitespace-separated, without shell
+the `python` and `graphviz` suites. Memory errors exit 99, failing even
+expected-failure cases. Python and Graphviz tests still run in the regular
+test job. The script sets `STRAHLER_TEST_WRAPPER` so golden, stdin, and version
+harnesses also wrap their child binaries. Wrapper arguments are whitespace-separated, without shell
 evaluation. Valgrind's `--quiet` keeps successful runs' goldens unchanged;
 memory errors appear in the Meson error logs.
 
@@ -209,7 +213,7 @@ change untruncated Strahler tails even when winning regions agree. Oink keeps
 its default parity-preserving priority renumbering. Stream runs disable
 single-parity, self-loop and winner-controlled-cycle preprocessing. Ours uses
 `--iter-shave --format=leaves`; succinct fixes `--bits=ceil(log2(n))` to match
-`--sspm`, rather than our default bounded schedule. The comparison selects the
+`--sspm`, bypassing our default bounded schedule. The comparison selects the
 last round's last-run player (Oink's counter player is our winner's opponent)
 and checks a multiset of the exact printed branches, retaining multiplicities.
 It also checks the final parameters and winning regions. With preprocessing
@@ -242,14 +246,15 @@ reports these missing streams separately, requires the partial regions to
 agree, and still compares full shaved winners. If shaved Oink Strahler also
 exhausts, Oink's `--zlk` supplies that full winning partition.
 
-The live test found and fixed a port mismatch: Oink's `uintqueue` is LIFO,
-and its incoming edges are built in reverse priority order. Our FIFO queue
-and ID-ordered incoming edges changed the final untruncated Strahler measures.
+Oink's `uintqueue` is LIFO, and its incoming edges are built in reverse
+priority order. The port initially used a FIFO queue and ID-ordered incoming
+edges, which changed the final untruncated Strahler measures. The live test
+exposed this mismatch, and the port now follows Oink's order.
 `test_lifo_order` retains a five-vertex reproducer that fails with FIFO.
 
 Seed 0 validation checked 506 games per algorithm: 500 generated, one quick
-example and five fixtures. With the printer patch, there were **zero stream
-or winning-region mismatches**: 502 Strahler streams and 506 succinct streams
+example and five fixtures. With the printer patch, there were no stream
+or winning-region mismatches: 502 Strahler streams and 506 succinct streams
 were compared. Four Strahler cases had matching partial results with no Oink
 stream (three generated games plus the search-limit fixture). The large
 `cabp_swp.ehoa.pg` example exceeded the timeout for both algorithms. The regular

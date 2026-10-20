@@ -1,9 +1,9 @@
 # Zielonka versus attractor-decomposition lifting
 
 The final trees can differ for either player. Neither algorithm minimizes
-leaf count or Strahler number: there are checked counterexamples in **both
-directions for both metrics**. Their heights can differ too. Ordered tree
-embedding can be incomparable even on four vertices.
+leaf count or Strahler number: checked counterexamples go in both directions
+for both metrics. Heights can differ too. Even four-vertex games can give
+ordered trees that do not embed in each other.
 
 The least-labelling statement is different: in a fixed host containing a
 Zielonka witness, lifting's labelling is pointwise no larger than the
@@ -32,7 +32,7 @@ counted. Every C run verifies its witness; the experiment uses no
 
 The main sample has seed 20261019, exactly two distinct uniformly sampled
 successors per vertex (clamped at n), independent uniform owners, and
-uniform priorities in `0..2h-1`. Here **h is the generator parameter**, not
+uniform priorities in `0..2h-1`. Here h is the generator parameter, not
 necessarily the compact host height H: priorities may be absent, and the
 two players have different parity bounds. It completed 109,413 games in
 751 CPU seconds, plus 48 deterministic ladder/nested-cycle cases and the
@@ -82,7 +82,7 @@ sets; `test_research` checks them against fresh verified C runs.
 | [disagree_odd_strahler.pg](../tests/games/disagree_odd_strahler.pg) | Odd | 5 | `(((),),)` | `(((),()),)` | Strahler 1 vs 2; 1 vs 2 leaves |
 | [disagree_zielonka_height.pg](../tests/games/disagree_zielonka_height.pg) | Even | 13 | `(((),),)` | `(((),((),)),)` | height 3 vs 4; Strahler 1 vs 2 |
 
-Each fixture is **1-minimal for its stated disagreement** under vertex
+Each fixture is 1-minimal for its stated disagreement under vertex
 deletion, edge deletion and individual priority lowering: none of those
 single edits preserves the selected difference while keeping a total game.
 Vertex deletion removes incident edges and renumbers the survivors; edits
@@ -108,7 +108,7 @@ winning region as the next child core. Lifting instead tries to place the
 next certified core in the next available host branch. That branch can be
 too narrow for Zielonka's whole core, so lifting finishes a smaller core
 there, attracts to it, and continues in later branches. This changes the
-subgames passed to recursive children, not just a drawing convention.
+subgames passed to recursive children.
 
 The default universal host contains every Zielonka decomposition: it has
 enough height, at most n leaves are needed, and Strahler is at most
@@ -124,9 +124,8 @@ Across unspecified embeddings or hosts, bare shapes have no such intrinsic
 pointwise order. In particular, the four-vertex shapes do not embed in
 each other.
 
-**Same shape implies the same attached sets for these two algorithms.**
-There were no same-shape/different-set cases. There is also a structural
-reason, rather than just sampling evidence. If the shapes agree, embed the
+For these two algorithms, equal shapes imply equal attached sets. The sample
+had no same-shape/different-set cases. To prove this, embed the
 Zielonka witness along exactly the occupied nodes of the lifting witness.
 Leastness gives the same pointwise inequality. Both root top attractors are
 the unique attractor to the root priority. In the remainder, every vertex
@@ -138,8 +137,8 @@ is contained in the whole winning region of Zielonka's lower subgame, its
 first core. The two cores are equal. Their attractors are consequently
 equal. Induct within the child and then over the remaining siblings. This
 proves equality of every stored and derived set when the ordered shapes
-agree. For differing shapes, the goldens preserve all sets rather than
-pretending that differently located nodes have a canonical correspondence.
+agree. For differing shapes, the goldens preserve all sets; nodes at different
+positions have no canonical correspondence.
 
 The metrics are not monotone consequences of this pointwise order. The
 eight-vertex example has more lifting leaves; the five-vertex Odd example
@@ -155,8 +154,8 @@ larger lifting height; no general height inequality is claimed.
 algorithms. The large `cabp_swp.ehoa.pg` cannot be compared with the default
 lifting settings: its Even host `U^2_{19,2}` has 1,048,575 leaves, exceeding
 the default 1,000,000 limit. Timed attempts and their outcomes are recorded
-in [research/examples.json](research/examples.json); this is a resource
-exclusion, not a decomposition disagreement.
+in [research/examples.json](research/examples.json). The host limit excludes
+this game from the comparison.
 
 ```sh
 python3 scripts/find_disagreements.py --samples=10000 --cpu-seconds=750 \
