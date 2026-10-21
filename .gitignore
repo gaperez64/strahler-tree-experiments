@@ -17,6 +17,7 @@ __pycache__/
 
 # Test artifacts
 tests/actual/
+keiren/*.lock
 
 .vscode/
 visualizations/

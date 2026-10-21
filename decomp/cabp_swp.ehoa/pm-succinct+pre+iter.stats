@@ -56,3 +56,4 @@ iter-shave: rounds=14 shaved=13632
 succinct: round=14 result=complete unresolved=0
 even: bits=1 depth=1 vertices=13632 lifts=39929 attempts=60202 non_top=0 top=13632 attracted=0
 odd: bits=1 depth=2 vertices=13632 lifts=23856 attempts=35396 non_top=13632 top=0 attracted=0
+start: vertex=0 winner=odd

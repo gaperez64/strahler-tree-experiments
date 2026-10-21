@@ -4,6 +4,7 @@ iter-shave: round=1 shaved=5 even=4 odd=1
 iter-shave: round=2 shaved=2 even=2 odd=0
 lifting even: root_level=4 H=3 k_full=3 host=file host_nodes=3 host_leaves=1 positions=9 rounds=1 lifts=2 top=0 region=2 tree_nodes=2 tree_leaves=1 tree_height=2 strahler=1
 lifting odd: root_level=5 H=3 k_full=3 host=file host_nodes=3 host_leaves=1 positions=9 rounds=5 lifts=9 top=2 region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+start: vertex=0 winner=even
 digraph attractor_decompositions {
   graph [rankdir=TB, ordering=out];
   node [shape=box];

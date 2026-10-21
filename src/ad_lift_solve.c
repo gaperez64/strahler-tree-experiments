@@ -139,7 +139,9 @@ typedef enum {
                 k, t, height);
     return HOST_FAILED;
   }
-  if (leaves == UINT_MAX || leaves > solver->options->max_host_leaves) {
+  // SIZE_MAX allows resource budgets to govern hosts beyond counter saturation.
+  if (solver->options->max_host_leaves != SIZE_MAX &&
+      (leaves == UINT_MAX || leaves > solver->options->max_host_leaves)) {
     char message[sizeof(solver->error->message)];
     (void)snprintf(message, sizeof(message),
                    "the %s host U^%zu_{%zu,%zu} has %s%u leaves, more than the "
@@ -236,18 +238,14 @@ typedef enum {
 }
 
 [[nodiscard]] static bool covered(Solver const *solver) {
-  PGSet rest = {0};
-  if (!pg_set_clone(&rest, solver->domain)) {
-    return false;
-  }
-  for (size_t player = 0; player < 2; player++) {
-    if (solver->outcome[player].dominion.bit_count != 0) {
-      pg_set_subtract_into(&rest, &solver->outcome[player].dominion);
+  for (size_t vertex = pg_set_next(solver->domain, 0); vertex != SIZE_MAX;
+       vertex = pg_set_next(solver->domain, vertex + 1)) {
+    if (!pg_set_contains(&solver->outcome[0].dominion, vertex) &&
+        !pg_set_contains(&solver->outcome[1].dominion, vertex)) {
+      return false;
     }
   }
-  bool const result = pg_set_empty(&rest);
-  pg_set_destroy(&rest);
-  return result;
+  return true;
 }
 
 [[nodiscard]] static size_t smaller(size_t const left, size_t const right) {

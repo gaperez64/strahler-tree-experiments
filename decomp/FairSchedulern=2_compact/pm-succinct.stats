@@ -2,3 +2,4 @@ outcome: complete
 succinct: round=2 result=complete unresolved=0
 even: bits=2 depth=7 vertices=5596 lifts=23359 attempts=344535 non_top=5596 top=0 attracted=0
 odd: bits=2 depth=8 vertices=5596 lifts=156575 attempts=2569338 non_top=0 top=5596 attracted=0
+start: vertex=0 winner=even

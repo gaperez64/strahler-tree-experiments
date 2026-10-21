@@ -11,3 +11,4 @@ iter-shave: rounds=3 shaved=5583
 succinct: round=3 result=complete unresolved=0
 even: bits=2 depth=7 vertices=5583 lifts=23353 attempts=343414 non_top=5583 top=0 attracted=0
 odd: bits=2 depth=8 vertices=0 lifts=0 attempts=0 non_top=0 top=0 attracted=0
+start: vertex=0 winner=even

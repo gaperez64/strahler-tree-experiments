@@ -25,6 +25,42 @@ TREE_METRICS = (
 )
 
 
+PARAMETERS_GUIDE = (
+    "Final search bounds: lifting uses `H` (host height), `K` (Strahler bound), "
+    "`t` (size allowance); `pm-strahler` uses `k` (Strahler bound), "
+    "`t` (size allowance), `depth` (number of measure levels); "
+    "`pm-succinct` uses `bits` (bit budget per measure) and `depth`. "
+    "Zielonka methods have no search parameters."
+)
+
+TREE_METRIC_GUIDE = (
+    "Depth counts nodes from the root (depth 1); means have three decimal "
+    "places.\n\n"
+    "- `nodes`: Number of nodes in the result tree. Several game vertices "
+    "can belong to one tree node.\n"
+    "- `leaves`: Number of tree nodes with no children.\n"
+    "- `internal_nodes`: Number of tree nodes with at least one child.\n"
+    "- `height`: Number of nodes on the longest path from the root to a leaf.\n"
+    "- `width`: Largest number of nodes on one level.\n"
+    "- `max_arity`: Largest number of children of one node.\n"
+    "- `mean_internal_arity`: Mean number of children over internal nodes; "
+    "zero if there are none.\n"
+    "- `branching_nodes`: Number of tree nodes with at least two children.\n"
+    "- `min_leaf_depth`: Fewest nodes on a path from the root to a leaf.\n"
+    "- `mean_leaf_depth`: Mean number of nodes on a path from the root to a leaf, "
+    "over all leaves.\n"
+    "- `strahler`: A leaf has value 1. At an internal node, take the largest "
+    "child value and add 1 if at least two children share that largest value. "
+    "The tree's value is the root's value.\n\n"
+    "Each player's Strahler number is the smallest Strahler number among that\n"
+    "player's attractor decompositions; the game's Strahler number is the larger of\n"
+    "the two. For a complete result without shaving, the larger of the reported Even\n"
+    "and Odd values is an upper bound for the game's.\n"
+    "With shaving or partial results, the metrics describe only the represented\n"
+    "residual region.\n\n"
+)
+
+
 @dataclass(frozen=True)
 class Backend:
     name: str
@@ -160,17 +196,22 @@ def invoke(command, game, root, build_dir, timeout):
     return Run(outcomes[-1], stats, result.stdout)
 
 
-def run_backend(backend, game, root, build_dir, timeout, limit, *, skip_runs=False,
-                compare_adaptive=True):
-    if skip_runs and (game.name, backend.name) in SKIP_RUNS:
-        seconds = SKIP_RUNS[game.name, backend.name]
-        return Run(f"skipped (> {seconds:g} s locally)")
+def backend_command(backend, game, build_dir, limit):
     command = [str(build_dir / backend.binary), *backend.options,
                "--player=both", "--stats",
                "--labels=" + GAME_LABELS.get(game.stem, "sets"),
                f"--max-set-items={MAX_SET_ITEMS}"]
     if backend.binary == "pg2adot" and backend.name.startswith("lifting"):
         command.append(f"--max-host-leaves={limit}")
+    return command
+
+
+def run_backend(backend, game, root, build_dir, timeout, limit, *, skip_runs=False,
+                compare_adaptive=True):
+    if skip_runs and (game.name, backend.name) in SKIP_RUNS:
+        seconds = SKIP_RUNS[game.name, backend.name]
+        return Run(f"skipped (> {seconds:g} s locally)")
+    command = backend_command(backend, game, build_dir, limit)
     run = invoke(command, game, root, build_dir, timeout)
     if run.outcome not in ("complete", "partial"):
         return run
@@ -290,13 +331,32 @@ def run_metrics(backend, run, vertices):
             count += int(current.get("non_top" if pm else "region",
                                      current.get("dominion", 0)))
         won.append(count)
-    if run.outcome == "complete":
+    if run.outcome == "complete" and vertices is not None:
         assert sum(won) == vertices, "incomplete regions"
     parameters = tuple(
         ", ".join(f"{key}={s[key]}" for key in
                   ("H", "K", "k", "t", "bits", "depth") if key in s) or "—"
         for s in stats)
     return dict(info=info, won=tuple(won), parameters=parameters)
+
+
+SUMMARY_FIELDS = ["game", "backend", "outcome", "vertices", "edges",
+                  "distinct_priorities", "maximum_priority"] + [
+    f"{metric}_{player}" for metric in ("won", *TREE_METRICS, "parameters")
+    for player in ("even", "odd")]
+
+
+def metric_columns(metrics):
+    if metrics["info"] is None:
+        return {}
+    row = {}
+    for p, player in enumerate(("even", "odd")):
+        row[f"won_{player}"] = metrics["won"][p]
+        row[f"parameters_{player}"] = metrics["parameters"][p]
+        for metric in TREE_METRICS:
+            row[f"{metric}_{player}"] = format_metric(
+                metric, metrics["info"][p][0][metric])
+    return row
 
 
 def write_run(folder, backend, run, info):
@@ -335,11 +395,7 @@ def generate(root, destination, build_dir, timeout, limit):
         "belong to one tree node. |\n"
         "| Leaves | Number of tree nodes with no children. |\n"
         "| Height | Number of nodes on the longest path from the root to a leaf. |\n"
-        "| Parameters | Final search bounds: lifting uses `H` (host height), "
-        "`K` (Strahler bound), `t` (size allowance); `pm-strahler` uses `k` "
-        "(Strahler bound), `t` (size allowance), `depth` (number of measure "
-        "levels); `pm-succinct` uses `bits` (bit budget per measure) and `depth`. "
-        "Zielonka methods have no search parameters. |\n"
+        "| Parameters | " + PARAMETERS_GUIDE + " |\n"
         "| Tree | PNG links open the pictures; DOT links open their graph "
         "descriptions; leaves links list the distinct progress measures; "
         "metrics links give the final tree statistics. |\n\n",
@@ -350,31 +406,8 @@ def generate(root, destination, build_dir, timeout, limit):
         "zero metrics;\n"
         "connector boxes, shaved regions and unresolved vertices do not count.\n\n",
         "The `.metrics` files have one line per field, with `even=` and `odd=` "
-        "values.\n"
-        "Depth counts nodes from the root (depth 1); means have three decimal "
-        "places.\n\n"
-        "- `nodes`: Number of nodes in the result tree. Several game vertices "
-        "can belong to one tree node.\n"
-        "- `leaves`: Number of tree nodes with no children.\n"
-        "- `internal_nodes`: Number of tree nodes with at least one child.\n"
-        "- `height`: Number of nodes on the longest path from the root to a leaf.\n"
-        "- `width`: Largest number of nodes on one level.\n"
-        "- `max_arity`: Largest number of children of one node.\n"
-        "- `mean_internal_arity`: Mean number of children over internal nodes; "
-        "zero if there are none.\n"
-        "- `branching_nodes`: Number of tree nodes with at least two children.\n"
-        "- `min_leaf_depth`: Fewest nodes on a path from the root to a leaf.\n"
-        "- `mean_leaf_depth`: Mean number of nodes on a path from the root to a leaf, "
-        "over all leaves.\n"
-        "- `strahler`: A leaf has value 1. At an internal node, take the largest "
-        "child value and add 1 if at least two children share that largest value. "
-        "The tree's value is the root's value.\n\n"
-        "Each player's Strahler number is the smallest Strahler number among that\n"
-        "player's attractor decompositions; the game's Strahler number is the larger of\n"
-        "the two. For a complete result without shaving, the larger of the reported Even\n"
-        "and Odd values is an upper bound for the game's.\n"
-        "With shaving or partial results, the metrics describe only the represented\n"
-        "residual region.\n\n",
+        "values.\n",
+        TREE_METRIC_GUIDE,
         "## Preprocessing and shaving\n\n",
         "The `+pre` rows pass `--initial-shave=all --compress` before running the "
         "selected solver:\n\n",

@@ -2,3 +2,4 @@ outcome: complete
 zielonka-sym: vertices=875281 result=complete calls=15 attractors=71 moves=29 sets=57 certification_lifts=0 separator=0
 zielonka-sym even: region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
 zielonka-sym odd: region=875281 tree_nodes=15 tree_leaves=14 tree_height=2 strahler=2
+start: vertex=0 winner=odd

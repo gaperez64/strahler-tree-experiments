@@ -3,6 +3,7 @@ zielonka: vertices=0 result=complete
 zielonka: calls=0 attractors=0
 zielonka even: region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
 zielonka odd: region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+start: vertex=0 winner=even
 digraph attractor_decompositions {
   graph [rankdir=TB, ordering=out];
   node [shape=box];

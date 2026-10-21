@@ -8,3 +8,4 @@ iter-shave: round=2 t=1 shaved=5583 even=5583 odd=0
 lifting: first_complete_t=1 even_first_full_t=1 odd_first_full_t=0 budget_exhausted=no
 lifting even: root_level=10 H=6 k_full=6 host=strahler K=2 t=1 host_nodes=92 host_leaves=27 positions=276 rounds=137 lifts=21799 top=0 total_lifts=40047 region=5583 tree_nodes=17 tree_leaves=6 tree_height=5 strahler=2
 lifting odd: root_level=11 H=6 k_full=6 host=strahler K=2 t=1 host_nodes=92 host_leaves=27 positions=276 rounds=525 lifts=204018 top=5583 total_lifts=227848 region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+start: vertex=0 winner=even

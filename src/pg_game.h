@@ -21,6 +21,9 @@ typedef struct {
   size_t vertex_count;
   size_t edge_count;
   uint64_t max_priority;
+  /* File's start ID (default 0) and its dense index, or SIZE_MAX if absent. */
+  uint64_t start_id;
+  size_t start_vertex;
 
   PGVertex *vertices;
 

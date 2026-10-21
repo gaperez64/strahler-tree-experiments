@@ -66,6 +66,7 @@ static void test_sparse_dense_graph(void) {
   assert(game.vertex_count == 2);
   assert(game.edge_count == 3);
   assert(game.max_priority == 7);
+  assert(game.start_id == 0 && game.start_vertex == SIZE_MAX);
   assert(game.vertices[0].external_id == 10);
   assert(game.vertices[0].priority == 2);
   assert(game.vertices[0].owner == PG_EVEN);
@@ -133,6 +134,7 @@ static void test_start_directive(void) {
                       "0 0 0 0;\n");
   assert(game.vertex_count == 1);
   assert(game.vertices[0].external_id == 0);
+  assert(game.start_id == UINT64_MAX && game.start_vertex == SIZE_MAX);
   char *written = write_game(&game, true);
   assert(strcmp(written, "parity 0;\n0 0 0 0;\n") == 0);
   free(written);
@@ -141,7 +143,16 @@ static void test_start_directive(void) {
   PGGame headerless = parse("start 999;\n7 1 1 7;\n");
   assert(headerless.vertex_count == 1);
   assert(headerless.vertices[0].external_id == 7);
+  assert(headerless.start_id == 999 && headerless.start_vertex == SIZE_MAX);
   pg_game_destroy(&headerless);
+
+  PGGame sparse = parse("start 20;\n20 1 1 20;\n3 0 0 3;\n");
+  assert(sparse.start_id == 20 && sparse.start_vertex == 1);
+  pg_game_destroy(&sparse);
+
+  PGGame implicit = parse("0 0 0 0;\n");
+  assert(implicit.start_id == 0 && implicit.start_vertex == 0);
+  pg_game_destroy(&implicit);
 }
 
 static void test_priority_map(void) {

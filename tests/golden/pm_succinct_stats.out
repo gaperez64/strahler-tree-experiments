@@ -1,5 +1,6 @@
 succinct: round=1 result=complete unresolved=0
 even: bits=1 depth=1 vertices=2 lifts=1 attempts=3 non_top=2 top=0 attracted=0
 odd: bits=1 depth=2 vertices=2 lifts=6 attempts=8 non_top=0 top=2 attracted=0
+start: vertex=0 winner=even
 even: e|0|
 odd: 

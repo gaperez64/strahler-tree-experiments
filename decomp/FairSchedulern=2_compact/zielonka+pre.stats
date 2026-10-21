@@ -4,3 +4,4 @@ zielonka: vertices=5583 result=complete
 zielonka: calls=26 attractors=49
 zielonka even: region=5583 tree_nodes=17 tree_leaves=8 tree_height=5 strahler=3
 zielonka odd: region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+start: vertex=0 winner=even

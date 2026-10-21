@@ -103,6 +103,7 @@ static void usage(FILE *out, char *argv[]) {
       if (resized == nullptr) {
         free(text);
         (void)fclose(stream);
+        errno = ENOMEM;
         return nullptr;
       }
       text = resized;
@@ -479,7 +480,7 @@ int main(int argc, char *argv[argc + 1]) {
   if (tree_path != nullptr) {
     char *text = read_file(tree_path);
     if (text == nullptr) {
-      fprintf(stderr, "Cannot read %s\n", tree_path);
+      fprintf(stderr, "Cannot read %s: %s\n", tree_path, strerror(errno));
       return EXIT_IO;
     }
     OrderedTreeError tree_error = {0};
@@ -537,6 +538,7 @@ int main(int argc, char *argv[argc + 1]) {
 
   PGPreprocessResult preprocessed = {0};
   ADResult result = {0};
+  errno = 0;
   if (!pg_preprocess(&game, &preprocess_options, &preprocessed)) {
     fputs("Failed to preprocess the game\n", stderr);
     status = EXIT_SOLVER;
@@ -657,6 +659,24 @@ int main(int argc, char *argv[argc + 1]) {
     }
   }
 
+  if (print_stats) {
+    char const *winner = "unresolved";
+    for (size_t candidate = 0; candidate < 2; candidate++) {
+      bool won =
+          pg_set_contains(&preprocessed.won[candidate], game.start_vertex) ||
+          pg_set_contains(&result.region[candidate], game.start_vertex);
+      for (size_t round = 0; round < result.shave_count; round++) {
+        won = won || pg_set_contains(&result.shaves[round].attracted[candidate],
+                                     game.start_vertex);
+      }
+      if (won) {
+        winner = candidate == PG_EVEN ? "even" : "odd";
+      }
+    }
+    fprintf(stderr, "start: vertex=%" PRIu64 " winner=%s\n", game.start_id,
+            winner);
+  }
+
   PGPriorityMap const *display_map = priority_mode == PRIORITY_MODE_ORIGINAL
                                          ? &preprocessed.priority_map
                                          : nullptr;
@@ -665,8 +685,16 @@ int main(int argc, char *argv[argc + 1]) {
     fputs("Failed to write DOT output\n", stderr);
     status = EXIT_IO;
   }
+  if (fflush(stdout) != 0 || fflush(stderr) != 0 || ferror(stdout) ||
+      ferror(stderr)) {
+    status = EXIT_IO;
+  }
 
 cleanup:
+  // Boolean solver/output APIs propagate allocation failure through errno.
+  if (status != EXIT_SUCCESS && errno == ENOMEM) {
+    fputs("Failed to allocate memory\n", stderr);
+  }
   ad_result_destroy(&result);
   pg_preprocess_destroy(&preprocessed);
   pg_game_destroy(&game);

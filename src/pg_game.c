@@ -65,6 +65,7 @@ typedef struct {
   size_t declaration_capacity;
   bool has_header;
   uint64_t header_maximum;
+  uint64_t start_id;
 } Parser;
 
 static void set_error(PGParseError *error, size_t const line,
@@ -108,7 +109,7 @@ static void set_error(PGParseError *error, size_t const line,
     ArrayGrowth const growth = grow_array(result, capacity, sizeof(*result));
     if (!growth.succeeded) {
       free(result);
-      set_error(error, 1, 1, "failed to terminate the input buffer");
+      set_error(error, 1, 1, "failed to allocate the input buffer terminator");
       return false;
     }
     result = growth.data;
@@ -430,6 +431,7 @@ failure:
                 "expected a vertex identifier after 'start'")) {
       return false;
     }
+    parser->start_id = parser->token.natural;
     parser_advance(parser);
     if (!expect(parser, TOKEN_SEMICOLON,
                 "expected ';' after the start directive")) {
@@ -572,6 +574,8 @@ retain_last_declarations(TempDeclaration *declarations, size_t const count) {
     edge_count += declaration->successor_count;
   }
   game->edge_count = edge_count;
+  game->start_id = parser->start_id;
+  game->start_vertex = find_vertex(game, game->start_id);
   if (!allocate_csr(game, edge_count, parser->lexer.error)) {
     return false;
   }
