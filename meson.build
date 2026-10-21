@@ -273,7 +273,13 @@ test_pg_game_exe = executable(
   'tests/test_pg_game.c',
   dependencies : pg_game_dep,
 )
-test('test_pg_game', test_pg_game_exe)
+test('test_pg_game', test_pg_game_exe,
+  args : [meson.project_source_root() / 'tests/games'])
+test_pg_game_alloc_exe = executable('test_pg_game_alloc',
+  ['tests/test_pg_game_alloc.c', 'src/pg_game.c'],
+  include_directories : source_includes,
+  c_args : ['-DPG_GAME_TEST_ALLOCATOR'])
+test('test_pg_game_alloc', test_pg_game_alloc_exe)
 
 test_pg_set_exe = executable(
   'test_pg_set',
@@ -324,6 +330,11 @@ test('test_ad_lift', test_ad_lift_exe, timeout : 120,
   workdir : meson.project_source_root())
 
 python = find_program('python3')
+test('test_pg_game_property', python,
+  args : [files('tests/test_pg_game_property.py'), pgfilt], suite : 'python')
+test('test_pg_game_memory', python,
+  args : [files('tests/test_pg_game_memory.py'), pgfilt, get_option('b_sanitize')],
+  suite : 'python', timeout : 60)
 test(
   'test_research',
   python,

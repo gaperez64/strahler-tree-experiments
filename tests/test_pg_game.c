@@ -1,9 +1,12 @@
 #include <assert.h>
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "pg_game.h"
+#include "pg_game_internal.h"
+
+static size_t chunk_size = PG_GAME_DEFAULT_CHUNK;
 
 [[nodiscard]] static FILE *input_stream(char const *text) {
   FILE *stream = tmpfile();
@@ -18,7 +21,8 @@
   FILE *stream = input_stream(text);
   PGGame game = {0};
   PGParseError error = {0};
-  bool const succeeded = pg_game_read(stream, &game, &error);
+  bool const succeeded =
+      pg_game_read_chunked(stream, chunk_size, &game, &error);
   if (!succeeded) {
     fprintf(stderr, "parse failed at %zu:%zu: %s\n", error.line, error.column,
             error.message);
@@ -32,7 +36,7 @@ static void reject(char const *text) {
   FILE *stream = input_stream(text);
   PGGame game = {0};
   PGParseError error = {0};
-  assert(!pg_game_read(stream, &game, &error));
+  assert(!pg_game_read_chunked(stream, chunk_size, &game, &error));
   assert(game.vertex_count == 0);
   assert(game.vertices == nullptr);
   assert(error.line > 0);
@@ -220,6 +224,140 @@ static void test_invalid_games(void) {
   reject("start 0 0 0 0;");
   reject("start 0; start 0; 0 0 0 0;");
   reject("0 0 0 0; start 0;");
+  reject("0 18446744073709551616 0 0;");
+  reject("0 0 0 18446744073709551616;");
+  reject("0 0 0 0;\ntimeout: WARNING: command timed out\n");
+  reject("0 0 0 0; paritylongkeyword;");
+  reject("0 0 0 0 \"first\" \"second\";");
+}
+
+static void test_stream_edges(void) {
+  PGGame game = parse("\tparity\t0001;\r\nstart\t01;\r\n"
+                      "0001\t0002\t1\t0000,01 \"\";\r\n0 0 0 1;");
+  assert(game.vertex_count == 2 && game.edge_count == 3);
+  assert(game.start_vertex == 1 && game.start_id == 1);
+  assert(game.vertices[1].priority == 2);
+  assert(strcmp(game.vertices[1].name, "") == 0);
+  pg_game_destroy(&game);
+
+  game = parse("5 99 0 999,888,777 \"discarded\";\n"
+               "1 0 0 5,1;\n5 2 1 1 \"retained\";");
+  assert(game.edge_count == 3 && game.max_priority == 2);
+  assert(game.succ_offsets[1] == 2 && game.succ_offsets[2] == 3);
+  assert(game.successors[0] == 1 && game.successors[1] == 0 &&
+         game.successors[2] == 0);
+  pg_game_destroy(&game);
+
+  game = parse("0000000000000000000000000000000000000 0 0 0;");
+  assert(game.vertices[0].external_id == 0);
+  pg_game_destroy(&game);
+  game = parse("18446744073709551615 18446744073709551615 1 "
+               "18446744073709551615;");
+  assert(game.max_priority == UINT64_MAX);
+  pg_game_destroy(&game);
+
+  size_t const length = 3 * PG_GAME_DEFAULT_CHUNK + 17;
+  char *text = malloc(length + 32);
+  assert(text != nullptr);
+  memcpy(text, "0 0 0 0 \"", 9);
+  memset(text + 9, 'x', length);
+  memcpy(text + 9 + length, "\";", 3);
+  game = parse(text);
+  assert(strlen(game.vertices[0].name) == length);
+  assert(memcmp(game.vertices[0].name, text + 9, length) == 0);
+  free(text);
+  pg_game_destroy(&game);
+
+  FILE *stream = input_stream("\r\n\t5 0 0 5,5,17;");
+  PGParseError error = {0};
+  assert(!pg_game_read_chunked(stream, chunk_size, &game, &error));
+  assert(error.line == 2 && error.column == 2);
+  assert(strcmp(error.message,
+                "successor 17 (position 3) of node 5 has no final "
+                "declaration") == 0);
+  assert(fclose(stream) == 0);
+}
+
+static void same_game(PGGame const *first, PGGame const *second) {
+  assert(first->vertex_count == second->vertex_count);
+  assert(first->edge_count == second->edge_count);
+  assert(first->max_priority == second->max_priority);
+  assert(first->start_id == second->start_id);
+  assert(first->start_vertex == second->start_vertex);
+  for (size_t vertex = 0; vertex < first->vertex_count; vertex++) {
+    PGVertex const *a = first->vertices + vertex;
+    PGVertex const *b = second->vertices + vertex;
+    assert(a->external_id == b->external_id && a->priority == b->priority);
+    assert(a->owner == b->owner);
+    assert((a->name == nullptr) == (b->name == nullptr));
+    assert(a->name == nullptr || strcmp(a->name, b->name) == 0);
+  }
+  assert(memcmp(first->succ_offsets, second->succ_offsets,
+                (first->vertex_count + 1) * sizeof(size_t)) == 0);
+  assert(memcmp(first->pred_offsets, second->pred_offsets,
+                (first->vertex_count + 1) * sizeof(size_t)) == 0);
+  assert(memcmp(first->successors, second->successors,
+                first->edge_count * sizeof(size_t)) == 0);
+  assert(memcmp(first->predecessors, second->predecessors,
+                first->edge_count * sizeof(size_t)) == 0);
+}
+
+static void test_fixture(char const *path) {
+  FILE *input = fopen(path, "rb");
+  assert(input != nullptr);
+  FILE *stream = tmpfile();
+  assert(stream != nullptr);
+  char bytes[4096];
+  size_t length = 0;
+  while ((length = fread(bytes, 1, sizeof(bytes), input)) != 0) {
+    assert(fwrite(bytes, 1, length, stream) == length);
+  }
+  assert(!ferror(input));
+  assert(fclose(input) == 0);
+  assert(fseek(stream, 0, SEEK_SET) == 0);
+  PGGame expected = {0};
+  PGParseError expected_error = {0};
+  bool const valid = pg_game_read(stream, &expected, &expected_error);
+  size_t const chunks[] = {1, 2, 3, 7, 64, PG_GAME_DEFAULT_CHUNK};
+  for (size_t index = 0; index < sizeof(chunks) / sizeof(chunks[0]); index++) {
+    assert(fseek(stream, 0, SEEK_SET) == 0);
+    PGGame actual = {0};
+    PGParseError error = {0};
+    assert(pg_game_read_chunked(stream, chunks[index], &actual, &error) ==
+           valid);
+    if (valid) {
+      same_game(&expected, &actual);
+    } else {
+      assert(error.line == expected_error.line);
+      assert(error.column == expected_error.column);
+      assert(strcmp(error.message, expected_error.message) == 0);
+      assert(actual.vertices == nullptr && actual.vertex_count == 0);
+    }
+    pg_game_destroy(&actual);
+  }
+  pg_game_destroy(&expected);
+  assert(fclose(stream) == 0);
+}
+
+static void test_fixtures(char const *directory) {
+  DIR *dir = opendir(directory);
+  assert(dir != nullptr);
+  struct dirent *entry = nullptr;
+  size_t count = 0;
+  while ((entry = readdir(dir)) != nullptr) {
+    size_t const length = strlen(entry->d_name);
+    if (length < 3 || strcmp(entry->d_name + length - 3, ".pg") != 0) {
+      continue;
+    }
+    char path[4096];
+    int const written =
+        snprintf(path, sizeof(path), "%s/%s", directory, entry->d_name);
+    assert(written > 0 && (size_t)written < sizeof(path));
+    test_fixture(path);
+    count++;
+  }
+  assert(count > 0);
+  assert(closedir(dir) == 0);
 }
 
 static void test_api_guards(void) {
@@ -229,6 +367,28 @@ static void test_api_guards(void) {
   assert(error.message[0] != '\0');
   FILE *stream = input_stream("0 0 0 0;");
   assert(!pg_game_read(stream, nullptr, &error));
+  assert(!pg_game_read_chunked(stream, 0, &game, &error));
+  assert(fclose(stream) == 0);
+  stream = fopen("/dev/null", "w");
+  assert(stream != nullptr);
+  assert(!pg_game_read(stream, &game, &error));
+  assert(strcmp(error.message, "failed to read the input stream") == 0);
+  assert(fclose(stream) == 0);
+  game = parse("0 0 0 0;");
+  stream = fopen("/dev/null", "r");
+  assert(stream != nullptr);
+  assert(!pg_game_write_pgsolver(stream, &game, true));
+  assert(fclose(stream) == 0);
+  pg_game_destroy(&game);
+  char const nul_name[] = "0 0 0 0 \"a\0b\";";
+  stream = tmpfile();
+  assert(stream != nullptr);
+  assert(fwrite(nul_name, 1, sizeof(nul_name) - 1, stream) ==
+         sizeof(nul_name) - 1);
+  assert(fseek(stream, 0, SEEK_SET) == 0);
+  assert(!pg_game_read_chunked(stream, 1, &game, &error));
+  assert(error.line == 1 && error.column == 11);
+  assert(strstr(error.message, "non-NUL ASCII") != nullptr);
   assert(fclose(stream) == 0);
   assert(!pg_game_write_pgsolver(nullptr, &game, true));
   assert(!pg_game_write_pgsolver(stdout, &game, true));
@@ -244,13 +404,20 @@ static void test_api_guards(void) {
   pg_game_destroy(&game);
 }
 
-int main(void) {
-  test_sparse_dense_graph();
-  test_last_declaration_wins();
-  test_canonical_round_trip();
-  test_start_directive();
+int main(int argc, char *argv[]) {
+  size_t const chunks[] = {1, 2, 3, 7, 64, PG_GAME_DEFAULT_CHUNK};
+  for (size_t index = 0; index < sizeof(chunks) / sizeof(chunks[0]); index++) {
+    chunk_size = chunks[index];
+    test_sparse_dense_graph();
+    test_last_declaration_wins();
+    test_canonical_round_trip();
+    test_start_directive();
+    test_invalid_games();
+    test_stream_edges();
+  }
+  assert(argc == 2);
+  test_fixtures(argv[1]);
   test_priority_map();
-  test_invalid_games();
   test_api_guards();
   return 0;
 }

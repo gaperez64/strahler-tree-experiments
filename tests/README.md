@@ -20,9 +20,20 @@ Meson builds the C unit tests and runs the command-line regression cases.
 - `test_ordered_tree.c` tests the owned compact-leaf tree, including stable
   sibling order, normalization, round trips, invalid input, DOT, and p-level
   partitions.
-- `test_pg_game.c` tests whole-stream PGSolver parsing, sparse dense-index
-  construction, predecessor and successor CSR, replacement declarations,
-  canonical round trips, and malformed inputs.
+- `test_pg_game.c` checks streaming PGSolver parsing and every `games/*.pg`
+  fixture with chunks of 1, 2, 3, 7, 64 and 65,536 bytes, comparing all vertex,
+  name, start and CSR fields (or diagnostics for invalid fixtures). It also
+  checks long names, integer limits, replacement declarations, I/O errors,
+  canonical round trips, and malformed input including stray timeout output.
+- `test_pg_game_alloc.c` fails every successive allocation in a separate test
+  build of the reader, checking clean failure for dense, sparse, reordered,
+  duplicate and named inputs. This C test runs in the ASan and Valgrind jobs.
+- `test_pg_game_property.py` compares 120 seeded games against an independent
+  reference normalizer, varying whitespace, names, IDs, duplicates and starts.
+- `test_pg_game_memory.py` generates a 46 MB game in the build directory and
+  parses it under a 240 MiB address-space limit. It exits 77 on macOS, sanitizer
+  builds, memory-check wrappers or platforms where that limit is unavailable
+  or ineffective.
 - `test_pg_set.c` tests the owned dense-index bitset and its move semantics.
 - `test_pg_preprocess.c` checks shared option parsing, each shaving rule,
   fixpoint iteration, full-game closure verification, compression bounds, and
@@ -53,7 +64,8 @@ Meson builds the C unit tests and runs the command-line regression cases.
   progress, exhausted budgets, initial shaving, and renamed flag rejection.
 - `test_zielonka.c` checks exact classic and tree-relative decomposition
   witnesses and metrics, verifies literal priority-gap wrappers, and compares
-  fixed-seed random games with an exhaustive positional-strategy solver.
+  fixed-seed random games with an exhaustive positional-strategy solver. It
+  also rejects non-total domains, invalid bounds and corrupted witnesses.
 - `test_ad_tree_dot.c` checks deterministic classic, tree-relative, and
   Jurdziński DOT, priority-level display, label modes, partial results with
   dominions and unresolved vertices, and invalid writer input.

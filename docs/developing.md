@@ -11,12 +11,83 @@ on every build and appends ` (git <describe>)` when available; without Git or
 `.git`, only the Meson version is printed.
 
 CI checks formatting with clang-format 18, treats compiler and clang-tidy
-warnings as errors, enforces 75% line coverage, and runs ASan/UBSan and
+warnings as errors, enforces 87% line coverage, and runs ASan/UBSan and
 Valgrind separately. To run the memory check locally after building:
 
 ```sh
 ci/check-valgrind.sh build
 ```
+
+## Streaming PGSolver reader
+
+`pg_game_read` uses a 64 KiB `fread` buffer. Naturals accumulate with checked
+`uint64_t` arithmetic; keywords use six bytes of carry, and optional ASCII
+quoted names grow independently. No token depends on a buffer boundary.
+The public `PGGame` and `PGParseError` API and last-declaration-wins semantics
+are unchanged. An undeclared successor now reports the declaration's location
+and, for example, `successor 17 (position 3) of node 5 has no final declaration`.
+All existing goldens retain their contents.
+
+One shared `uint64_t` array holds successor IDs. Sorted, unique declarations
+need no sort; dense IDs use direct indexing. Otherwise only a pointer index
+is sorted, obsolete edge spans are compacted, and sparse targets use binary
+search. Equal-width `size_t` targets reuse the ID allocation; reordered spans
+use the eventual predecessor buffer as scratch. Different-width platforms
+allocate a separate target array. Declaration storage is released before
+constructing predecessors whenever possible. Names retain their existing
+individual ownership, avoiding a second ownership scheme in the public API.
+
+On LP64 without names, CSR payload is about **48 bytes per vertex plus
+16 bytes per edge**. Geometric successor growth retains up to 8 extra
+bytes per input edge. A conservative bound for our sorted-input allocations
+is `max(192*V + 16*E, 56*V + 24*E) + 65536 + 16` bytes. Here V/E count all input
+declarations/edges, including replacements. Unsorted input adds an `8*V`
+pointer index and can overlap declarations with the `8*E` predecessor buffer.
+Allocator overhead, qsort workspace and name strings are additional. Peak
+memory depends on the graph and optional names, rather than a copy of the
+whole input text.
+
+The baseline is commit `685789d`. Measured on Linux x86-64 with GCC 15.3.1,
+release `pgfilt` (`-O3 -DNDEBUG`),
+at nice 19 on one CPU. The generated input has 1,000,000 vertices, 5,000,000
+edges and 46,333,355 text bytes, without names. Vertex i has priority i % 8,
+owner i % 2 and successors i through i+4 modulo the vertex count. These are
+medians of three alternating before/after runs on the same input; another
+benchmark was active, so wall time is sensitive to scheduling.
+
+| Measurement | Before | Streaming |
+| --- | ---: | ---: |
+| Peak RSS | 421,928 KiB (412.0 MiB) | 157,960 KiB (154.3 MiB) |
+| Wall time | 1.16 s | 0.46 s |
+| User / system CPU time | 0.96 / 0.19 s | 0.36 / 0.09 s |
+| Overall source line coverage | 87.2% (5526/6339) | 88.7% (5643/6365) |
+| Overall source branch coverage | 72.4% (4093/5654) | 73.4% (4258/5798) |
+
+The same input fails in the old reader under 240 MiB of address space and
+passes the new memory regression, including generation, in under four seconds.
+Coverage uses the CI `^src/` filter, a GCC debug build with `-Db_coverage=true`,
+gcovr 8.6, and the complete suite. The line gate is now 87%, with 1.7 points
+of headroom. Parser line coverage rises from 88.0% to 94.3%.
+
+The ten least-covered source files by final line coverage are:
+
+| Source | Lines before | Lines after | Branches after |
+| --- | ---: | ---: | ---: |
+| `src/str-tree.cc` | 67.2% | 67.2% | 50.1% |
+| `src/zielonka.c` | 66.9% | 72.0% | 72.5% |
+| `src/dot_utils.c` | 77.8% | 77.8% | 65.6% |
+| `src/pg_dot.c` | 80.0% | 80.0% | 72.2% |
+| `src/utils.h` | 72.7% | 81.8% | 60.0% |
+| `src/ordered_tree.c` | 84.4% | 84.4% | 78.3% |
+| `src/stree.c` | 86.1% | 86.1% | 67.0% |
+| `src/pm_tree_dot.c` | 85.6% | 86.2% | 76.3% |
+| `src/ad_lift_solve.c` | 86.5% | 86.5% | 76.6% |
+| `src/pg_attractor.c` | 87.5% | 87.5% | 76.2% |
+
+Additional coverage checks actual CLI exit codes and diagnostics for malformed
+games, missing files and solver limits; explicit DOT/player/priority options;
+empty and non-total solver domains; and corrupted decomposition witnesses.
+Unreachable helpers and debug-only traces are left untested.
 
 ## Releases
 

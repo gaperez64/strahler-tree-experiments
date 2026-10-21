@@ -8,6 +8,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 
 binary = Path(sys.argv[1]).resolve()
 version = sys.argv[2]
@@ -92,6 +93,13 @@ elif program == "str-tree":
                       ("--index", "0"), ("--index=-1",), ("--index=999999",),
                       ("--index=x",), ("--index=0", "--p-level=999999")]:
         invalid(*arguments)
+    all_leaves = run()
+    assert all_leaves.returncode == 0, all_leaves
+    count = int(re.search(r"tree has (\d+) leaves", help_result.stdout)[1])
+    assert all_leaves.stdout.count("Correct successor!") == count
+    assert all_leaves.stdout.count("Correct forward comparison!") == count - 1
+    assert all_leaves.stdout.count("Correct backward comparison!") == count - 1
+    assert "Wrong" not in all_leaves.stdout, all_leaves.stdout
 elif program == "pms2dot":
     invalid("--check-order", "--reorder")
     invalid("--reorder", "--check-order")
@@ -103,7 +111,11 @@ else:
     if program == "pgfilt":
         invalid("-n")
         invalid("operand")
+        result = run("--normalize", "--priority-mode=original", input="0 2 0 0;")
+        assert result.returncode == 0 and result.stdout == "parity 0;\n0 2 0 0;\n"
     else:
+        for option in ("player", "labels"):
+            invalid(f"--{option}=bad")
         invalid("first.pg", "second.pg")
         if program == "pg2adot":
             for arguments in [("--tree-file=",), ("--adaptive-t=bad",),
@@ -121,3 +133,31 @@ else:
         for option in ("max-set-items", "tree-k" if program == "pg2adot" else "k"):
             for value in ("", "-1", "+1", " 1", "1x", "999999999999999999999"):
                 invalid(f"--{option}={value}")
+        explicit = ["--player=odd", "--labels=counts", "--priority-mode=original"]
+        explicit += ["--view=classic"] if program == "pg2adot" else ["--format=dot"]
+        result = run(*explicit, input="0 1 1 0;")
+        assert result.returncode == 0 and result.stdout.startswith("digraph"), result
+        assert "Odd" in result.stdout and "Even" not in result.stdout, result
+        result = run(input="0 0 0 0;\ntimeout: WARNING: stray output\n")
+        assert result.returncode == 3 and "2:1: unexpected keyword" in result.stderr, result
+        with tempfile.TemporaryDirectory(dir=binary.parent) as directory:
+            missing = Path(directory) / "missing.pg"
+            result = run(str(missing))
+            assert result.returncode == 5 and "Cannot open" in result.stderr, result
+            malformed = Path(directory) / "bad.pg"
+            malformed.write_text("5 0 0 5,17;")
+            result = run(str(malformed))
+            assert result.returncode == 3, result
+            assert ("1:1: successor 17 (position 2) of node 5 has no final declaration"
+                    in result.stderr), result
+        if program == "pg2adot":
+            result = run(input="0 18446744073709551615 0 0;")
+            assert result.returncode == 4 and "Solver failed:" in result.stderr, result
+            deep_game = "".join(f"{i} {i} 0 {i};\n" for i in range(1026))
+            for algorithm in ("zielonka", "zielonka-sym"):
+                result = run(f"--algorithm={algorithm}", input=deep_game)
+                assert result.returncode == 4, result
+                assert "priority depth exceeds" in result.stderr, result
+        else:
+            result = run("--k=2147483647", "--t=1", input=game)
+            assert result.returncode == 4 and "Solver failed:" in result.stderr, result
