@@ -220,8 +220,21 @@ CSVs without `start_winner` can still be rendered, but resuming refuses them wit
 a message to delete or migrate the old CSV. New CSVs use mode 0644; the ignored
 `.lock` file uses normal file permissions under the current umask.
 
+`solver_build` records the first line of `pg2adot --version` once per run, plus
+Meson's build type and optimization when available. Older CSVs without this
+column load with empty build cells. To label earlier measurements, use
+`run --backfill-build='pg2adot 0.2 (git v0.3-4-g685789d), release -O3'`.
+This fills only empty build cells and publishes atomically, with no downloads
+or solver runs; it needs no build directory. Metadata refresh preserves builds.
+The report counts rows and games per build and lists games with rows from
+non-majority builds as reruns after parser input-buffer allocation failures.
+
 `--archives LIST` accepts comma-separated names: `mlsolver`, `pgsolver`,
 `equivchecking-hesselink`, `modelchecking`, `equivchecking`.
+`--games REGEX` uses Python's `re.search` on the saved `game` path, with the
+`.bz2` suffix removed, e.g. `--games='games/FLCTL.*\.gm$'`. It filters new runs,
+`--retry=OUTCOMES` and `--refresh-metadata`; retries require both a matching path
+and a selected outcome. Invalid regular expressions are rejected before running.
 `--backends LIST`, `--build-dir DIR` and `--max-host-leaves N` select backend names,
 binaries and the host limit. Keiren defaults to `SIZE_MAX`
 (18,446,744,073,709,551,615 on 64-bit hosts), the largest value `pg2adot` accepts,

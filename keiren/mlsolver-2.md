@@ -18,17 +18,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 2.316 | 1123.758 | - | - | - | - | Solver failed: failed to build the Even host U^10_{17,10} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.315 | 1123.617 | - | - | - | - | preprocess: residual=214615 shaved_even=19962 shaved_odd=0 single=0 loops=19962 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.315 | 1123.617 | - | - | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.305 | 1123.754 | - | - | - | - | Solver failed: failed to build the Even host U^10_{17,10} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.264 | 1123.746 | - | - | - | - | preprocess: residual=214615 shaved_even=19962 shaved_odd=0 single=0 loops=19962 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.264 | 1123.746 | - | - | - | - | (error text not recorded) |
 | lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.003 | 60.797 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+pre | complete | 234577 / 0 | 12 / 0 | 2 / 0 | 7 / 0 | H=9, K=2, t=1 / H=8, K=2, t=1 | 19.550 | 60.828 | even | - | - | false | - |
 | lifting-adaptive+iter | complete | 234577 / 0 | 12 / 0 | 2 / 0 | 7 / 0 | H=10, K=2, t=1 / H=9, K=2, t=1 | 19.711 | 60.695 | even | - | - | false | - |
 | lifting-adaptive+pre+iter | complete | 234577 / 0 | 6 / 0 | 1 / 0 | 6 / 0 | H=9, K=2, t=1 / H=8, K=2, t=1 | 7.177 | 60.699 | even | - | - | false | - |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 2.237 | 1123.621 | - | - | - | - | Solver failed: failed to build the Even host U^10_{17,10} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.249 | 1123.695 | - | - | - | - | preprocess: residual=214615 shaved_even=19962 shaved_odd=0 single=0 loops=19962 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.249 | 1123.695 | - | - | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.246 | 1123.816 | - | - | - | - | Solver failed: failed to build the Even host U^10_{17,10} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.289 | 1123.691 | - | - | - | - | preprocess: residual=214615 shaved_even=19962 shaved_odd=0 single=0 loops=19962 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.289 | 1123.691 | - | - | - | - | (error text not recorded) |
 | pm-strahler | complete | 234577 / 0 | 248 / 0 | 41 / 0 | 10 / 0 | k=2, t=1, depth=9 / k=2, t=1, depth=9 | 1.233 | 60.707 | even | - | - | false | - |
 | pm-strahler+pre | complete | 234577 / 0 | 159 / 0 | 33 / 0 | 9 / 0 | k=2, t=1, depth=8 / k=2, t=1, depth=8 | 1.058 | 60.648 | even | - | - | false | - |
 | pm-strahler+iter | complete | 234577 / 0 | 192 / 0 | 33 / 0 | 10 / 0 | k=2, t=1, depth=9 / k=2, t=1, depth=9 | 0.945 | 60.770 | even | - | - | false | - |
@@ -81,17 +81,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 2.481 | 1373.297 | - | true | - | - | Solver failed: failed to build the Even host U^7_{12,7} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.645 | 1373.023 | - | true | - | - | preprocess: residual=6637 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.645 | 1373.023 | - | true | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.491 | 1373.168 | - | true | - | - | Solver failed: failed to build the Even host U^7_{12,7} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.350 | 1373.027 | - | true | - | - | preprocess: residual=6637 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.350 | 1373.027 | - | true | - | - | (error text not recorded) |
 | lifting-adaptive | complete | 6650 / 0 | 16 / 0 | 3 / 0 | 7 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 0.793 | 58.574 | even | true | true | false | - |
 | lifting-adaptive+pre | complete | 6650 / 0 | 10 / 0 | 2 / 0 | 6 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 0.608 | 58.574 | even | true | true | false | - |
 | lifting-adaptive+iter | complete | 6650 / 0 | 10 / 0 | 2 / 0 | 6 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 0.620 | 58.574 | even | true | true | false | - |
 | lifting-adaptive+pre+iter | complete | 6650 / 0 | 5 / 0 | 1 / 0 | 5 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 0.466 | 58.574 | even | true | true | false | - |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 2.473 | 1373.070 | - | true | - | - | Solver failed: failed to build the Even host U^7_{12,7} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.432 | 1373.020 | - | true | - | - | preprocess: residual=6637 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.432 | 1373.020 | - | true | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.395 | 1373.172 | - | true | - | - | Solver failed: failed to build the Even host U^7_{12,7} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.278 | 1373.016 | - | true | - | - | preprocess: residual=6637 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.278 | 1373.016 | - | true | - | - | (error text not recorded) |
 | pm-strahler | complete | 6650 / 0 | 30 / 0 | 5 / 0 | 7 / 0 | k=2, t=1, depth=6 / k=2, t=1, depth=7 | 2.195 | 58.574 | even | true | true | false | - |
 | pm-strahler+pre | complete | 6650 / 0 | 25 / 0 | 4 / 0 | 7 / 0 | k=2, t=1, depth=6 / k=2, t=1, depth=7 | 1.408 | 58.574 | even | true | true | false | - |
 | pm-strahler+iter | complete | 6650 / 0 | 25 / 0 | 4 / 0 | 7 / 0 | k=2, t=1, depth=6 / k=2, t=1, depth=7 | 0.423 | 58.574 | even | true | true | false | - |
@@ -144,17 +144,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 3.352 | 1475.688 | - | - | - | - | Solver failed: failed to build the Even host U^10_{19,10} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 3.559 | 1475.801 | - | - | - | - | preprocess: residual=533367 shaved_even=34386 shaved_odd=0 single=0 loops=34386 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 3.559 | 1475.801 | - | - | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.579 | 1475.543 | - | - | - | - | Solver failed: failed to build the Even host U^10_{19,10} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.464 | 1475.781 | - | - | - | - | preprocess: residual=533367 shaved_even=34386 shaved_odd=0 single=0 loops=34386 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.464 | 1475.781 | - | - | - | - | (error text not recorded) |
 | lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.010 | 145.391 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.008 | 145.289 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.010 | 145.355 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+pre+iter | complete | 567753 / 0 | 6 / 0 | 1 / 0 | 6 / 0 | H=9, K=2, t=1 / H=8, K=2, t=1 | 19.155 | 145.355 | even | - | - | false | - |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 3.390 | 1475.691 | - | - | - | - | Solver failed: failed to build the Even host U^10_{19,10} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 3.551 | 1475.875 | - | - | - | - | preprocess: residual=533367 shaved_even=34386 shaved_odd=0 single=0 loops=34386 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 3.551 | 1475.875 | - | - | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.409 | 1475.609 | - | - | - | - | Solver failed: failed to build the Even host U^10_{19,10} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.399 | 1475.812 | - | - | - | - | preprocess: residual=533367 shaved_even=34386 shaved_odd=0 single=0 loops=34386 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.399 | 1475.812 | - | - | - | - | (error text not recorded) |
 | pm-strahler | complete | 567753 / 0 | 240 / 0 | 39 / 0 | 10 / 0 | k=2, t=1, depth=9 / k=2, t=1, depth=9 | 2.551 | 145.133 | even | - | - | false | - |
 | pm-strahler+pre | complete | 567753 / 0 | 159 / 0 | 33 / 0 | 9 / 0 | k=2, t=1, depth=8 / k=2, t=1, depth=8 | 2.098 | 145.176 | even | - | - | false | - |
 | pm-strahler+iter | complete | 567753 / 0 | 192 / 0 | 33 / 0 | 10 / 0 | k=2, t=1, depth=9 / k=2, t=1, depth=9 | 1.809 | 145.297 | even | - | - | false | - |
@@ -207,17 +207,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 2.231 | 1209.172 | - | true | - | - | Solver failed: failed to build the Even host U^7_{13,7} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.241 | 1209.320 | - | true | - | - | preprocess: residual=15414 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.241 | 1209.320 | - | true | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.220 | 1209.258 | - | true | - | - | Solver failed: failed to build the Even host U^7_{13,7} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.053 | 1209.270 | - | true | - | - | preprocess: residual=15414 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.053 | 1209.270 | - | true | - | - | (error text not recorded) |
 | lifting-adaptive | complete | 15427 / 0 | 16 / 0 | 3 / 0 | 7 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 1.332 | 58.574 | even | true | true | false | - |
 | lifting-adaptive+pre | complete | 15427 / 0 | 10 / 0 | 2 / 0 | 6 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 0.879 | 58.574 | even | true | true | false | - |
 | lifting-adaptive+iter | complete | 15427 / 0 | 10 / 0 | 2 / 0 | 6 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 0.907 | 58.574 | even | true | true | false | - |
 | lifting-adaptive+pre+iter | complete | 15427 / 0 | 5 / 0 | 1 / 0 | 5 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 0.549 | 58.574 | even | true | true | false | - |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 2.181 | 1209.312 | - | true | - | - | Solver failed: failed to build the Even host U^7_{13,7} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.136 | 1209.309 | - | true | - | - | preprocess: residual=15414 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.136 | 1209.309 | - | true | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.150 | 1209.195 | - | true | - | - | Solver failed: failed to build the Even host U^7_{13,7} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.106 | 1209.184 | - | true | - | - | preprocess: residual=15414 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.106 | 1209.184 | - | true | - | - | (error text not recorded) |
 | pm-strahler | complete | 15427 / 0 | 30 / 0 | 5 / 0 | 7 / 0 | k=2, t=1, depth=6 / k=2, t=1, depth=7 | 9.625 | 58.574 | even | true | true | false | - |
 | pm-strahler+pre | complete | 15427 / 0 | 25 / 0 | 4 / 0 | 7 / 0 | k=2, t=1, depth=6 / k=2, t=1, depth=7 | 5.192 | 58.574 | even | true | true | false | - |
 | pm-strahler+iter | complete | 15427 / 0 | 25 / 0 | 4 / 0 | 7 / 0 | k=2, t=1, depth=6 / k=2, t=1, depth=7 | 0.501 | 58.574 | even | true | true | false | - |
@@ -270,17 +270,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 3.328 | 1170.012 | - | - | - | - | Solver failed: failed to build the Even host U^10_{20,10} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 3.389 | 1170.078 | - | - | - | - | preprocess: residual=1286141 shaved_even=62818 shaved_odd=0 single=0 loops=62818 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 3.389 | 1170.078 | - | - | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.327 | 1170.055 | - | - | - | - | Solver failed: failed to build the Even host U^10_{20,10} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.503 | 1169.965 | - | - | - | - | preprocess: residual=1286141 shaved_even=62818 shaved_odd=0 single=0 loops=62818 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.503 | 1169.965 | - | - | - | - | (error text not recorded) |
 | lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.020 | 346.445 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.020 | 346.387 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.020 | 346.445 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.022 | 346.574 | - | - | - | - | deadline exceeded |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 3.301 | 1169.984 | - | - | - | - | Solver failed: failed to build the Even host U^10_{20,10} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 3.408 | 1170.078 | - | - | - | - | preprocess: residual=1286141 shaved_even=62818 shaved_odd=0 single=0 loops=62818 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 3.408 | 1170.078 | - | - | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.277 | 1170.074 | - | - | - | - | Solver failed: failed to build the Even host U^10_{20,10} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.515 | 1170.070 | - | - | - | - | preprocess: residual=1286141 shaved_even=62818 shaved_odd=0 single=0 loops=62818 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 3.515 | 1170.070 | - | - | - | - | (error text not recorded) |
 | pm-strahler | complete | 1348959 / 0 | 386 / 0 | 61 / 0 | 10 / 0 | k=2, t=2, depth=9 / k=2, t=2, depth=9 | 10.169 | 346.336 | even | - | - | false | - |
 | pm-strahler+pre | complete | 1348959 / 0 | 159 / 0 | 33 / 0 | 9 / 0 | k=2, t=1, depth=8 / k=2, t=1, depth=8 | 4.526 | 346.395 | even | - | - | false | - |
 | pm-strahler+iter | complete | 1348959 / 0 | 192 / 0 | 33 / 0 | 10 / 0 | k=2, t=1, depth=9 / k=2, t=1, depth=9 | 3.873 | 346.395 | even | - | - | false | - |
@@ -333,17 +333,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 2.427 | 1299.785 | - | - | - | - | Solver failed: failed to build the Even host U^7_{15,7} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.478 | 1299.844 | - | - | - | - | preprocess: residual=35375 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.478 | 1299.844 | - | - | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.459 | 1299.750 | - | - | - | - | Solver failed: failed to build the Even host U^7_{15,7} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.311 | 1299.785 | - | - | - | - | preprocess: residual=35375 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.311 | 1299.785 | - | - | - | - | (error text not recorded) |
 | lifting-adaptive | complete | 35388 / 0 | 16 / 0 | 3 / 0 | 7 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 2.619 | 58.574 | even | - | - | false | - |
 | lifting-adaptive+pre | complete | 35388 / 0 | 10 / 0 | 2 / 0 | 6 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 1.534 | 58.574 | even | - | - | false | - |
 | lifting-adaptive+iter | complete | 35388 / 0 | 10 / 0 | 2 / 0 | 6 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 1.555 | 58.574 | even | - | - | false | - |
 | lifting-adaptive+pre+iter | complete | 35388 / 0 | 5 / 0 | 1 / 0 | 5 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 0.743 | 58.574 | even | - | - | false | - |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 2.419 | 1299.652 | - | - | - | - | Solver failed: failed to build the Even host U^7_{15,7} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.394 | 1299.848 | - | - | - | - | preprocess: residual=35375 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.394 | 1299.848 | - | - | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.391 | 1299.617 | - | - | - | - | Solver failed: failed to build the Even host U^7_{15,7} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.301 | 1299.707 | - | - | - | - | preprocess: residual=35375 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.301 | 1299.707 | - | - | - | - | (error text not recorded) |
 | pm-strahler | timeout | - / - | - / - | - / - | - / - | - / - | 30.002 | 58.574 | - | - | - | - | deadline exceeded |
 | pm-strahler+pre | complete | 35388 / 0 | 25 / 0 | 4 / 0 | 7 / 0 | k=2, t=1, depth=6 / k=2, t=1, depth=7 | 23.803 | 58.574 | even | - | - | false | - |
 | pm-strahler+iter | complete | 35388 / 0 | 25 / 0 | 4 / 0 | 7 / 0 | k=2, t=1, depth=6 / k=2, t=1, depth=7 | 0.952 | 58.574 | even | - | - | false | - |
@@ -396,17 +396,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 5.285 | 1227.703 | - | - | - | - | Solver failed: failed to build the Even host U^10_{21,10} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.614 | 1227.664 | - | - | - | - | preprocess: residual=3035137 shaved_even=120834 shaved_odd=0 single=0 loops=120834 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.614 | 1227.664 | - | - | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.335 | 1227.797 | - | - | - | - | Solver failed: failed to build the Even host U^10_{21,10} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.472 | 1227.926 | - | - | - | - | preprocess: residual=3035137 shaved_even=120834 shaved_odd=0 single=0 loops=120834 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.472 | 1227.926 | - | - | - | - | (error text not recorded) |
 | lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.039 | 813.984 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.039 | 814.176 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.043 | 814.051 | - | - | - | - | deadline exceeded |
 | lifting-adaptive+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.034 | 814.180 | - | - | - | - | deadline exceeded |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 5.175 | 1227.707 | - | - | - | - | Solver failed: failed to build the Even host U^10_{21,10} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.585 | 1227.758 | - | - | - | - | preprocess: residual=3035137 shaved_even=120834 shaved_odd=0 single=0 loops=120834 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.585 | 1227.758 | - | - | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.245 | 1228.070 | - | - | - | - | Solver failed: failed to build the Even host U^10_{21,10} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.579 | 1228.066 | - | - | - | - | preprocess: residual=3035137 shaved_even=120834 shaved_odd=0 single=0 loops=120834 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.579 | 1228.066 | - | - | - | - | (error text not recorded) |
 | pm-strahler | complete | 3155971 / 0 | 248 / 0 | 41 / 0 | 10 / 0 | k=2, t=1, depth=9 / k=2, t=1, depth=9 | 13.094 | 813.965 | even | - | - | false | - |
 | pm-strahler+pre | complete | 3155971 / 0 | 159 / 0 | 33 / 0 | 9 / 0 | k=2, t=1, depth=8 / k=2, t=1, depth=8 | 10.673 | 814.059 | even | - | - | false | - |
 | pm-strahler+iter | complete | 3155971 / 0 | 192 / 0 | 33 / 0 | 10 / 0 | k=2, t=1, depth=9 / k=2, t=1, depth=9 | 9.018 | 814.098 | even | - | - | false | - |
@@ -459,17 +459,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 2.862 | 1345.961 | - | - | - | - | Solver failed: failed to build the Even host U^7_{16,7} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.760 | 1346.199 | - | - | - | - | preprocess: residual=80120 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.760 | 1346.199 | - | - | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.738 | 1345.891 | - | - | - | - | Solver failed: failed to build the Even host U^7_{16,7} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.659 | 1346.148 | - | - | - | - | preprocess: residual=80120 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.659 | 1346.148 | - | - | - | - | (error text not recorded) |
 | lifting-adaptive | complete | 80133 / 0 | 16 / 0 | 3 / 0 | 7 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 5.629 | 58.574 | even | - | - | false | - |
 | lifting-adaptive+pre | complete | 80133 / 0 | 10 / 0 | 2 / 0 | 6 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 3.052 | 58.574 | even | - | - | false | - |
 | lifting-adaptive+iter | complete | 80133 / 0 | 10 / 0 | 2 / 0 | 6 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 3.083 | 58.574 | even | - | - | false | - |
 | lifting-adaptive+pre+iter | complete | 80133 / 0 | 5 / 0 | 1 / 0 | 5 / 0 | H=7, K=2, t=1 / H=7, K=2, t=1 | 1.181 | 58.574 | even | - | - | false | - |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 2.680 | 1345.906 | - | - | - | - | Solver failed: failed to build the Even host U^7_{16,7} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.922 | 1346.184 | - | - | - | - | preprocess: residual=80120 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.922 | 1346.184 | - | - | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.778 | 1345.887 | - | - | - | - | Solver failed: failed to build the Even host U^7_{16,7} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.673 | 1346.133 | - | - | - | - | preprocess: residual=80120 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.673 | 1346.133 | - | - | - | - | (error text not recorded) |
 | pm-strahler | timeout | - / - | - / - | - / - | - / - | - / - | 30.003 | 58.574 | - | - | - | - | deadline exceeded |
 | pm-strahler+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.003 | 58.574 | - | - | - | - | deadline exceeded |
 | pm-strahler+iter | complete | 80133 / 0 | 25 / 0 | 4 / 0 | 7 / 0 | k=2, t=1, depth=6 / k=2, t=1, depth=7 | 3.012 | 58.574 | even | - | - | false | - |
@@ -648,17 +648,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 2.171 | 1117.707 | - | true | - | - | Solver failed: failed to build the Even host U^14_{17,14} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.181 | 1117.707 | - | true | - | - | preprocess: residual=136587 shaved_even=3722 shaved_odd=0 single=0 loops=3722 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.181 | 1117.707 | - | true | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.201 | 1117.574 | - | true | - | - | Solver failed: failed to build the Even host U^14_{17,14} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.162 | 1117.570 | - | true | - | - | preprocess: residual=136587 shaved_even=3722 shaved_odd=0 single=0 loops=3722 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.162 | 1117.570 | - | true | - | - | (error text not recorded) |
 | lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.003 | 58.574 | - | true | - | - | deadline exceeded |
 | lifting-adaptive+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.003 | 58.574 | - | true | - | - | deadline exceeded |
 | lifting-adaptive+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.003 | 58.574 | - | true | - | - | deadline exceeded |
 | lifting-adaptive+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.002 | 58.574 | - | true | - | - | deadline exceeded |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 2.153 | 1117.711 | - | true | - | - | Solver failed: failed to build the Even host U^14_{17,14} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.152 | 1117.773 | - | true | - | - | preprocess: residual=136587 shaved_even=3722 shaved_odd=0 single=0 loops=3722 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 2.152 | 1117.773 | - | true | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.160 | 1117.707 | - | true | - | - | Solver failed: failed to build the Even host U^14_{17,14} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.130 | 1117.711 | - | true | - | - | preprocess: residual=136587 shaved_even=3722 shaved_odd=0 single=0 loops=3722 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.130 | 1117.711 | - | true | - | - | (error text not recorded) |
 | pm-strahler | complete | 140309 / 0 | 3789 / 0 | 688 / 0 | 14 / 0 | k=3, t=2, depth=13 / k=3, t=2, depth=13 | 6.489 | 58.574 | even | true | true | false | - |
 | pm-strahler+pre | complete | 140309 / 0 | 2983 / 0 | 606 / 0 | 10 / 0 | k=3, t=3, depth=9 / k=3, t=3, depth=9 | 5.123 | 58.574 | even | true | true | false | - |
 | pm-strahler+iter | complete | 140309 / 0 | 3763 / 0 | 686 / 0 | 14 / 0 | k=3, t=2, depth=13 / k=3, t=2, depth=13 | 1.645 | 58.574 | even | true | true | false | - |
@@ -711,17 +711,17 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 2.551 | 1345.918 | - | true | - | - | Solver failed: failed to build the Even host U^8_{12,8} |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.251 | 2002.570 | - | true | - | - | preprocess: residual=5583 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.251 | 2002.570 | - | true | - | - | (error text not recorded) |
 | lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.550 | 1345.855 | - | true | - | - | Solver failed: failed to build the Even host U^8_{12,8} |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.147 | 2002.566 | - | true | - | - | preprocess: residual=5583 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.147 | 2002.566 | - | true | - | - | (error text not recorded) |
 | lifting-adaptive | complete | 5596 / 0 | 29 / 0 | 6 / 0 | 8 / 0 | H=8, K=2, t=1 / H=8, K=2, t=1 | 1.958 | 58.574 | even | true | true | false | - |
 | lifting-adaptive+pre | complete | 5596 / 0 | 17 / 0 | 6 / 0 | 5 / 0 | H=6, K=2, t=1 / H=6, K=2, t=1 | 1.536 | 58.574 | even | true | true | false | - |
 | lifting-adaptive+iter | complete | 5596 / 0 | 22 / 0 | 5 / 0 | 7 / 0 | H=8, K=2, t=1 / H=8, K=2, t=1 | 1.987 | 58.574 | even | true | true | false | - |
 | lifting-adaptive+pre+iter | complete | 5596 / 0 | 17 / 0 | 6 / 0 | 5 / 0 | H=6, K=2, t=1 / H=6, K=2, t=1 | 1.531 | 58.574 | even | true | true | false | - |
 | lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 2.547 | 1345.777 | - | true | - | - | Solver failed: failed to build the Even host U^8_{12,8} |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.179 | 2002.508 | - | true | - | - | preprocess: residual=5583 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.179 | 2002.508 | - | true | - | - | (error text not recorded) |
 | lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.429 | 1345.785 | - | true | - | - | Solver failed: failed to build the Even host U^8_{12,8} |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.914 | 2002.555 | - | true | - | - | preprocess: residual=5583 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0 |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.914 | 2002.555 | - | true | - | - | (error text not recorded) |
 | pm-strahler | timeout | - / - | - / - | - / - | - / - | - / - | 30.001 | 58.574 | - | true | - | - | deadline exceeded |
 | pm-strahler+pre | complete | 5596 / 0 | 63 / 0 | 13 / 0 | 6 / 0 | k=2, t=2, depth=5 / k=2, t=2, depth=6 | 7.360 | 58.574 | even | true | true | false | - |
 | pm-strahler+iter | complete | 5596 / 0 | 379 / 0 | 80 / 0 | 8 / 0 | k=3, t=2, depth=7 / k=3, t=2, depth=8 | 14.920 | 58.574 | even | true | true | false | - |

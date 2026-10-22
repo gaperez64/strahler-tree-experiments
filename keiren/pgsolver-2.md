@@ -9,69 +9,6 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 ## Inventory
 
 <details>
-<summary>pgsolver/games/randomgame(1000,_10,_1,_20)id=11.gm · 1000 vertices / 10424 edges · 22 complete · 2 timeout</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 1000 | 10424 | 11 | 10 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | timeout | - / - | - / - | - / - | - / - | - / - | 30.017 | 323.297 | - | true | - | - | deadline exceeded |
-| lifting+pre | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.393 | 58.574 | even | true | true | false | - |
-| lifting+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.017 | 323.434 | - | true | - | - | deadline exceeded |
-| lifting+pre+iter | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.371 | 58.574 | even | true | true | false | - |
-| lifting-adaptive | complete | 501 / 499 | 1 / 2 | 1 / 1 | 1 / 2 | H=6, K=1, t=0 / H=6, K=1, t=0 | 0.380 | 58.574 | even | true | true | false | - |
-| lifting-adaptive+pre | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.369 | 58.574 | even | true | true | false | - |
-| lifting-adaptive+iter | complete | 501 / 499 | 1 / 2 | 1 / 1 | 1 / 2 | H=6, K=1, t=0 / H=6, K=1, t=0 | 0.390 | 58.574 | even | true | true | false | - |
-| lifting-adaptive+pre+iter | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.370 | 58.574 | even | true | true | false | - |
-| lifting-sym | complete | 501 / 499 | 1 / 2 | 1 / 1 | 1 / 2 | H=6, K=6, t=9 / H=6, K=6, t=9 | 8.561 | 436.027 | even | true | true | false | - |
-| lifting-sym+pre | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.369 | 58.574 | even | true | true | false | - |
-| lifting-sym+iter | complete | 501 / 499 | 1 / 2 | 1 / 1 | 1 / 2 | H=6, K=6, t=9 / H=6, K=6, t=9 | 8.485 | 436.148 | even | true | true | false | - |
-| lifting-sym+pre+iter | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.369 | 58.574 | even | true | true | false | - |
-| pm-strahler | complete | 501 / 499 | 21 / 25 | 4 / 4 | 6 / 7 | k=2, t=1, depth=5 / k=2, t=1, depth=6 | 0.380 | 58.574 | even | true | true | false | - |
-| pm-strahler+pre | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=5 / k=1, t=1, depth=6 | 0.369 | 58.574 | even | true | true | false | - |
-| pm-strahler+iter | complete | 501 / 499 | 6 / 7 | 1 / 1 | 6 / 7 | k=1, t=1, depth=5 / k=1, t=1, depth=6 | 0.377 | 58.574 | even | true | true | false | - |
-| pm-strahler+pre+iter | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=5 / k=1, t=1, depth=6 | 0.370 | 58.574 | even | true | true | false | - |
-| pm-succinct | complete | 501 / 499 | 23 / 33 | 5 / 6 | 6 / 7 | bits=1, depth=5 / bits=1, depth=6 | 0.370 | 58.574 | even | true | true | false | - |
-| pm-succinct+pre | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=5 / bits=0, depth=6 | 0.371 | 58.574 | even | true | true | false | - |
-| pm-succinct+iter | complete | 501 / 499 | 23 / 33 | 5 / 6 | 6 / 7 | bits=1, depth=5 / bits=1, depth=6 | 0.371 | 58.574 | even | true | true | false | - |
-| pm-succinct+pre+iter | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=5 / bits=0, depth=6 | 0.370 | 58.574 | even | true | true | false | - |
-| zielonka | complete | 501 / 499 | 1 / 2 | 1 / 1 | 1 / 2 | — / — | 0.369 | 58.574 | even | true | true | false | - |
-| zielonka+pre | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.369 | 58.574 | even | true | true | false | - |
-| zielonka-sym | complete | 501 / 499 | 1 / 2 | 1 / 1 | 1 / 2 | — / — | 0.369 | 58.574 | even | true | true | false | - |
-| zielonka-sym+pre | complete | 501 / 499 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.369 | 58.574 | even | true | true | false | - |
-
-| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-adaptive | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-adaptive+iter | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-sym | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-sym+iter | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-strahler | 17 / 21 | 4 / 4 | 4 / 4 | 1.176 / 1.143 | 1 / 1 | 6 / 7 | 6.000 / 7.000 | 2 / 2 |
-| pm-strahler+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-strahler+iter | 5 / 6 | 1 / 1 | 1 / 1 | 1.000 / 1.000 | 0 / 0 | 6 / 7 | 6.000 / 7.000 | 1 / 1 |
-| pm-strahler+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-succinct | 18 / 27 | 5 / 6 | 3 / 3 | 1.222 / 1.185 | 3 / 3 | 6 / 7 | 6.000 / 7.000 | 2 / 2 |
-| pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-succinct+iter | 18 / 27 | 5 / 6 | 3 / 3 | 1.222 / 1.185 | 3 / 3 | 6 / 7 | 6.000 / 7.000 | 2 / 2 |
-| pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| zielonka | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| zielonka-sym | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-
-</details>
-
-<details>
 <summary>pgsolver/games/randomgame(1000,_10,_1,_20)id=12.gm · 1000 vertices / 10378 edges · 22 complete · 2 timeout</summary>
 
 | Vertices | Edges | Distinct priorities | Maximum priority |
@@ -2835,6 +2772,69 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | pm-succinct | 39 / 38 | 12 / 9 | 6 / 4 | 1.282 / 1.211 | 6 / 5 | 6 / 7 | 6.000 / 7.000 | 3 / 3 |
 | pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
 | pm-succinct+iter | 22 / 29 | 7 / 7 | 3 / 3 | 1.273 / 1.207 | 4 / 4 | 6 / 7 | 6.000 / 7.000 | 2 / 2 |
+| pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
+| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka-sym | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
+| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+
+</details>
+
+<details>
+<summary>pgsolver/games/randomgame(10000,_10,_1,_20)id=8.gm · 10000 vertices / 105449 edges · 20 complete · 4 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 10000 | 105449 | 11 | 10 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 2.134 | 1212.793 | - | false | - | - | Solver failed: failed to build the Even host U^6_{13,6} |
+| lifting+pre | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.447 | 58.574 | odd | false | true | false | - |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.134 | 1212.695 | - | false | - | - | Solver failed: failed to build the Even host U^6_{13,6} |
+| lifting+pre+iter | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.445 | 58.574 | odd | false | true | false | - |
+| lifting-adaptive | complete | 5032 / 4968 | 1 / 2 | 1 / 1 | 1 / 2 | H=6, K=1, t=0 / H=6, K=1, t=0 | 0.538 | 58.574 | odd | false | true | false | - |
+| lifting-adaptive+pre | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.446 | 58.574 | odd | false | true | false | - |
+| lifting-adaptive+iter | complete | 5032 / 4968 | 1 / 2 | 1 / 1 | 1 / 2 | H=6, K=1, t=0 / H=6, K=1, t=0 | 0.549 | 58.574 | odd | false | true | false | - |
+| lifting-adaptive+pre+iter | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.434 | 58.574 | odd | false | true | false | - |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 2.099 | 1212.734 | - | false | - | - | Solver failed: failed to build the Even host U^6_{13,6} |
+| lifting-sym+pre | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.434 | 58.574 | odd | false | true | false | - |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 2.109 | 1212.719 | - | false | - | - | Solver failed: failed to build the Even host U^6_{13,6} |
+| lifting-sym+pre+iter | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.434 | 58.574 | odd | false | true | false | - |
+| pm-strahler | complete | 5032 / 4968 | 25 / 41 | 5 / 7 | 6 / 7 | k=2, t=1, depth=5 / k=2, t=1, depth=6 | 0.550 | 58.574 | odd | false | true | false | - |
+| pm-strahler+pre | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=5 / k=1, t=1, depth=6 | 0.433 | 58.574 | odd | false | true | false | - |
+| pm-strahler+iter | complete | 5032 / 4968 | 6 / 7 | 1 / 1 | 6 / 7 | k=1, t=1, depth=5 / k=1, t=1, depth=6 | 0.454 | 58.574 | odd | false | true | false | - |
+| pm-strahler+pre+iter | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=5 / k=1, t=1, depth=6 | 0.435 | 58.574 | odd | false | true | false | - |
+| pm-succinct | complete | 5032 / 4968 | 41 / 50 | 10 / 9 | 6 / 7 | bits=2, depth=5 / bits=2, depth=6 | 0.578 | 58.574 | odd | false | true | false | - |
+| pm-succinct+pre | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=5 / bits=0, depth=6 | 0.433 | 58.574 | odd | false | true | false | - |
+| pm-succinct+iter | complete | 5032 / 4968 | 32 / 33 | 8 / 6 | 6 / 7 | bits=1, depth=5 / bits=1, depth=6 | 0.475 | 58.574 | odd | false | true | false | - |
+| pm-succinct+pre+iter | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=5 / bits=0, depth=6 | 0.433 | 58.574 | odd | false | true | false | - |
+| zielonka | complete | 5032 / 4968 | 1 / 2 | 1 / 1 | 1 / 2 | — / — | 0.442 | 58.574 | odd | false | true | false | - |
+| zielonka+pre | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.424 | 58.574 | odd | false | true | false | - |
+| zielonka-sym | complete | 5032 / 4968 | 1 / 2 | 1 / 1 | 1 / 2 | — / — | 0.444 | 58.574 | odd | false | true | false | - |
+| zielonka-sym+pre | complete | 5032 / 4968 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.412 | 58.574 | odd | false | true | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
+| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive+iter | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
+| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler | 20 / 34 | 5 / 7 | 4 / 5 | 1.200 / 1.176 | 2 / 2 | 6 / 7 | 6.000 / 7.000 | 2 / 2 |
+| pm-strahler+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler+iter | 5 / 6 | 1 / 1 | 1 / 1 | 1.000 / 1.000 | 0 / 0 | 6 / 7 | 6.000 / 7.000 | 1 / 1 |
+| pm-strahler+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct | 31 / 41 | 10 / 9 | 4 / 5 | 1.290 / 1.195 | 5 / 4 | 6 / 7 | 6.000 / 7.000 | 3 / 3 |
+| pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct+iter | 24 / 27 | 8 / 6 | 3 / 3 | 1.292 / 1.185 | 4 / 3 | 6 / 7 | 6.000 / 7.000 | 2 / 2 |
 | pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
 | zielonka | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
 | zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
