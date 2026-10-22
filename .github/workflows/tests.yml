@@ -249,11 +249,13 @@ jobs:
 
       - name: Generate reports and enforce threshold
         run: |
+          # Uncapped observer invariance can exceed gcovr's 32-bit hit threshold.
           gcovr \
             --root . \
             --filter '^src/' \
             --gcov-executable gcov-14 \
             --gcov-object-directory build-coverage \
+            --gcov-suspicious-hits-threshold 0 \
             --txt build-coverage/coverage.txt \
             --xml-pretty \
             --xml build-coverage/coverage.xml \

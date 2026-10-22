@@ -48,6 +48,8 @@ typedef struct {
 /* Lift, check, and materialize one player's run, replacing its outcome. */
 [[nodiscard]] static bool run_on_host(Solver *solver, ADLiftTree *host) {
   PGPlayer const player = host->player;
+  AD_TRACE(solver->options->trace, .kind = AD_TRACE_PHASE, .player = player,
+           .name = "host_built", .to = host->node_count);
   ADLiftPlayerStats *stats = solver->stats->player + player;
   if (solver->options->symmetric) {
     stats->host_nodes = host->node_count;
@@ -65,9 +67,9 @@ typedef struct {
   if (!solver->options->incremental || known_losing->bit_count == 0) {
     known_losing = nullptr;
   }
-  if (!ad_lift_run_seeded(solver->game, solver->domain, host,
-                          solver->options->schedule, known_losing, &labelling,
-                          &lift_error)) {
+  if (!ad_lift_run_trace(solver->game, solver->domain, host,
+                         solver->options->schedule, known_losing, &labelling,
+                         &lift_error, solver->options->trace)) {
     solve_error(solver->error, "%s lifting failed: %s", player_name(player),
                 lift_error.message);
     return false;
@@ -95,6 +97,12 @@ typedef struct {
     goto failure;
   }
 
+  AD_TRACE(solver->options->trace, .kind = AD_TRACE_PHASE, .player = player,
+           .name = "dominion_certified", .vertices = &labelling.dominion);
+  if (solver->options->trace != nullptr && solver->options->trace->failed) {
+    solve_error(solver->error, "trace observer stopped the run");
+    goto failure;
+  }
   stats->host_nodes = host->node_count;
   stats->host_leaves = host->leaf_count;
   stats->host_positions = host->position_count;
@@ -270,6 +278,8 @@ typedef enum {
   size_t best_count[2] = {0, 0};
   size_t best_t[2] = {0, 0};
   for (size_t t = smaller(solver->options->t, stats->t_full);; t++) {
+    AD_TRACE(solver->options->trace, .kind = AD_TRACE_PHASE, .name = "t_raised",
+             .to = t);
     for (size_t player = 0; player < 2; player++) {
       ADLiftPlayerStats const *shape = stats->player + player;
       size_t k = smaller(shape->height, t + 1);
@@ -428,8 +438,9 @@ typedef enum {
 
   if (succeeded && options->symmetric) {
     ad_result_destroy(result);
-    succeeded = ad_sym_solve(game, domain, solver.hosts, options->verify,
-                             result, &stats->symmetric, error);
+    succeeded =
+        ad_sym_solve_trace(game, domain, solver.hosts, options->verify, result,
+                           &stats->symmetric, error, options->trace);
     if (succeeded) {
       for (size_t player = 0; player < 2; player++) {
         stats->player[player].tree =
@@ -489,7 +500,8 @@ typedef enum {
          pg_set_clone(&result->unresolved, remaining);
 }
 
-bool ad_lift_solve(PGGame const *game, PGSet const *domain,
+[[nodiscard]] static bool
+solve_with_options(PGGame const *game, PGSet const *domain,
                    ADLiftOptions const *options, ADResult *result,
                    ADLiftSolveStats *stats, ADLiftError *error) {
   if (error != nullptr) {
@@ -526,6 +538,11 @@ bool ad_lift_solve(PGGame const *game, PGSet const *domain,
         stats->budget_exhausted = true;
         succeeded = empty_residual(&remaining, result);
       }
+      goto cleanup;
+    }
+    AD_TRACE(options->trace, .kind = AD_TRACE_PHASE, .name = "iteration_done",
+             .to = stats->iterations, .result = result);
+    if (options->trace != nullptr && options->trace->failed) {
       goto cleanup;
     }
     current.iterations = stats->iterations + !pg_set_empty(&remaining);
@@ -574,12 +591,25 @@ bool ad_lift_solve(PGGame const *game, PGSet const *domain,
         solve_error(error, "failed to attract a certified dominion");
         goto cleanup;
       }
+      AD_TRACE(options->trace, .kind = AD_TRACE_ATTRACTOR,
+               .player = (PGPlayer)player, .name = "side",
+               .target = &shave->certified.region[player],
+               .vertices = &shave->attracted[player], .subgame = &remaining);
+      if (options->trace != nullptr && options->trace->failed) {
+        goto cleanup;
+      }
     }
     /* Removing a dominion's attractor leaves a total subgame. Its winners
      * remain winners in the original game: exits into a removed opponent
      * dominion were already attracted, and exits into one's own are winning. */
     pg_set_subtract_into(&remaining, &shave->attracted[0]);
     pg_set_subtract_into(&remaining, &shave->attracted[1]);
+    AD_TRACE(options->trace, .kind = AD_TRACE_PHASE, .name = "shave_applied",
+             .to = history.shave_count - 1, .result = &shave->certified,
+             .vertices = &remaining);
+    if (options->trace != nullptr && options->trace->failed) {
+      goto cleanup;
+    }
     bool const adaptive = options->mode == AD_LIFT_HOST_ADAPTIVE;
     if (pg_set_empty(&remaining) ||
         (adaptive && stats->player[0].t >= stats->t_full)) {
@@ -611,4 +641,26 @@ cleanup:
   }
   ad_result_destroy(&history);
   return succeeded;
+}
+
+bool ad_lift_solve(PGGame const *game, PGSet const *domain,
+                   ADLiftOptions const *options, ADResult *result,
+                   ADLiftSolveStats *stats, ADLiftError *error) {
+  ADTrace *trace = options == nullptr ? nullptr : options->trace;
+  if (trace != nullptr) {
+    trace->nesting++;
+  }
+  bool success =
+      solve_with_options(game, domain, options, result, stats, error);
+  if (trace != nullptr) {
+    if (--trace->nesting == 0 && success) {
+      AD_TRACE(trace, .kind = AD_TRACE_RESULT, .result = result);
+    }
+    if (success && trace->failed) {
+      ad_result_destroy(result);
+      solve_error(error, "trace observer stopped the run");
+      success = false;
+    }
+  }
+  return success;
 }

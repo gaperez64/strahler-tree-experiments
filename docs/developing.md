@@ -368,6 +368,11 @@ standard input. The default algorithm is attractor-decomposition lifting.
 - `--algorithm=lifting|zielonka|zielonka-sym|lifting-sym` selects the solver;
   the default is `lifting`. `zielonka` runs enhanced Zielonka. All four share
   preprocessing, statistics and verification.
+- `--trace=FILE` writes algorithm events as JSON Lines, leaving DOT and statistics
+  unchanged. `--trace-limit=N` sets the event budget (default 1,000,000; zero is
+  allowed). Exceeding it stops the solver with status 1 and a final `truncated`
+  event. These options are supported with every `pg2adot` option combination;
+  `pg2pmdot` does not accept them. See [the schema](#algorithm-traces).
 - `--initial-shave=LIST` solves and removes dominions before building either tree.
   Use a comma list of `single` (all remaining priorities have one parity),
   `loops` (winning self-loops, including forced losing-owner loops), and
@@ -722,6 +727,142 @@ With the default `--algorithm=lifting`, these nodes are exactly the parts of
 the lifting host that the final labelling occupies; see
 [attractor-decomposition lifting](#attractor-decomposition-lifting).
 In a partial result the root reads `Even dominion` or `Odd dominion`.
+
+## Algorithm traces
+
+For example, from the repository root:
+
+```sh
+build/pg2adot --algorithm=zielonka-sym --trace=steps.jsonl tests/games/otj22-fig1.gm >game.dot
+```
+
+Every line is one JSON object. The header has `event: "header"`,
+`schema: "strahler-trace/1"`, `version`, `algorithm`, and `options` (the command
+arguments). Algorithm events have consecutive `step` numbers starting at 1, `event`,
+`player` (0 Even, 1 Odd), and `path` (zero-based child indices, root `[]`).
+On a successful run the last and only `result` event contains the final result.
+The header is outside the event budget; `truncated` replaces the first event
+past the budget. After option validation, the destination is truncated and the
+header written before reading either input, so a failed parse replaces any old
+trace. Failed runs end in `incomplete` with a reason and the CLI exit status
+whenever the stream remains writable; an unwritable stream can leave a prefix.
+An `incomplete` record overrides any preceding solver result (for example, if
+writing DOT subsequently fails). Files are closed on every exit path. A trace
+path aliasing the game, host input, stdout, or stderr is rejected before
+truncating it.
+
+All vertex sets are sorted arrays of the original PGSolver IDs, without the DOT
+label cap. Priority bounds `h` use the solver's compact priorities, including
+`--compress` when requested; `--priority-mode` controls only DOT display.
+
+| Event | Additional fields and meaning |
+| --- | --- |
+| `call` | Lower `player`, priority bound `h`, `paths: [even_path, odd_path]`, and `subgame`. Counts match the nonempty calls in `--stats`. |
+| `return` | Lower player's returned `vertices` (the separator for the symmetric algorithms). |
+| `attractor` | `kind: "top"` or `"side"`, `target`, and resulting `vertices`. The ambient `subgame` is included; lazy tests also include `safe` for their reach-through-safe attractor. |
+| `set` | Replace `part: "H"`, `"T"`, or `"S"` at `path` with `vertices`; `h` and `children` describe the stored node. Discard descendants with a next child index at least `children`. |
+| `move` | Transfer `vertices` from `path`/`part` to `to_path`/`to_part`. Reserved for observers that combine individual writes; the current algorithms emit sets or labels. |
+| `labels` | A changed `vertex` now occupies `path`/`part`, at node bound `h`. Replace its previous position for this player. |
+| `check` | `subgame`, `is_attractor_decomposition`, and `reason`, reporting the symmetric algorithm's own early-exit test. |
+| `lift` | One changed `vertex`, numeric host positions `from` and `to`, plus the new `path`/`part` and `h`. Its preceding `labels` event updates replay state. |
+| `round_end` | All scheduled changes of this lifting round are visible. A single-vertex schedule ends its round after one lift. |
+| `phase` | `phase`, `value`, and `vertices`; some phases include a certified `result`. See below. |
+| `result` | `initial_won: [even, odd]` from preprocessing, and `result: {complete, regions: [even, odd], unresolved, trees: [even, odd], shaves}`. |
+| `truncated` | `step` and `limit`; no result is claimed. The solver exits 1. |
+| `incomplete` | Next `step`, nonempty `reason`, and integer `exit_status`; the run failed and no result is claimed. Outside the event budget, without a player/path since input parsing can fail before solving. |
+
+A result tree is either `null` or `{h, H, T, S, children}`, recursively. A final
+result root's S is empty; vertices at root S/TOP are outside its dominion.
+Intermediate replay retains root S and roots containing only S, since those
+are actual algorithm positions. Apply dominion pruning only for comparisons
+with materialized results. Each shaving entry
+has `certified` (a result of the same format) and `attracted: [even, odd]`.
+The result describes residual trees separately from earlier shaving certificates.
+Initial preprocessing is reported by `preprocessed` with its active vertices.
+The final winning regions combine `initial_won`, the residual `regions`, and
+each shave's `attracted` sets. The already-won vertices are the preprocessing
+summary in DOT, without invented decomposition nodes.
+
+Zielonka emits sets after stored-tree writes and uses `phase: "discard"` to
+remove temporary nodes at a player's path before continuing. Symmetric solving
+and lifting emit **labels at every label write**, including initialization,
+smallMove, Set, short lifts, and certification. Such intermediate labels need
+not define a valid decomposition. They use host paths, retaining empty host
+branches; final materialization prunes unused branches in order. A regular
+position is H, minus-infinity is T, a child's plus position is its S, and TOP is
+root S. No attractor decomposition is substituted for unfinished labels.
+
+`labels_reset` starts a player's new host labelling; discard that player's old
+labels. Other phases are `host_built` (node count in `value`), `t_raised` (t in
+`value`), `dominion_certified`, `iteration_done` (result and iteration index),
+and `shave_applied` (certified result and shave index). Replayers retain the
+certified trees when a shave is applied, then continue with the residual game.
+`tests/trace_replay.py` implements these rules without reading result trees
+into its state, and compares its state with every final result.
+
+The C observer is `ADTrace` in `src/ad_trace.h`: a callback, context, monotonically
+increasing step counter, and failure state. All event pointers, including
+`PGSet const *` and path arrays, are borrowed for the callback only. Copy what
+must survive it. Returning false aborts the run. A null observer takes the null
+branch at each event site and performs no observer allocation or set copying.
+The existing solver entry points remain available; traced variants and
+`ADLiftOptions.trace` carry the observer. Nested certification/iterative solves
+share the counter and emit exactly one top-level result.
+
+The default tests serialize and replay the bounded games, property, paper, and
+host corpora. Every example/backend pair instead compares stdout, `--stats`,
+and exit status with a test-only build of the same CLI whose observer counts
+events and discards their data (`trace_count_pg2adot`). It uses the backend's
+actual options and host budget. Deliberately restricted budgets have separate
+`test_trace_host-errors` and lifecycle tests.
+Games and examples are split by backend to bound each test's sanitizer runtime.
+The `thesis_f4.pg` lifting cases also use counting: their real default host
+solves successfully, but serializing its millions of lifts exceeds
+the default test budget. The other game fixtures retain JSON replay coverage
+for every backend option combination.
+
+Uncapped invariance can legitimately exceed 2³² execution hits on hot lines.
+CI and local coverage reports use `gcovr --gcov-suspicious-hits-threshold 0`
+to retain those counters; negative counters still cause a reporting error.
+
+Plain `meson test` excludes the `slow` suite. The default examples test prints
+every delegated pair; the suite registers these exact pairs as individual tests:
+
+- `cabp_swp.ehoa.pg/lifting-adaptive`
+- `cabp_swp.ehoa.pg/lifting-adaptive+pre`
+- `cabp_swp.ehoa.pg/lifting-adaptive+iter`
+- `cabp_swp.ehoa.pg/lifting-adaptive+pre+iter`
+- `thesis_f4.pg/lifting`
+- `thesis_f4.pg/lifting+pre`
+- `thesis_f4.pg/lifting+iter`
+- `thesis_f4.pg/lifting+pre+iter`
+
+The cabp runs exceed 20 seconds even without tracing in release builds (about
+71 million lifts). The four full-host F₄ invariance tests exceed 120 seconds
+under ASan even using the counting observer. Both groups retain their real
+default host budgets and successful solves in this suite. Build the required
+tools and run all eight invariance tests explicitly with:
+
+```sh
+meson compile -C build pg2adot trace_count_pg2adot trace_check
+meson test -C build --no-rebuild --setup=all --suite slow --print-errorlogs
+```
+
+`ADVerifyError` retains `message` and adds `condition`, `path_length`/`path`,
+and `vertex` (a dense C index, `SIZE_MAX` when none). `AD_VERIFY_MEMORY` is an
+incomplete check, never a semantic rejection. `ad_tree_check(game, subgame,
+player, root, error)` restricts the stored sets and prunes unused children before
+reusing the classic verifier on the induced total subgame. Error paths map back
+to the original tree. This preparation is needed because the existing verifiers
+compare stored sets exactly, without restricting them. An empty restriction is
+valid. The check makes no dominion claim about edges leaving the subgame; result
+verification additionally checks traps in the ambient domain.
+
+`ad_lift_materialize_partial` accepts compatible labels and their non-TOP
+region. It returns a candidate even for plus fibres with empty child cores,
+and a caller-owned list of `AD_VERIFY_EMPTY_CORE` structural problems, located
+in host paths. This is for observation; use `ad_tree_check` to test the candidate's
+semantics. Solvers continue to use the strict materializer and verifiers.
 
 ## Implementation notes
 

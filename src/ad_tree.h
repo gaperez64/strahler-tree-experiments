@@ -59,9 +59,45 @@ typedef struct {
   size_t strahler;
 } ADTreeMetrics;
 
+typedef enum {
+  AD_VERIFY_OK,
+  AD_VERIFY_INPUT,
+  AD_VERIFY_MEMORY,
+  AD_VERIFY_NODE,
+  AD_VERIFY_PRIORITY,
+  AD_VERIFY_TOP,
+  AD_VERIFY_CHILD_BOUND,
+  AD_VERIFY_TRAP,
+  AD_VERIFY_CHILD,
+  AD_VERIFY_ATTRACTOR,
+  AD_VERIFY_PARTITION,
+  AD_VERIFY_CORE,
+  AD_VERIFY_SHAVE,
+  AD_VERIFY_TOTALITY,
+  AD_VERIFY_REGION,
+  AD_VERIFY_INCOMPLETE,
+  AD_VERIFY_INACTIVE,
+  AD_VERIFY_POSITION,
+  AD_VERIFY_COMPATIBILITY,
+  AD_VERIFY_DOMINION,
+  AD_VERIFY_REGULAR,
+  AD_VERIFY_LAZY,
+  AD_VERIFY_EMPTY_CORE,
+} ADVerifyCondition;
+
+/* Solver priority bounds are at most 1025 (at most 513 tree edges). */
+enum { AD_PATH_CAPACITY = 1026 };
 typedef struct {
+  ADVerifyCondition condition;
+  size_t path_length;
+  size_t path[AD_PATH_CAPACITY];
+  size_t vertex; /* Internal vertex index, SIZE_MAX when there is none. */
   char message[256];
 } ADVerifyError;
+
+size_t ad_verify_dead_end(PGGame const *game, PGSet const *domain);
+void ad_verify_error(ADVerifyError *error, ADVerifyCondition condition,
+                     size_t vertex, char const *message);
 
 typedef struct {
   PGSet highest;
@@ -82,6 +118,13 @@ void ad_result_destroy(ADResult *result);
 
 [[nodiscard]] bool ad_tree_verify(PGGame const *game, PGSet const *domain,
                                   ADNode const *root, ADVerifyError *error);
+
+/* Definition 1 after restricting every stored set to the induced total
+ * subgame. Error paths refer to the original tree, before pruning empty
+ * children. An empty restriction is valid. No claim about exits is made. */
+[[nodiscard]] bool ad_tree_check(PGGame const *game, PGSet const *subgame,
+                                 PGPlayer player, ADNode const *root,
+                                 ADVerifyError *error);
 
 /* Derive the tree-relative parts for a classic node: H is the priority-bound
  * target in core, T is the rest of the stored top attractor, and S is

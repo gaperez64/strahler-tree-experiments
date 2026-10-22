@@ -31,10 +31,34 @@ static void solver_error(ZielonkaError *error, char const *message) {
   return true;
 }
 
+typedef struct {
+  ADTrace *observer;
+  size_t indices[2][AD_PATH_CAPACITY];
+  ADTracePath paths[2];
+} TracePaths;
+
+static void trace_return(TracePaths *paths, PGGame const *game,
+                         PGSet const *domain, ADResult const *result,
+                         PGPlayer const lower) {
+  for (size_t player = 0; player < 2; player++) {
+    if (result->decomposition[player] == nullptr) {
+      AD_TRACE(paths->observer, .kind = AD_TRACE_PHASE,
+               .player = (PGPlayer)player, .path = paths->paths[player],
+               .name = "discard");
+    }
+    ad_trace_tree(paths->observer, game, &result->region[player],
+                  &result->region[player], result->decomposition[player],
+                  paths->paths[player]);
+  }
+  AD_TRACE(paths->observer, .kind = AD_TRACE_RETURN, .player = lower,
+           .path = paths->paths[lower], .vertices = &result->region[lower],
+           .subgame = domain);
+}
+
 [[nodiscard]] static bool solve(PGGame const *game, PGSet const *domain,
                                 uint64_t const bound, size_t const depth,
                                 ADResult *result, ZielonkaError *error,
-                                ZielonkaStats *stats) {
+                                ZielonkaStats *stats, TracePaths *paths) {
   if (depth > MAX_RECURSION_DEPTH) {
     solver_error(error, "priority depth exceeds the safe recursion depth");
     return false;
@@ -48,6 +72,16 @@ static void solver_error(ZielonkaError *error, char const *message) {
     return true;
   }
   stats->calls++;
+  if (paths != nullptr) {
+    AD_TRACE(paths->observer, .kind = AD_TRACE_CALL,
+             .player = (PGPlayer)(bound % 2), .h = bound,
+             .path = paths->paths[bound % 2],
+             .paths = {paths->paths[0], paths->paths[1]}, .subgame = domain);
+    if (paths->observer->failed) {
+      solver_error(error, "trace observer stopped the run");
+      goto failure;
+    }
+  }
   if (!domain_within_bound(game, domain, bound) ||
       !pg_subgame_is_total(game, domain)) {
     solver_error(error, "solver domain violates its bound or totality");
@@ -63,6 +97,12 @@ static void solver_error(ZielonkaError *error, char const *message) {
       goto failure;
     }
     result->decomposition[PG_EVEN] = node;
+    if (paths != nullptr) {
+      trace_return(paths, game, domain, result, PG_EVEN);
+      if (paths->observer->failed) {
+        goto failure;
+      }
+    }
     return true;
   }
 
@@ -81,6 +121,15 @@ static void solver_error(ZielonkaError *error, char const *message) {
     goto failure;
   }
 
+  if (paths != nullptr) {
+    ad_trace_tree(paths->observer, game, domain, domain, beta_accumulator,
+                  paths->paths[beta]);
+    if (paths->observer->failed) {
+      ad_node_destroy(beta_accumulator);
+      pg_set_destroy(&residual);
+      goto failure;
+    }
+  }
   while (!pg_set_empty(&residual)) {
     PGSet target = {0};
     PGSet alpha_attractor = {0};
@@ -102,9 +151,26 @@ static void solver_error(ZielonkaError *error, char const *message) {
       solver_error(error, "failed to compute the top attractor");
       goto iteration_failure;
     }
+    if (paths != nullptr) {
+      AD_TRACE(paths->observer, .kind = AD_TRACE_ATTRACTOR, .player = alpha,
+               .path = paths->paths[alpha], .name = "top", .target = &target,
+               .vertices = &alpha_attractor, .subgame = &residual);
+      if (paths->observer->failed) {
+        goto iteration_failure;
+      }
+    }
     pg_set_subtract_into(&lower, &alpha_attractor);
-    if (!pg_set_empty(&lower) &&
-        !solve(game, &lower, bound - 1, depth + 1, &recursive, error, stats)) {
+    if (paths != nullptr) {
+      paths->indices[beta][paths->paths[beta].length++] =
+          beta_accumulator->child_count;
+    }
+    bool const recursed =
+        pg_set_empty(&lower) || solve(game, &lower, bound - 1, depth + 1,
+                                      &recursive, error, stats, paths);
+    if (paths != nullptr) {
+      paths->paths[beta].length--;
+    }
+    if (!recursed) {
       goto iteration_failure;
     }
 
@@ -141,6 +207,12 @@ static void solver_error(ZielonkaError *error, char const *message) {
       pg_set_destroy(&alpha_attractor);
       pg_set_destroy(&lower);
       ad_result_destroy(&recursive);
+      if (paths != nullptr) {
+        trace_return(paths, game, domain, result, alpha);
+        if (paths->observer->failed) {
+          goto failure;
+        }
+      }
       return true;
     }
 
@@ -156,6 +228,18 @@ static void solver_error(ZielonkaError *error, char const *message) {
       pg_set_destroy(&beta_attractor);
       goto iteration_failure;
     }
+    if (paths != nullptr) {
+      ADTracePath side_path = paths->paths[beta];
+      paths->indices[beta][side_path.length++] = beta_accumulator->child_count;
+      AD_TRACE(paths->observer, .kind = AD_TRACE_ATTRACTOR, .player = beta,
+               .path = side_path, .name = "side",
+               .target = &recursive.region[beta], .vertices = &beta_attractor,
+               .subgame = &residual);
+      if (paths->observer->failed) {
+        pg_set_destroy(&beta_attractor);
+        goto iteration_failure;
+      }
+    }
     ADChild child = {.subtree = recursive.decomposition[beta]};
     recursive.decomposition[beta] = nullptr;
     pg_set_move(&child.trap, &recursive.region[beta]);
@@ -168,6 +252,15 @@ static void solver_error(ZielonkaError *error, char const *message) {
       ad_node_destroy(child.subtree);
       solver_error(error, "failed to append an opponent dominion");
       goto iteration_failure;
+    }
+    if (paths != nullptr) {
+      AD_TRACE(paths->observer, .kind = AD_TRACE_PHASE, .player = alpha,
+               .path = paths->paths[alpha], .name = "discard");
+      ad_trace_tree(paths->observer, game, domain, domain, beta_accumulator,
+                    paths->paths[beta]);
+      if (paths->observer->failed) {
+        goto iteration_failure;
+      }
     }
     size_t const previous_size = pg_set_count(&residual);
     pg_set_subtract_into(
@@ -203,6 +296,12 @@ static void solver_error(ZielonkaError *error, char const *message) {
   }
   result->decomposition[beta] = beta_accumulator;
   pg_set_destroy(&residual);
+  if (paths != nullptr) {
+    trace_return(paths, game, domain, result, alpha);
+    if (paths->observer->failed) {
+      goto failure;
+    }
+  }
   return true;
 
 failure:
@@ -210,9 +309,10 @@ failure:
   return false;
 }
 
-bool zielonka_decompose_stats(PGGame const *game, PGSet const *domain,
-                              uint64_t const bound, ADResult *result,
-                              ZielonkaStats *stats, ZielonkaError *error) {
+[[nodiscard]] static bool
+decompose_trace(PGGame const *game, PGSet const *domain, uint64_t const bound,
+                ADResult *result, ZielonkaStats *stats, ZielonkaError *error,
+                ADTrace *trace) {
   ZielonkaStats local = {0};
   if (stats == nullptr) {
     stats = &local;
@@ -231,7 +331,13 @@ bool zielonka_decompose_stats(PGGame const *game, PGSet const *domain,
     return false;
   }
   *result = (ADResult){0};
-  if (!solve(game, domain, bound, 0, result, error, stats)) {
+  TracePaths paths;
+  paths.observer = trace;
+  for (size_t player = 0; player < 2; player++) {
+    paths.paths[player] = (ADTracePath){.indices = paths.indices[player]};
+  }
+  if (!solve(game, domain, bound, 0, result, error, stats,
+             trace == nullptr ? nullptr : &paths)) {
     return false;
   }
   if (!pg_set_init(&result->unresolved, game->vertex_count)) {
@@ -246,4 +352,33 @@ bool zielonka_decompose(PGGame const *game, PGSet const *domain,
                         uint64_t const bound, ADResult *result,
                         ZielonkaError *error) {
   return zielonka_decompose_stats(game, domain, bound, result, nullptr, error);
+}
+
+bool zielonka_decompose_stats(PGGame const *game, PGSet const *domain,
+                              uint64_t const bound, ADResult *result,
+                              ZielonkaStats *stats, ZielonkaError *error) {
+  return zielonka_decompose_trace(game, domain, bound, result, stats, error,
+                                  nullptr);
+}
+
+bool zielonka_decompose_trace(PGGame const *game, PGSet const *domain,
+                              uint64_t const bound, ADResult *result,
+                              ZielonkaStats *stats, ZielonkaError *error,
+                              ADTrace *trace) {
+  if (trace != nullptr) {
+    trace->nesting++;
+  }
+  bool success =
+      decompose_trace(game, domain, bound, result, stats, error, trace);
+  if (trace != nullptr) {
+    if (--trace->nesting == 0 && success) {
+      AD_TRACE(trace, .kind = AD_TRACE_RESULT, .result = result);
+    }
+    if (success && trace->failed) {
+      ad_result_destroy(result);
+      solver_error(error, "trace observer stopped the run");
+      success = false;
+    }
+  }
+  return success;
 }

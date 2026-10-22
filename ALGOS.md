@@ -123,6 +123,13 @@ flowchart TD
 
 Source: [Raghavan's thesis](https://thejaswiniraghavan.github.io/PhD_Thesis.pdf), Algorithm 7.
 
+`pg2adot --trace=steps.jsonl` records the steps of all four decomposition
+algorithms, including both players' intermediate H/T/S labels, recursive calls,
+attractors and lifting rounds. Tracing preserves the computed result and statistics.
+The file uses JSON Lines (`strahler-trace/1`); `--trace-limit=N` stops with status
+1 and a final `truncated` event when N events have been written (default one
+million). The event schema is in [the command reference](docs/developing.md#algorithm-traces).
+
 ## Symmetric Zielonka: `zielonka-sym`
 
 Symmetric Zielonka builds complete decomposition trees and keeps both players'

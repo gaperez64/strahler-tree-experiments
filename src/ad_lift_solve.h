@@ -58,6 +58,7 @@ typedef struct {
   bool iter_shave;
   /* Algorithm 9; adaptive hosts are not supported. */
   bool symmetric;
+  ADTrace *trace;
 } ADLiftOptions;
 
 typedef struct {

@@ -25,6 +25,8 @@ typedef struct {
   PGSet lower;
   PGSet checked;
   ADSymStats *stats;
+  ADTrace *trace;
+  size_t (*trace_paths)[AD_PATH_CAPACITY];
 } Sym;
 
 static void sym_error(ADLiftError *error, char const *message) {
@@ -71,16 +73,27 @@ static void sym_error(ADLiftError *error, char const *message) {
 
 [[nodiscard]] static bool attract(Sym *state, PGSet const *domain,
                                   PGSet const *target, PGPlayer const player,
-                                  PGSet *result) {
+                                  PGSet *result, size_t const node,
+                                  char const *kind) {
   state->stats->attractors++;
-  return pg_attractor(state->game, domain, target, player, result);
+  bool const success =
+      pg_attractor(state->game, domain, target, player, result);
+  if (success && state->trace != nullptr) {
+    size_t storage[AD_PATH_CAPACITY];
+    ADTracePath const path =
+        ad_trace_host_path(state->tree + player, node, storage);
+    AD_TRACE(state->trace, .kind = AD_TRACE_ATTRACTOR, .player = player,
+             .path = path, .name = kind, .target = target, .vertices = result,
+             .subgame = domain);
+  }
+  return success && (state->trace == nullptr || !state->trace->failed);
 }
 
 /* Proposition 7.2.1, restricted to this call's subgame. Failure to satisfy a
  * condition is distinct from failure to allocate an attractor. */
-[[nodiscard]] static bool is_ad(Sym *state, PGSet const *domain,
-                                PGPlayer const player, size_t const node,
-                                bool *valid) {
+[[nodiscard]] static bool is_ad_impl(Sym *state, PGSet const *domain,
+                                     PGPlayer const player, size_t const node,
+                                     bool *valid) {
   *valid = false;
   pg_set_clear(&state->checked);
   for (size_t vertex = pg_set_next(domain, 0); vertex != SIZE_MAX;
@@ -133,6 +146,18 @@ static void sym_error(ADLiftError *error, char const *message) {
                               player, &attracted)) {
       return false;
     }
+    if (state->trace != nullptr) {
+      size_t storage[AD_PATH_CAPACITY];
+      ADTracePath const path =
+          ad_trace_host_path(state->tree + player, label.node, storage);
+      AD_TRACE(state->trace, .kind = AD_TRACE_ATTRACTOR, .player = player,
+               .path = path, .name = "side", .target = &state->lower,
+               .vertices = &attracted, .subgame = domain, .safe = &state->safe);
+      if (state->trace->failed) {
+        pg_set_destroy(&attracted);
+        return false;
+      }
+    }
     bool reached = true;
     for (size_t other = vertex; other != SIZE_MAX;
          other = pg_set_next(domain, other + 1)) {
@@ -151,6 +176,24 @@ static void sym_error(ADLiftError *error, char const *message) {
   }
   *valid = true;
   return true;
+}
+
+[[nodiscard]] static bool is_ad(Sym *state, PGSet const *domain,
+                                PGPlayer const player, size_t const node,
+                                bool *valid) {
+  if (!is_ad_impl(state, domain, player, node, valid)) {
+    return false;
+  }
+  if (state->trace != nullptr) {
+    size_t storage[AD_PATH_CAPACITY];
+    ADTracePath const path =
+        ad_trace_host_path(state->tree + player, node, storage);
+    AD_TRACE(state->trace, .kind = AD_TRACE_CHECK, .player = player,
+             .path = path, .subgame = domain, .valid = *valid,
+             .name = *valid ? "valid restricted labelling"
+                            : "restricted labelling condition fails");
+  }
+  return state->trace == nullptr || !state->trace->failed;
 }
 
 [[nodiscard]] static size_t add_node(Sym *state, PGPlayer const player,
@@ -253,6 +296,13 @@ static void sym_error(ADLiftError *error, char const *message) {
       }
       *label = (Label){side, AD_POS_PLUS};
     }
+    if (state->trace != nullptr) {
+      ad_trace_label(state->trace, state->tree + player, vertex, label->node,
+                     label->kind, AD_TRACE_LABELS, 0, 0);
+      if (state->trace->failed) {
+        return false;
+      }
+    }
   }
   return true;
 }
@@ -267,15 +317,25 @@ static void set_side(Sym *state, PGSet const *vertices, PGPlayer const player,
     Label *label = state->labels[player] + vertex;
     if (compare(state->tree + player, *label, side) < 0) {
       *label = side;
+      if (state->trace != nullptr) {
+        ad_trace_label(state->trace, state->tree + player, vertex, label->node,
+                       label->kind, AD_TRACE_LABELS, 0, 0);
+        if (state->trace->failed) {
+          return;
+        }
+      }
     }
   }
 }
 
+[[nodiscard]] static bool solve(Sym *state, PGSet *domain, PGPlayer player,
+                                size_t node, size_t opponent_node);
+
 /* Algorithms 8/9, with players exchanged on alternating levels. domain is
  * owned by the caller and becomes the returned separator for this player. */
-[[nodiscard]] static bool solve(Sym *state, PGSet *domain,
-                                PGPlayer const player, size_t const node,
-                                size_t const opponent_node) {
+[[nodiscard]] static bool solve_impl(Sym *state, PGSet *domain,
+                                     PGPlayer const player, size_t const node,
+                                     size_t const opponent_node) {
   state->stats->calls++;
   PGPlayer const opponent = (PGPlayer)(1 - player);
   assert(pg_subgame_is_total(state->game, domain));
@@ -329,7 +389,7 @@ static void set_side(Sym *state, PGSet const *vertices, PGPlayer const player,
         pg_set_add(&target, vertex);
       }
     }
-    if (!attract(state, domain, &target, player, &top) ||
+    if (!attract(state, domain, &target, player, &top, node, "top") ||
         !move(state, domain, player, node, AD_POS_MINUS_INF, &top)) {
       goto failure;
     }
@@ -354,7 +414,7 @@ static void set_side(Sym *state, PGSet const *vertices, PGPlayer const player,
     pg_set_union_into(&target, domain);
     pg_set_subtract_into(&target, &subgame);
     PGSet escaping = {0};
-    if (!attract(state, domain, &target, player, &escaping)) {
+    if (!attract(state, domain, &target, player, &escaping, node, "side")) {
       goto failure;
     }
     pg_set_intersect_into(&escaping, &subgame);
@@ -363,7 +423,7 @@ static void set_side(Sym *state, PGSet const *vertices, PGPlayer const player,
     pg_set_destroy(&escaping);
     if ((!pg_set_empty(&subgame) &&
          !solve(state, &subgame, opponent, child, node)) ||
-        !attract(state, domain, &subgame, opponent, &side) ||
+        !attract(state, domain, &subgame, opponent, &side, child, "side") ||
         !move(state, domain, opponent, child, AD_POS_PLUS, &side)) {
       goto failure;
     }
@@ -404,6 +464,33 @@ failure:
   return false;
 }
 
+[[nodiscard]] static bool solve(Sym *state, PGSet *domain,
+                                PGPlayer const player, size_t const node,
+                                size_t const opponent_node) {
+  ADTracePath paths[2] = {0};
+  if (state->trace != nullptr) {
+    paths[player] = ad_trace_host_path(state->tree + player, node,
+                                       state->trace_paths[player]);
+    paths[1 - player] =
+        ad_trace_host_path(state->tree + (1 - player), opponent_node,
+                           state->trace_paths[1 - player]);
+    AD_TRACE(state->trace, .kind = AD_TRACE_CALL, .player = player,
+             .h = state->tree[player].nodes[node].level, .path = paths[player],
+             .paths = {paths[0], paths[1]}, .subgame = domain);
+    if (state->trace->failed) {
+      return false;
+    }
+  }
+  bool const success = solve_impl(state, domain, player, node, opponent_node);
+  if (success && state->trace != nullptr) {
+    paths[player] = ad_trace_host_path(state->tree + player, node,
+                                       state->trace_paths[player]);
+    AD_TRACE(state->trace, .kind = AD_TRACE_RETURN, .player = player,
+             .path = paths[player], .vertices = domain);
+  }
+  return success && (state->trace == nullptr || !state->trace->failed);
+}
+
 /* Flatten only the nodes actually visited by Algorithm 8, or the supplied
  * finite host, to reuse the labelling verifier and classic materializer. */
 static void flatten(ADLiftTree *tree, size_t const index, size_t *position) {
@@ -424,9 +511,10 @@ static void flatten(ADLiftTree *tree, size_t const index, size_t *position) {
   node->after = *position;
 }
 
-bool ad_sym_solve(PGGame const *game, PGSet const *domain,
-                  ADLiftTree const *hosts, bool const verify, ADResult *result,
-                  ADSymStats *stats, ADLiftError *error) {
+[[nodiscard]] static bool
+sym_solve_trace(PGGame const *game, PGSet const *domain,
+                ADLiftTree const *hosts, bool const verify, ADResult *result,
+                ADSymStats *stats, ADLiftError *error, ADTrace *trace) {
   if (error != nullptr) {
     *error = (ADLiftError){0};
   }
@@ -445,10 +533,13 @@ bool ad_sym_solve(PGGame const *game, PGSet const *domain,
     sym_error(error, "invalid symmetric solver input");
     return false;
   }
+  size_t trace_paths[2][AD_PATH_CAPACITY];
   Sym state = {.game = game,
                .memory = hosts == nullptr,
                .arity = pg_set_count(domain),
-               .stats = stats};
+               .stats = stats,
+               .trace = trace,
+               .trace_paths = trace_paths};
   PGSet separator = {0};
   uint64_t maximum = 0;
   for (size_t vertex = pg_set_next(domain, 0); vertex != SIZE_MAX;
@@ -499,10 +590,20 @@ bool ad_sym_solve(PGGame const *game, PGSet const *domain,
         !pg_set_init(result->region + player, game->vertex_count)) {
       goto failure;
     }
+    AD_TRACE(trace, .kind = AD_TRACE_PHASE, .player = (PGPlayer)player,
+             .name = "labels_reset");
     for (size_t vertex = pg_set_next(domain, 0); vertex != SIZE_MAX;
          vertex = pg_set_next(domain, vertex + 1)) {
       state.labels[player][vertex] =
           assign(&state, (PGPlayer)player, 0, vertex);
+      if (trace != nullptr) {
+        Label const label = state.labels[player][vertex];
+        ad_trace_label(trace, tree, vertex, label.node, label.kind,
+                       AD_TRACE_LABELS, 0, 0);
+        if (trace->failed) {
+          goto failure;
+        }
+      }
     }
   }
   /* The upper root has no highest-priority vertices. Its empty top attractor
@@ -575,7 +676,7 @@ bool ad_sym_solve(PGGame const *game, PGSet const *domain,
     /* Theorem F guarantees a separator, not certificates for arbitrary hosts.
      * Finish short lifts from D ⊑ A to obtain both least valid labellings. */
     if (!state.memory &&
-        !ad_lift_continue(game, domain, tree, &labelling, error)) {
+        !ad_lift_continue_trace(game, domain, tree, &labelling, error, trace)) {
       ad_lift_labelling_destroy(&labelling);
       goto failure;
     }
@@ -593,6 +694,8 @@ bool ad_sym_solve(PGGame const *game, PGSet const *domain,
       sym_error(error, verify_error.message);
       goto failure;
     }
+    AD_TRACE(trace, .kind = AD_TRACE_PHASE, .player = (PGPlayer)player,
+             .name = "dominion_certified", .vertices = result->region + player);
     pg_set_subtract_into(&result->unresolved, result->region + player);
   }
   PGPlayer const first = (PGPlayer)(maximum % 2);
@@ -636,4 +739,33 @@ failure:
   pg_set_destroy(&state.checked);
   ad_result_destroy(result);
   return false;
+}
+
+bool ad_sym_solve(PGGame const *game, PGSet const *domain,
+                  ADLiftTree const *hosts, bool const verify, ADResult *result,
+                  ADSymStats *stats, ADLiftError *error) {
+  return ad_sym_solve_trace(game, domain, hosts, verify, result, stats, error,
+                            nullptr);
+}
+
+bool ad_sym_solve_trace(PGGame const *game, PGSet const *domain,
+                        ADLiftTree const *hosts, bool const verify,
+                        ADResult *result, ADSymStats *stats, ADLiftError *error,
+                        ADTrace *trace) {
+  if (trace != nullptr) {
+    trace->nesting++;
+  }
+  bool success =
+      sym_solve_trace(game, domain, hosts, verify, result, stats, error, trace);
+  if (trace != nullptr) {
+    if (--trace->nesting == 0 && success) {
+      AD_TRACE(trace, .kind = AD_TRACE_RESULT, .result = result);
+    }
+    if (success && trace->failed) {
+      ad_result_destroy(result);
+      sym_error(error, "trace observer stopped the run");
+      success = false;
+    }
+  }
+  return success;
 }

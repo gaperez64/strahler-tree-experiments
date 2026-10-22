@@ -29,12 +29,6 @@ static void lift_error(ADLiftError *error, char const *message) {
   }
 }
 
-static void verify_error(ADVerifyError *error, char const *message) {
-  if (error != nullptr && error->message[0] == '\0') {
-    (void)snprintf(error->message, sizeof(error->message), "%s", message);
-  }
-}
-
 typedef struct {
   size_t label;
   size_t vertex;
@@ -113,6 +107,7 @@ typedef struct {
   PGSet safe;
   PGSet invalid;
   size_t attractors;
+  ADTrace *trace;
 } LiftState;
 
 /* Mark every invalid vertex of the current labelling. Positions are visited in
@@ -160,6 +155,15 @@ typedef struct {
                                 &state->below, host->player, &attracted)) {
         return false;
       }
+      if (state->trace != nullptr) {
+        size_t storage[AD_PATH_CAPACITY];
+        ADTracePath const path =
+            ad_trace_host_path(host, current->node, storage);
+        AD_TRACE(state->trace, .kind = AD_TRACE_ATTRACTOR,
+                 .player = host->player, .path = path, .name = "side",
+                 .target = &state->below, .vertices = &attracted,
+                 .subgame = state->active, .safe = &state->safe);
+      }
       for (size_t index = begin; index < end; index++) {
         if (!pg_set_contains(&attracted, sorted[index].vertex)) {
           pg_set_add(&state->invalid, sorted[index].vertex);
@@ -177,9 +181,21 @@ typedef struct {
 
 static void lift(LiftState *state, size_t const vertex) {
   /* TOP is always valid, so an invalid vertex lies strictly below it. */
+  size_t const previous = state->labels[vertex];
   state->labels[vertex] =
       ad_lift_tree_first_compatible(state->host, state->labels[vertex] + 1,
                                     state->game->vertices[vertex].priority);
+  if (state->trace != nullptr) {
+    ADPosition const *position = state->host->positions + state->labels[vertex];
+    ad_trace_label(state->trace, state->host, vertex,
+                   position->kind == AD_POS_TOP ? 0 : position->node,
+                   position->kind, AD_TRACE_LABELS, previous,
+                   state->labels[vertex]);
+    ad_trace_label(state->trace, state->host, vertex,
+                   position->kind == AD_POS_TOP ? 0 : position->node,
+                   position->kind, AD_TRACE_LIFT, previous,
+                   state->labels[vertex]);
+  }
 }
 
 void ad_lift_labelling_destroy(ADLiftLabelling *labelling) {
@@ -197,10 +213,12 @@ void ad_lift_labelling_destroy(ADLiftLabelling *labelling) {
          host->top + 1 == host->position_count;
 }
 
-[[nodiscard]] static bool
-run(PGGame const *game, PGSet const *active, ADLiftTree const *host,
-    ADLiftSchedule const schedule, PGSet const *known_losing,
-    ADLiftLabelling *result, ADLiftError *error, size_t const *initial) {
+[[nodiscard]] static bool run(PGGame const *game, PGSet const *active,
+                              ADLiftTree const *host,
+                              ADLiftSchedule const schedule,
+                              PGSet const *known_losing,
+                              ADLiftLabelling *result, ADLiftError *error,
+                              size_t const *initial, ADTrace *trace) {
   if (error != nullptr) {
     *error = (ADLiftError){0};
   }
@@ -223,7 +241,8 @@ run(PGGame const *game, PGSet const *active, ADLiftTree const *host,
     return false;
   }
 
-  LiftState state = {.game = game, .active = active, .host = host};
+  LiftState state = {
+      .game = game, .active = active, .host = host, .trace = trace};
   state.labels = malloc((count == 0 ? 1 : count) * sizeof(state.labels[0]));
   if (state.labels == nullptr || !pg_set_init(&state.below, count) ||
       !pg_set_init(&state.safe, count) || !pg_set_init(&state.invalid, count) ||
@@ -249,6 +268,21 @@ run(PGGame const *game, PGSet const *active, ADLiftTree const *host,
     }
   }
 
+  AD_TRACE(trace, .kind = AD_TRACE_PHASE, .player = host->player,
+           .name = "labels_reset");
+  if (trace != nullptr) {
+    for (size_t vertex = pg_set_next(active, 0); vertex != SIZE_MAX;
+         vertex = pg_set_next(active, vertex + 1)) {
+      ADPosition const *position = host->positions + state.labels[vertex];
+      ad_trace_label(trace, host, vertex,
+                     position->kind == AD_POS_TOP ? 0 : position->node,
+                     position->kind, AD_TRACE_LABELS, 0, state.labels[vertex]);
+      if (trace->failed) {
+        lift_error(error, "trace observer stopped the run");
+        goto failure;
+      }
+    }
+  }
   ADLiftStats stats = {.max_position = SIZE_MAX};
   while (true) {
     if (!mark_invalid(&state)) {
@@ -263,12 +297,26 @@ run(PGGame const *game, PGSet const *active, ADLiftTree const *host,
     if (schedule == AD_LIFT_SCHEDULE_SINGLE) {
       lift(&state, first);
       stats.lifts++;
+      AD_TRACE(trace, .kind = AD_TRACE_ROUND_END, .player = host->player);
+      if (trace != nullptr && trace->failed) {
+        lift_error(error, "trace observer stopped the run");
+        goto failure;
+      }
       continue;
     }
     for (size_t vertex = first; vertex != SIZE_MAX;
          vertex = pg_set_next(&state.invalid, vertex + 1)) {
       lift(&state, vertex);
       stats.lifts++;
+      if (trace != nullptr && trace->failed) {
+        lift_error(error, "trace observer stopped the run");
+        goto failure;
+      }
+    }
+    AD_TRACE(trace, .kind = AD_TRACE_ROUND_END, .player = host->player);
+    if (trace != nullptr && trace->failed) {
+      lift_error(error, "trace observer stopped the run");
+      goto failure;
     }
   }
 
@@ -315,13 +363,13 @@ bool ad_lift_run_seeded(PGGame const *game, PGSet const *active,
                         ADLiftTree const *host, ADLiftSchedule const schedule,
                         PGSet const *known_losing, ADLiftLabelling *result,
                         ADLiftError *error) {
-  return run(game, active, host, schedule, known_losing, result, error,
-             nullptr);
+  return ad_lift_run_trace(game, active, host, schedule, known_losing, result,
+                           error, nullptr);
 }
 
-bool ad_lift_continue(PGGame const *game, PGSet const *active,
-                      ADLiftTree const *host, ADLiftLabelling *labelling,
-                      ADLiftError *error) {
+bool ad_lift_continue_trace(PGGame const *game, PGSet const *active,
+                            ADLiftTree const *host, ADLiftLabelling *labelling,
+                            ADLiftError *error, ADTrace *trace) {
   if (error != nullptr) {
     *error = (ADLiftError){0};
   }
@@ -332,7 +380,7 @@ bool ad_lift_continue(PGGame const *game, PGSet const *active,
   }
   ADLiftLabelling result = {0};
   if (!run(game, active, host, AD_LIFT_SCHEDULE_ROUNDS, nullptr, &result, error,
-           labelling->labels)) {
+           labelling->labels, trace)) {
     return false;
   }
   ad_lift_labelling_destroy(labelling);
@@ -360,15 +408,20 @@ bool ad_lift_verify(PGGame const *game, PGSet const *active,
                     ADLiftTree const *host, ADLiftLabelling const *labelling,
                     ADVerifyError *error) {
   if (error != nullptr) {
-    *error = (ADVerifyError){0};
+    *error = (ADVerifyError){.vertex = SIZE_MAX};
   }
   if (game == nullptr || active == nullptr || labelling == nullptr ||
       labelling->labels == nullptr || !valid_host(host) ||
       labelling->vertex_count != game->vertex_count ||
       active->bit_count != game->vertex_count ||
-      labelling->dominion.bit_count != game->vertex_count ||
-      !pg_subgame_is_total(game, active)) {
-    verify_error(error, "invalid labelling verifier input");
+      labelling->dominion.bit_count != game->vertex_count) {
+    ad_verify_error(error, AD_VERIFY_INPUT, SIZE_MAX,
+                    "invalid labelling verifier input");
+    return false;
+  }
+  if (!pg_subgame_is_total(game, active)) {
+    ad_verify_error(error, AD_VERIFY_TOTALITY, ad_verify_dead_end(game, active),
+                    "labelling verifier domain is not total");
     return false;
   }
   size_t const *labels = labelling->labels;
@@ -376,23 +429,48 @@ bool ad_lift_verify(PGGame const *game, PGSet const *active,
     if (!pg_set_contains(active, vertex)) {
       if (labels[vertex] != SIZE_MAX ||
           pg_set_contains(&labelling->dominion, vertex)) {
-        verify_error(error, "an inactive vertex is labelled");
+        ad_verify_error(error, AD_VERIFY_INACTIVE, vertex,
+                        "an inactive vertex is labelled");
+        if (error != nullptr && labels[vertex] <= host->top) {
+          ADPosition const *bad = host->positions + labels[vertex];
+          error->path_length =
+              ad_trace_host_path(host, bad->kind == AD_POS_TOP ? 0 : bad->node,
+                                 error->path)
+                  .length;
+        }
         return false;
       }
       continue;
     }
     if (labels[vertex] > host->top) {
-      verify_error(error, "a label is outside the host");
+      ad_verify_error(error, AD_VERIFY_POSITION, vertex,
+                      "a label is outside the host");
       return false;
     }
     if (!ad_position_accepts_priority(host, labels[vertex],
                                       game->vertices[vertex].priority)) {
-      verify_error(error, "a label is not priority compatible");
+      ad_verify_error(error, AD_VERIFY_COMPATIBILITY, vertex,
+                      "a label is not priority compatible");
+      if (error != nullptr) {
+        ADPosition const *bad = host->positions + labels[error->vertex];
+        error->path_length =
+            ad_trace_host_path(host, bad->kind == AD_POS_TOP ? 0 : bad->node,
+                               error->path)
+                .length;
+      }
       return false;
     }
     if ((labels[vertex] != host->top) !=
         pg_set_contains(&labelling->dominion, vertex)) {
-      verify_error(error, "the dominion is not the non-TOP region");
+      ad_verify_error(error, AD_VERIFY_DOMINION, vertex,
+                      "the dominion is not the non-TOP region");
+      if (error != nullptr) {
+        ADPosition const *bad = host->positions + labels[error->vertex];
+        error->path_length =
+            ad_trace_host_path(host, bad->kind == AD_POS_TOP ? 0 : bad->node,
+                               error->path)
+                .length;
+      }
       return false;
     }
   }
@@ -403,7 +481,8 @@ bool ad_lift_verify(PGGame const *game, PGSet const *active,
   if (!pg_set_init(&safe, game->vertex_count) ||
       !pg_set_init(&lower, game->vertex_count) ||
       !pg_set_init(&checked, game->vertex_count)) {
-    verify_error(error, "failed to allocate labelling verifier sets");
+    ad_verify_error(error, AD_VERIFY_MEMORY, SIZE_MAX,
+                    "failed to allocate labelling verifier sets");
     goto failure;
   }
   for (size_t vertex = pg_set_next(active, 0); vertex != SIZE_MAX;
@@ -416,7 +495,15 @@ bool ad_lift_verify(PGGame const *game, PGSet const *active,
     if (current->kind == AD_POS_REGULAR) {
       if (!regular_valid(game, active, labels, host->player, vertex,
                          host->nodes[current->node].after)) {
-        verify_error(error, "a regular condition fails");
+        ad_verify_error(error, AD_VERIFY_REGULAR, vertex,
+                        "a regular condition fails");
+        if (error != nullptr) {
+          ADPosition const *bad = host->positions + labels[error->vertex];
+          error->path_length =
+              ad_trace_host_path(host, bad->kind == AD_POS_TOP ? 0 : bad->node,
+                                 error->path)
+                  .length;
+        }
         goto failure;
       }
       continue;
@@ -428,7 +515,15 @@ bool ad_lift_verify(PGGame const *game, PGSet const *active,
     split_at(active, labels, position, &safe, &lower);
     if (!pg_attractor_through(game, active, &safe, &lower, host->player,
                               &attracted)) {
-      verify_error(error, "failed to compute a lazy attractor");
+      ad_verify_error(error, AD_VERIFY_MEMORY, vertex,
+                      "failed to compute a lazy attractor");
+      if (error != nullptr) {
+        ADPosition const *bad = host->positions + labels[error->vertex];
+        error->path_length =
+            ad_trace_host_path(host, bad->kind == AD_POS_TOP ? 0 : bad->node,
+                               error->path)
+                .length;
+      }
       goto failure;
     }
     for (size_t other = vertex; other != SIZE_MAX;
@@ -439,7 +534,15 @@ bool ad_lift_verify(PGGame const *game, PGSet const *active,
       pg_set_add(&checked, other);
       if (!pg_set_contains(&attracted, other)) {
         pg_set_destroy(&attracted);
-        verify_error(error, "a lazy reach-through-safe condition fails");
+        ad_verify_error(error, AD_VERIFY_LAZY, other,
+                        "a lazy reach-through-safe condition fails");
+        if (error != nullptr) {
+          ADPosition const *bad = host->positions + labels[error->vertex];
+          error->path_length =
+              ad_trace_host_path(host, bad->kind == AD_POS_TOP ? 0 : bad->node,
+                                 error->path)
+                  .length;
+        }
         goto failure;
       }
     }
@@ -463,6 +566,9 @@ typedef struct {
   LabelledVertex const *sorted;
   size_t count;
   ADLiftError *error;
+  bool partial;
+  ADVerifyError **problems;
+  size_t *problem_count;
 } Materializer;
 
 /* The first sorted entry whose label is at least position. */
@@ -514,11 +620,34 @@ static void add_range(Materializer const *materializer, PGSet *set,
     ADLiftNode const *child_node = host->nodes + child;
     size_t const core_end = lower_bound(materializer, child_node->after);
     size_t const outer_end = lower_bound(materializer, child_node->after + 1);
-    if (core_end == next) {
+    if (core_end == next && !materializer->partial) {
       lift_error(materializer->error,
                  "a nonempty c+ fibre has an empty child core");
       ad_node_destroy(result);
       return nullptr;
+    }
+    if (core_end == next && materializer->partial) {
+      size_t const count = *materializer->problem_count;
+      if (count >= SIZE_MAX / sizeof(ADVerifyError)) {
+        ad_node_destroy(result);
+        return nullptr;
+      }
+      ADVerifyError *grown =
+          realloc(*materializer->problems, (count + 1) * sizeof(*grown));
+      if (grown == nullptr) {
+        lift_error(materializer->error,
+                   "failed to allocate materialization problems");
+        ad_node_destroy(result);
+        return nullptr;
+      }
+      *materializer->problems = grown;
+      grown[count] = (ADVerifyError){.vertex = SIZE_MAX};
+      ad_verify_error(grown + count, AD_VERIFY_EMPTY_CORE,
+                      materializer->sorted[next].vertex,
+                      "a nonempty c+ fibre has an empty child core");
+      grown[count].path_length =
+          ad_trace_host_path(host, child, grown[count].path).length;
+      *materializer->problem_count = count + 1;
     }
     ADChild entry = {0};
     if (!pg_set_init(&entry.trap, vertex_count) ||
@@ -580,4 +709,83 @@ bool ad_lift_materialize(PGGame const *game, ADLiftTree const *host,
   *root = materialize_node(&materializer, 0);
   free(sorted);
   return *root != nullptr;
+}
+
+bool ad_lift_run_trace(PGGame const *game, PGSet const *active,
+                       ADLiftTree const *host, ADLiftSchedule const schedule,
+                       PGSet const *known_losing, ADLiftLabelling *result,
+                       ADLiftError *error, ADTrace *trace) {
+  return run(game, active, host, schedule, known_losing, result, error, nullptr,
+             trace);
+}
+
+bool ad_lift_continue(PGGame const *game, PGSet const *active,
+                      ADLiftTree const *host, ADLiftLabelling *labelling,
+                      ADLiftError *error) {
+  return ad_lift_continue_trace(game, active, host, labelling, error, nullptr);
+}
+
+bool ad_lift_materialize_partial(PGGame const *game, ADLiftTree const *host,
+                                 ADLiftLabelling const *labelling,
+                                 ADNode **root, ADVerifyError **problems,
+                                 size_t *problem_count, ADLiftError *error) {
+  if (root != nullptr) {
+    *root = nullptr;
+  }
+  if (problems != nullptr) {
+    *problems = nullptr;
+  }
+  if (problem_count != nullptr) {
+    *problem_count = 0;
+  }
+  if (error != nullptr) {
+    *error = (ADLiftError){0};
+  }
+  if (game == nullptr || !valid_host(host) || labelling == nullptr ||
+      labelling->labels == nullptr || root == nullptr || problems == nullptr ||
+      problem_count == nullptr ||
+      labelling->vertex_count != game->vertex_count ||
+      labelling->dominion.bit_count != game->vertex_count) {
+    lift_error(error, "invalid partial materialization input");
+    return false;
+  }
+  for (size_t vertex = 0; vertex < game->vertex_count; vertex++) {
+    size_t const label = labelling->labels[vertex];
+    if ((label != SIZE_MAX &&
+         !ad_position_accepts_priority(host, label,
+                                       game->vertices[vertex].priority)) ||
+        ((label < host->top) !=
+         pg_set_contains(&labelling->dominion, vertex))) {
+      lift_error(error, "partial materialization requires compatible labels "
+                        "and their non-TOP region");
+      return false;
+    }
+  }
+  if (pg_set_empty(&labelling->dominion)) {
+    return true;
+  }
+  size_t count = 0;
+  LabelledVertex *sorted =
+      sort_by_label(&labelling->dominion, labelling->labels, host->top, &count);
+  if (sorted == nullptr) {
+    lift_error(error, "failed to sort the labelling");
+    return false;
+  }
+  Materializer const materializer = {.game = game,
+                                     .host = host,
+                                     .sorted = sorted,
+                                     .count = count,
+                                     .error = error,
+                                     .partial = true,
+                                     .problems = problems,
+                                     .problem_count = problem_count};
+  *root = materialize_node(&materializer, 0);
+  free(sorted);
+  if (*root == nullptr) {
+    free(*problems);
+    *problems = nullptr;
+    *problem_count = 0;
+    return false;
+  }
+  return true;
 }
