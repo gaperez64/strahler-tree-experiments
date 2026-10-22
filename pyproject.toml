@@ -14,3 +14,16 @@ license-files = ["LICENSE", "LICENSE-APACHE-2.0"]
 [tool.meson-python.args]
 setup = ["-Dpython=enabled", "-Dlenstree=disabled"]
 install = ["--tags=python-runtime"]
+
+[tool.cibuildwheel]
+build = "cp310-manylinux_x86_64 cp310-macosx_arm64"
+build-frontend = "build"
+config-settings = { compile-args = "-j2" }
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+before-all = 'gcc --version && test "$(gcc -dumpversion | cut -d. -f1)" -ge 14'
+repair-wheel-command = "auditwheel repair --only-plat --plat manylinux_2_28_x86_64 -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.macos]
+environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }

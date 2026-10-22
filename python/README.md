@@ -3,7 +3,10 @@
 Python 3.10+ bindings for libstrahler, using only the standard library at runtime.
 The package contains a shared C library and pure Python ctypes bindings; it
 needs no Python extension module. Linux x86_64 and macOS arm64 are the tested
-CI targets. No wheel publishing is configured here.
+CI targets. Prebuilt wheels and the notebooks zip are attached to
+[GitHub releases](https://github.com/vfluegel/strahler-tree-experiments/releases),
+with [pip and uv instructions](../jupyter-examples/README.md). Wheels are not
+published to PyPI.
 
 ## Install from a checkout
 

@@ -14,6 +14,42 @@ permissions:
   contents: write
 
 jobs:
+  wheels:
+    uses: ./.github/workflows/wheels.yml
+    with:
+      tag: ${{ github.event.release.tag_name || inputs.tag }}
+
+  notebooks:
+    name: Release wheels and notebooks
+    needs: wheels
+    runs-on: ubuntu-24.04
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: wheel-*
+          merge-multiple: true
+          path: wheelhouse
+
+      - name: Check version, package notebooks and upload
+        run: |
+          python3 -m venv "$RUNNER_TEMP/notebooks-tools"
+          "$RUNNER_TEMP/notebooks-tools/bin/pip" install meson==1.8.5
+          project_version=$("$RUNNER_TEMP/notebooks-tools/bin/meson" introspect --projectinfo meson.build | python3 -c 'import json, sys; print(json.load(sys.stdin)["version"])')
+          if [[ "$project_version" != "${RELEASE_TAG#v}" ]]; then
+            echo "::error::Meson project version $project_version does not match release tag $RELEASE_TAG. Update meson.build before tagging."
+            exit 1
+          fi
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
+          ci/build-notebooks-zip.sh "$project_version" wheelhouse dist
+          gh release upload "$RELEASE_TAG" wheelhouse/*.whl dist/*.zip --clobber --repo "$GITHUB_REPOSITORY"
+
   package:
     name: Release ${{ matrix.platform }}
     strategy:

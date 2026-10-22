@@ -99,6 +99,15 @@ and `strahler-tree-experiments-<version>-macos-arm64.tar.gz`, each containing
 [the release workflow](../.github/workflows/release.yml) with an existing tag
 to rebuild and replace its assets.
 
+Releases also attach `strahler-<version>-py3-none-manylinux_2_28_x86_64.whl`,
+`strahler-<version>-py3-none-macosx_11_0_arm64.whl`, and
+`strahler-notebooks-<version>.zip`. The zip contains both wheels and everything
+in `jupyter-examples/`; see its [installation instructions](../jupyter-examples/README.md).
+Meson-python produces `py3-none` wheels. The shared workflow repairs them
+with auditwheel on Linux and delocate on macOS, checks their tags and license
+metadata, and smoke-tests each installed wheel in a fresh environment outside
+the checkout. Nothing is uploaded to PyPI.
+
 Before creating a release tag `v<version>`, set `version : '<version>'` in the
 root `meson.build`, without the `v`. Rebuild and run
 `meson test -C <build-dir> --print-errorlogs`, then commit the version bump and
@@ -1231,5 +1240,7 @@ sanitizer, coverage, and Valgrind jobs. With `-Dpython=enabled`, `test_python`
 runs pytest, including exact CLI JSON comparisons, all host modes, forward
 and reverse replay, located checks, paper H_k call counts, concurrent calls,
 and repeated-call RSS. Measured slow corpus pairs remain explicitly selectable
-in the `slow` suite. CI builds and tests a meson-python wheel on Ubuntu 24.04
-x86_64 and macOS 14 arm64 using Python 3.10; no release/publishing step is added.
+in the `slow` suite. CI tests the native API and Python package on Ubuntu 24.04
+x86_64 and macOS 14 arm64 using Python 3.10. The shared wheel workflow builds
+with Python 3.10 for manylinux_2_28 x86_64 and macOS 11.0+ arm64, then tests the
+installed wheels with Python 3.12 on Ubuntu 24.04 and macOS 15.
