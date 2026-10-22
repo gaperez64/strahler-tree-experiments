@@ -252,6 +252,8 @@ class Trace:
         self.game, self.events, self.result = game, tuple(events), result
         self._compress = '--compress' in result.data['options']
         self._cursor, self._replay = -1, Replay()
+        self._checkpoint_interval = max(256, (len(self) + 127) // 128)
+        self._checkpoints = {-1: deepcopy(self._replay)}
 
     def __len__(self):
         return len(self.events)
@@ -264,11 +266,15 @@ class Trace:
             index += len(self.events)
         if not 0 <= index < len(self.events):
             raise IndexError('Trace index out of range')
-        if index < self._cursor:
-            self._cursor, self._replay = -1, Replay()
+        checkpoint = max(i for i in self._checkpoints if i <= index)
+        if index < self._cursor or checkpoint > self._cursor:
+            self._cursor = checkpoint
+            self._replay = deepcopy(self._checkpoints[checkpoint])
         while self._cursor < index:
             self._cursor += 1
             self._replay.apply(self.events[self._cursor])
+            if self._cursor % self._checkpoint_interval == 0:
+                self._checkpoints[self._cursor] = deepcopy(self._replay)
         return State(self._replay, self.events[index], index)
 
     def steps(self, kind=None):

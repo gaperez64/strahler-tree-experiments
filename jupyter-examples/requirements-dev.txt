@@ -1,0 +1,9 @@
+# First install the checkout with its notebooks extra (see README).
+jupyterlab
+anywidget>=0.9
+traitlets>=5
+pytest
+nbclient
+nbformat
+ipykernel
+playwright
