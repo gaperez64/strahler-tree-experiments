@@ -329,8 +329,12 @@ def test_deep_prefix_rejected_without_crashing():
 import resource
 import strahler
 resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-_, hard = resource.getrlimit(resource.RLIMIT_STACK)
-resource.setrlimit(resource.RLIMIT_STACK, (min(8 * 1024 * 1024, hard) if hard >= 0 else 8 * 1024 * 1024, hard))
+soft, hard = resource.getrlimit(resource.RLIMIT_STACK)
+try:
+    resource.setrlimit(resource.RLIMIT_STACK, (min(8 * 1024 * 1024, hard) if hard >= 0 else 8 * 1024 * 1024, hard))
+except ValueError:
+    # macOS rejects re-setting an unlimited hard stack limit; its default soft limit is 8 MiB.
+    assert 0 <= soft <= 8 * 1024 * 1024, soft
 try:
     strahler.pms_tree('e,' * 150000 + 'e|')
 except strahler.InputError as error:
