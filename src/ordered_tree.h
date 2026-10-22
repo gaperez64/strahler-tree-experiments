@@ -55,6 +55,10 @@ size_t ordered_tree_leaf_count(OrderedTreeNode const *root);
 [[nodiscard]]
 bool ordered_tree_write_dot(FILE *out, OrderedTreeNode const *root);
 
+/* Branch labels and child order match ordered_tree_write_dot. */
+[[nodiscard]]
+bool ordered_tree_write_json(FILE *out, OrderedTreeNode const *root);
+
 [[nodiscard]]
 bool ordered_tree_write_p_partition(FILE *out, OrderedTreeNode const *root,
                                     unsigned p);

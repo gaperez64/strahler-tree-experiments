@@ -5,6 +5,7 @@ Option values use --name=value.
 Options:
   --help                                      Print this message
   --version                                   Print the program version
+  --format=dot|json                           default: dot
   --check-order                               Reject branches outside bitstring-vector order
   --reorder                                   Sort branches into bitstring-vector order
 Read progress measures ending with | from standard input.

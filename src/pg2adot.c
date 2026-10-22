@@ -13,6 +13,7 @@
 
 #include "ad_lift_solve.h"
 #include "ad_tree_dot.h"
+#include "ad_tree_json.h"
 #include "cli_version.h"
 #include "pg_preprocess.h"
 #include "strahler_tree_version.h"
@@ -41,6 +42,7 @@ typedef enum {
 static void usage(FILE *out, char *argv[]) {
   cli_usage(out, argv[0], " [FILE]");
   fprintf(out,
+          "  --format=dot|json                           default: dot\n"
           "  --player=both|even|odd                      default: both\n"
           "  --view=classic|tree-relative|jurdzinski     default: classic\n"
           "  --labels=counts|sets|none                   default: counts\n"
@@ -294,18 +296,25 @@ static void write_lifting_stats(ADLiftSolveStats const *stats,
 }
 
 #ifdef AD_TRACE_COUNT_ONLY
+typedef struct {
+  size_t count;
+  ADTraceJSON *writer;
+} TraceCount;
+
 static bool count_trace_event(void *context, ADTraceEvent const *event) {
-  size_t *count = context;
-  ++*count;
-  assert(event->step == *count);
-  return true;
+  TraceCount *count = context;
+  ++count->count;
+  assert(event->step == count->count);
+  return event->kind != AD_TRACE_RESULT ||
+         ad_trace_json_event(count->writer, event);
 }
 #endif
 
 int main(int argc, char *argv[argc + 1]) {
 
   enum {
-    OPTION_PLAYER = 1,
+    OPTION_FORMAT = 1,
+    OPTION_PLAYER,
     OPTION_VIEW,
     OPTION_LABELS,
     OPTION_MAX_ITEMS,
@@ -328,6 +337,7 @@ int main(int argc, char *argv[argc + 1]) {
   static struct option const options[] = {
       {"help", no_argument, nullptr, 'h'},
       {"version", no_argument, nullptr, 'v'},
+      {"format", required_argument, nullptr, OPTION_FORMAT},
       {"player", required_argument, nullptr, OPTION_PLAYER},
       {"view", required_argument, nullptr, OPTION_VIEW},
       {"labels", required_argument, nullptr, OPTION_LABELS},
@@ -370,6 +380,8 @@ int main(int argc, char *argv[argc + 1]) {
   char const *tree_path = nullptr;
   bool host_limit_given = false;
   bool print_stats = false;
+  bool json = false;
+  bool dot_options = false;
   char const *trace_path = nullptr;
   size_t trace_limit = 1000000;
   bool verify = true;
@@ -382,6 +394,15 @@ int main(int argc, char *argv[argc + 1]) {
     case 'h':
       usage(stdout, argv);
       return EXIT_SUCCESS;
+    case OPTION_FORMAT:
+      if (strcmp(optarg, "json") == 0) {
+        json = true;
+      } else if (strcmp(optarg, "dot") == 0) {
+        json = false;
+      } else {
+        return cli_error(argv[0], "Invalid --format value");
+      }
+      break;
     case OPTION_PLAYER:
       if (strcmp(optarg, "both") == 0) {
         player = AD_DOT_PLAYER_BOTH;
@@ -394,6 +415,7 @@ int main(int argc, char *argv[argc + 1]) {
       }
       break;
     case OPTION_VIEW:
+      dot_options = true;
       if (strcmp(optarg, "classic") == 0) {
         view = AD_DOT_VIEW_CLASSIC;
       } else if (strcmp(optarg, "tree-relative") == 0) {
@@ -405,6 +427,7 @@ int main(int argc, char *argv[argc + 1]) {
       }
       break;
     case OPTION_LABELS:
+      dot_options = true;
       if (strcmp(optarg, "counts") == 0) {
         labels = AD_DOT_LABEL_COUNTS;
       } else if (strcmp(optarg, "sets") == 0) {
@@ -416,6 +439,7 @@ int main(int argc, char *argv[argc + 1]) {
       }
       break;
     case OPTION_MAX_ITEMS:
+      dot_options = true;
       if (!parse_size(optarg, &max_set_items)) {
         return cli_error(argv[0], "Invalid --max-set-items value");
       }
@@ -514,6 +538,13 @@ int main(int argc, char *argv[argc + 1]) {
     return cli_error(argv[0],
                      "Unknown option or invalid argument; use --name=value");
   }
+  if (json && dot_options) {
+    return cli_error(
+        argv[0],
+        "--format=json conflicts with --view, --labels and --max-set-items");
+  }
+  static char const *const names[] = {"lifting", "zielonka", "zielonka-sym",
+                                      "lifting-sym"};
   bool const strahler_host = tree_k != 0 || adaptive_t;
   if ((strahler_host ? 1 : 0) + (arity != 0 ? 1 : 0) +
           (tree_path != nullptr ? 1 : 0) >
@@ -565,7 +596,8 @@ int main(int argc, char *argv[argc + 1]) {
   ADTrace observer = {.callback = ad_trace_json_event,
                       .context = &trace_writer};
 #ifdef AD_TRACE_COUNT_ONLY
-  size_t trace_count = 0;
+  TraceCount trace_count = {.writer = &trace_writer};
+  trace_writer.limit = SIZE_MAX;
   observer.callback = count_trace_event;
   observer.context = &trace_count;
 #endif
@@ -581,8 +613,6 @@ int main(int argc, char *argv[argc + 1]) {
               strerror(errno));
       return EXIT_FAILURE;
     }
-    static char const *const names[] = {"lifting", "zielonka", "zielonka-sym",
-                                        "lifting-sym"};
     if (!ad_trace_json_header(
             &trace_writer, STRAHLER_TREE_VERSION " (git " STRAHLER_TREE_GIT ")",
             names[algorithm], argc, argv)) {
@@ -813,11 +843,37 @@ int main(int argc, char *argv[argc + 1]) {
   PGPriorityMap const *display_map = priority_mode == PRIORITY_MODE_ORIGINAL
                                          ? &preprocessed.priority_map
                                          : nullptr;
-  if (!ad_tree_write_dot(stdout, &game, &result, player, view, labels,
-                         max_set_items, display_map, preprocessed.won)) {
-    fputs("Failed to write DOT output\n", stderr);
+  bool wrote = false;
+  if (json) {
+    fputc('{', stdout);
+    json_header(stdout, "strahler-decomp/1",
+                STRAHLER_TREE_VERSION " (git " STRAHLER_TREE_GIT ")",
+                names[algorithm], argc, argv);
+    fputs(",\"game\":", stdout);
+    json_game(stdout, &game, &preprocessed.priority_map);
+    fputs(",\"initial_won\":[", stdout);
+    JSONWriter const writer = {stdout, &game};
+    json_set(&writer, preprocessed.won);
+    fputc(',', stdout);
+    json_set(&writer, preprocessed.won + 1);
+    fputs("],", stdout);
+    wrote = ad_json_result_fields(&writer, &result, player);
+    if (wrote) {
+      fputs(",\"metrics\":", stdout);
+      wrote =
+          ad_json_metrics(stdout, &result, player) && fputs("}\n", stdout) >= 0;
+    }
+  } else {
+    wrote = ad_tree_write_dot(stdout, &game, &result, player, view, labels,
+                              max_set_items, display_map, preprocessed.won);
+  }
+  if (!wrote) {
+    fputs(json ? "Failed to write JSON output\n"
+               : "Failed to write DOT output\n",
+          stderr);
     status = EXIT_IO;
-    failure_reason = "cannot write DOT output";
+    failure_reason =
+        json ? "cannot write JSON output" : "cannot write DOT output";
   }
   if (fflush(stdout) != 0 || fflush(stderr) != 0 || ferror(stdout) ||
       ferror(stderr)) {

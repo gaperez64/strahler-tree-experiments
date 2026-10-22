@@ -25,7 +25,9 @@ from find_disagreements import Node, game_text, parse_dot, random_game
 SLOW_PAIRS = {(game, backend + suffix)
               for game, backend in (('cabp_swp.ehoa.pg', 'lifting-adaptive'),
                                     ('thesis_f4.pg', 'lifting'))
-              for suffix in ('', '+pre', '+iter', '+pre+iter')}
+              for suffix in ('', '+pre', '+iter', '+pre+iter')} | {
+                  ('cabp_swp.ehoa.pg', 'zielonka-sym' + suffix)
+                  for suffix in ('', '+pre')}
 
 
 def canonical(node):

@@ -9,7 +9,9 @@
 #include <string.h>
 
 #include "cli_version.h"
+#include "json_utils.h"
 #include "ordered_tree.h"
+#include "strahler_tree_version.h"
 #include "stree.h"
 #include "utrees.h"
 
@@ -45,6 +47,7 @@ static void print_usage(FILE *out, char *argv[]) {
         "(1-based)\n"
         "  --dot                                       Print the tree in DOT "
         "format (default: off)\n"
+        "  --json                                      Print the tree as JSON\n"
         "  --p-level=P                                 Print the partition at "
         "p-level P (P >= 1)\n"
         "With --p-level or no output option, leaf labels are printed.\n",
@@ -131,6 +134,7 @@ int main(int argc, char *argv[argc + 1]) {
       {"height", required_argument, nullptr, 'h'},
       {"count", no_argument, nullptr, 'j'},
       {"leaf", required_argument, nullptr, 'l'},
+      {"json", no_argument, nullptr, 'J'},
       {"dot", no_argument, nullptr, 'd'},
       {"p-level", required_argument, nullptr, 'p'},
       {nullptr, 0, nullptr, 0},
@@ -146,6 +150,7 @@ int main(int argc, char *argv[argc + 1]) {
   bool h_set = false;
   bool just_count = false;
   bool print_dot = false;
+  bool json = false;
 
   int option = 0;
   while ((option = cli_getopt(argc, argv, long_options)) != -1) {
@@ -162,6 +167,9 @@ int main(int argc, char *argv[argc + 1]) {
       break;
     case 'j':
       just_count = true;
+      break;
+    case 'J':
+      json = true;
       break;
     case 'd':
       print_dot = true;
@@ -208,6 +216,11 @@ int main(int argc, char *argv[argc + 1]) {
     return cli_error(argv[0], "--height must be at least --strahler");
   }
 
+  if (json && (just_count || print_dot || leaf_number > 0 || p > 0)) {
+    return cli_error(argv[0], "--json is mutually exclusive with --count, "
+                              "--leaf, --dot and --p-level");
+  }
+
   unsigned const total = stree_count_leaves(k, t, h);
   if (total == 0) {
     fputs("Failed to construct the leaf-count cache\n", stderr);
@@ -246,13 +259,25 @@ int main(int argc, char *argv[argc + 1]) {
   }
 
   int result = EXIT_SUCCESS;
-  if (print_dot || p > 0) {
+  if (print_dot || json || p > 0) {
     OrderedTreeNode *tree = parse_generated_tree(labels);
     if (tree == nullptr) {
       free(labels);
       return EXIT_FAILURE;
     }
-    if (print_dot) {
+    if (json) {
+      fputc('{', stdout);
+      json_header(stdout, "strahler-tree/1",
+                  STRAHLER_TREE_VERSION " (git " STRAHLER_TREE_GIT ")",
+                  "strahler", argc, argv);
+      fprintf(stdout,
+              ",\"parameters\":{\"k\":%d,\"h\":%d,\"t\":%d},\"tree\":", k, h,
+              t);
+      result =
+          ordered_tree_write_json(stdout, tree) && fputs("}\n", stdout) >= 0
+              ? EXIT_SUCCESS
+              : EXIT_FAILURE;
+    } else if (print_dot) {
       result =
           ordered_tree_write_dot(stdout, tree) ? EXIT_SUCCESS : EXIT_FAILURE;
     } else {
@@ -268,5 +293,7 @@ int main(int argc, char *argv[argc + 1]) {
     print_blocks(labels);
   }
   free(labels);
-  return result;
+  return result == EXIT_SUCCESS && fflush(stdout) == 0 && !ferror(stdout)
+             ? EXIT_SUCCESS
+             : EXIT_FAILURE;
 }

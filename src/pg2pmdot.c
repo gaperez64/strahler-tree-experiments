@@ -8,8 +8,10 @@
 #include <string.h>
 
 #include "cli_version.h"
+#include "json_utils.h"
 #include "pg_preprocess.h"
 #include "pm_tree_dot.h"
+#include "strahler_tree_version.h"
 
 enum { EXIT_GAME = 3, EXIT_SOLVER = 4, EXIT_IO = 5 };
 
@@ -21,6 +23,8 @@ typedef struct {
   size_t max_items;
   bool original;
   bool leaves;
+  bool json;
+  bool wrote_round;
   bool stats;
   bool incremental;
   char const *start_winner;
@@ -29,7 +33,7 @@ typedef struct {
 static void usage(FILE *out, char *argv[]) {
   cli_usage(out, argv[0], " [FILE]");
   fputs("  --algorithm=strahler|succinct               default: strahler\n"
-        "  --format=dot|leaves                         default: dot\n"
+        "  --format=dot|leaves|json                    default: dot\n"
         "  --player=both|even|odd                      default: both\n"
         "  --labels=counts|sets|none                   default: counts\n"
         "  --max-set-items=N                           default: 32\n"
@@ -108,6 +112,16 @@ static bool write_output(PMResult const result[static 2],
               current->active_count - pg_set_count(&current->region),
               pg_set_count(&current->attracted));
     }
+  }
+  if (output->json) {
+    if (output->wrote_round) {
+      fputc(',', stdout);
+    }
+    output->wrote_round = true;
+    return pm_write_json(
+        stdout, output->game, result, unresolved, round, output->player,
+        output->original ? &output->preprocessed->priority_map : nullptr,
+        output->preprocessed->won);
   }
   if (output->leaves) {
     if (output->incremental) {
@@ -204,7 +218,11 @@ int main(int argc, char *argv[argc + 1]) {
       }
       break;
     case OPT_FORMAT:
+      output.json = false;
       if (strcmp(optarg, "dot") == 0) {
+        output.leaves = false;
+      } else if (strcmp(optarg, "json") == 0) {
+        output.json = true;
         output.leaves = false;
       } else if (strcmp(optarg, "leaves") == 0) {
         output.leaves = true;
@@ -342,11 +360,25 @@ int main(int argc, char *argv[argc + 1]) {
             preprocessed.shaved[PG_SHAVE_WCWC][0] +
                 preprocessed.shaved[PG_SHAVE_WCWC][1]);
   }
+  if (output.json) {
+    fputc('{', stdout);
+    json_header(stdout, "strahler-pm/1",
+                STRAHLER_TREE_VERSION " (git " STRAHLER_TREE_GIT ")",
+                solve_options.algorithm == PM_STRAHLER ? "strahler"
+                                                       : "succinct",
+                argc, argv);
+    fputs(",\"game\":", stdout);
+    json_game(stdout, &game, &preprocessed.priority_map);
+    fputs(",\"rounds\":[", stdout);
+  }
   PMError error = {0};
   if (!pm_solve(&game, &preprocessed.active, &solve_options, write_output,
                 &output, &error)) {
     fprintf(stderr, "Solver failed: %s\n", error.message);
     goto cleanup;
+  }
+  if (output.json) {
+    fputs("]}\n", stdout);
   }
   if (output.stats) {
     fprintf(stderr, "start: vertex=%" PRIu64 " winner=%s\n", game.start_id,

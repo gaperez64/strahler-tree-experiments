@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "dot_utils.h"
+#include "json_utils.h"
 #include "ordered_tree.h"
 #include "pg_dot.h"
 #include "pm_tree_dot.h"
@@ -108,6 +109,7 @@ typedef struct {
   size_t next_id;
   size_t root_id;
   bool partial;
+  bool json;
   ADDotLabels labels;
   size_t max_items;
   PGPriorityMap const *priority_map;
@@ -135,6 +137,62 @@ static bool write_parameters(FILE *out, PMResult const *result) {
                  result->depth) >= 0;
 }
 
+static bool node_priority(TreeWriter const *writer, int const level,
+                          uint64_t *priority) {
+  *priority = (uint64_t)(2 * (writer->result->depth - level - 1)) +
+              (1 - writer->result->player);
+  return writer->priority_map == nullptr ||
+         pg_priority_map_original_bound(writer->priority_map, *priority,
+                                        priority);
+}
+
+static void leaf_vertices(TreeWriter *writer, OrderedTreeNode const *node) {
+  pg_set_clear(&writer->held);
+  if (node != nullptr) {
+    assert(writer->position < writer->count);
+    PMMeasure const *measure = writer->members[writer->position].measure;
+    do {
+      pg_set_add(&writer->held, writer->members[writer->position++].vertex);
+    } while (writer->position < writer->count &&
+             pm_compare(measure, writer->members[writer->position].measure,
+                        INT_MAX) == 0);
+  }
+}
+
+static bool write_json_node(TreeWriter *writer, OrderedTreeNode const *node,
+                            int const level) {
+  FILE *out = writer->out;
+  if (node == nullptr) {
+    return fputs("null", out) >= 0;
+  }
+  fputs("{\"priority\":", out);
+  if (node->is_leaf) {
+    fputs("null,\"vertices\":", out);
+    leaf_vertices(writer, node);
+    json_set(&(JSONWriter){out, writer->game}, &writer->held);
+  } else {
+    uint64_t priority = 0;
+    if (!node_priority(writer, level, &priority)) {
+      return false;
+    }
+    fprintf(out, "%" PRIu64 ",\"vertices\":null", priority);
+  }
+  fputs(",\"children\":[", out);
+  for (size_t index = 0; index < node->child_count; index++) {
+    if (index != 0) {
+      fputc(',', out);
+    }
+    fputs("{\"label\":", out);
+    json_string(out, node->children[index].label);
+    fputs(",\"node\":", out);
+    if (!write_json_node(writer, node->children[index].child, level + 1) ||
+        fputc('}', out) == EOF) {
+      return false;
+    }
+  }
+  return fputs("]}", out) >= 0 && !ferror(out);
+}
+
 static bool write_node(TreeWriter *writer, OrderedTreeNode const *node,
                        size_t const id, int const level) {
   FILE *out = writer->out;
@@ -154,11 +212,8 @@ static bool write_node(TreeWriter *writer, OrderedTreeNode const *node,
   }
   if (node != nullptr && !node->is_leaf &&
       writer->labels != AD_DOT_LABEL_NONE) {
-    uint64_t priority = (uint64_t)(2 * (writer->result->depth - level - 1)) +
-                        (1 - writer->result->player);
-    if (writer->priority_map != nullptr &&
-        !pg_priority_map_original_bound(writer->priority_map, priority,
-                                        &priority)) {
+    uint64_t priority = 0;
+    if (!node_priority(writer, level, &priority)) {
       return false;
     }
     if (fprintf(out, "%sp=%" PRIu64, id == writer->root_id ? "\\n" : "",
@@ -167,16 +222,7 @@ static bool write_node(TreeWriter *writer, OrderedTreeNode const *node,
     }
   }
   if (node == nullptr || node->is_leaf) {
-    pg_set_clear(&writer->held);
-    if (node != nullptr) {
-      assert(writer->position < writer->count);
-      PMMeasure const *measure = writer->members[writer->position].measure;
-      do {
-        pg_set_add(&writer->held, writer->members[writer->position++].vertex);
-      } while (writer->position < writer->count &&
-               pm_compare(measure, writer->members[writer->position].measure,
-                          INT_MAX) == 0);
-    }
+    leaf_vertices(writer, node);
     if (!write_region(writer, &writer->held, "V")) {
       return false;
     }
@@ -228,6 +274,24 @@ static bool write_player(TreeWriter *writer, PGSet const *shaved) {
   if (!valid || (writer->count != 0 &&
                  !ordered_tree_parse_leaf_stream_ordered(
                      stream, ORDERED_TREE_CHECK_VECTOR_ORDER, &tree, &error))) {
+    goto cleanup;
+  }
+  if (writer->json) {
+    PMResult const *result = writer->result;
+    fprintf(writer->out,
+            "{\"parameters\":{\"k\":%zu,\"t\":%zu,\"bits\":%zu,\"depth\":%d},"
+            "\"tree\":",
+            result->parameters.k, result->parameters.t, result->parameters.bits,
+            result->depth);
+    if (!write_json_node(writer, tree, 0)) {
+      goto cleanup;
+    }
+    JSONWriter const output = {writer->out, writer->game};
+    fputs(",\"shaved\":", writer->out);
+    json_set(&output, shaved);
+    fputs(",\"attracted\":", writer->out);
+    json_set(&output, &result->attracted);
+    wrote = fputc('}', writer->out) != EOF && !ferror(writer->out);
     goto cleanup;
   }
   if (!write_node(writer, tree, writer->root_id, 0)) {
@@ -308,6 +372,42 @@ bool pm_write_dot(FILE *out, PGGame const *game,
     goto cleanup;
   }
   wrote = fputs("}\n", out) >= 0;
+cleanup:
+  pg_set_destroy(&writer.held);
+  return wrote;
+}
+
+bool pm_write_json(FILE *out, PGGame const *game,
+                   PMResult const result[static 2], PGSet const *unresolved,
+                   size_t const round, ADDotPlayer const player,
+                   PGPriorityMap const *priority_map,
+                   PGSet const shaved[static 2]) {
+  fprintf(out, "{\"round\":%zu,\"complete\":%s,\"unresolved\":", round,
+          pg_set_empty(unresolved) ? "true" : "false");
+  json_set(&(JSONWriter){out, game}, unresolved);
+  fputs(",\"trees\":[", out);
+  TreeWriter writer = {
+      .out = out, .game = game, .json = true, .priority_map = priority_map};
+  if (!pg_set_init(&writer.held, game->vertex_count)) {
+    return false;
+  }
+  bool wrote = false;
+  for (size_t candidate = 0; candidate < 2; candidate++) {
+    if (candidate != 0) {
+      fputc(',', out);
+    }
+    if ((player == AD_DOT_PLAYER_EVEN && candidate != PG_EVEN) ||
+        (player == AD_DOT_PLAYER_ODD && candidate != PG_ODD)) {
+      fputs("null", out);
+      continue;
+    }
+    writer.result = &result[candidate];
+    writer.position = 0;
+    if (!write_player(&writer, &shaved[candidate])) {
+      goto cleanup;
+    }
+  }
+  wrote = fputs("]}", out) >= 0 && !ferror(out);
 cleanup:
   pg_set_destroy(&writer.held);
   return wrote;
