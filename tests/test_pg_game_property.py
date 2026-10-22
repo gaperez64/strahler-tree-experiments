@@ -48,9 +48,7 @@ def normalize(text):
     return "".join(lines)
 
 
-def main():
-    binary = Path(sys.argv[1]).resolve()
-    wrapper = shlex.split(os.environ.get("STRAHLER_TEST_WRAPPER", ""))
+def generated_games():
     rng = random.Random(685789)
     whitespace = [" ", "\t", "\r\n", "\n\t", "  ", "\v", "\f"]
     for case in range(120):
@@ -82,6 +80,13 @@ def main():
                        for token in tokens)
         if case % 2:
             text += rng.choice(whitespace)
+        yield case, text
+
+
+def main():
+    binary = Path(sys.argv[1]).resolve()
+    wrapper = shlex.split(os.environ.get("STRAHLER_TEST_WRAPPER", ""))
+    for case, text in generated_games():
         result = subprocess.run([*wrapper, str(binary), "--normalize"],
                                 input=text.encode("ascii"),
                                 capture_output=True, timeout=30)

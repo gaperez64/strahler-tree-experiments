@@ -2,16 +2,20 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "ad_lift_solve.h"
 #include "ad_tree_dot.h"
 #include "cli_version.h"
 #include "pg_preprocess.h"
+#include "strahler_tree_version.h"
 #include "zielonka.h"
 
 enum {
@@ -63,6 +67,10 @@ static void usage(FILE *out, char *argv[]) {
           "tree; may be partial\n"
           "  --max-host-leaves=N                         Host leaf limit "
           "(default: %d)\n"
+          "  --trace=FILE                                Write algorithm "
+          "events as JSON Lines\n"
+          "  --trace-limit=N                             Stop after N events "
+          "(default: 1000000)\n"
           "  --stats                                     Print statistics to "
           "stderr (default: off)\n"
           "  --no-verify                                 Skip verification "
@@ -70,6 +78,51 @@ static void usage(FILE *out, char *argv[]) {
           "Default host: a full Strahler tree. FILE defaults to stdin; - reads "
           "stdin.\n",
           DEFAULT_MAX_HOST_LEAVES);
+}
+
+[[nodiscard]] static bool same_file(struct stat const *left,
+                                    struct stat const *right) {
+  return left->st_dev == right->st_dev && left->st_ino == right->st_ino;
+}
+
+/* Open before checking identity, and truncate only after protecting inputs and
+ * output streams, including aliases through symlinks and /dev/stdout. */
+[[nodiscard]] static FILE *open_trace(char const *path, char const *game_path,
+                                      char const *tree_path) {
+  int const descriptor = open(path, O_WRONLY | O_CREAT, 0666);
+  if (descriptor < 0) {
+    return nullptr;
+  }
+  struct stat destination = {0};
+  struct stat source = {0};
+  bool safe = fstat(descriptor, &destination) == 0;
+  if ((fstat(STDOUT_FILENO, &source) == 0 &&
+       same_file(&source, &destination)) ||
+      (fstat(STDERR_FILENO, &source) == 0 &&
+       same_file(&source, &destination)) ||
+      (game_path == nullptr && fstat(STDIN_FILENO, &source) == 0 &&
+       same_file(&source, &destination)) ||
+      (game_path != nullptr && stat(game_path, &source) == 0 &&
+       same_file(&source, &destination)) ||
+      (tree_path != nullptr && stat(tree_path, &source) == 0 &&
+       same_file(&source, &destination))) {
+    errno = EINVAL;
+    safe = false;
+  }
+  if (!safe ||
+      (S_ISREG(destination.st_mode) && ftruncate(descriptor, 0) != 0)) {
+    int const saved_errno = errno;
+    (void)close(descriptor);
+    errno = saved_errno;
+    return nullptr;
+  }
+  FILE *stream = fdopen(descriptor, "w");
+  if (stream == nullptr) {
+    int const saved_errno = errno;
+    (void)close(descriptor);
+    errno = saved_errno;
+  }
+  return stream;
 }
 
 [[nodiscard]] static bool parse_size(char const *text, size_t *value) {
@@ -240,6 +293,15 @@ static void write_lifting_stats(ADLiftSolveStats const *stats,
   }
 }
 
+#ifdef AD_TRACE_COUNT_ONLY
+static bool count_trace_event(void *context, ADTraceEvent const *event) {
+  size_t *count = context;
+  ++*count;
+  assert(event->step == *count);
+  return true;
+}
+#endif
+
 int main(int argc, char *argv[argc + 1]) {
 
   enum {
@@ -260,6 +322,8 @@ int main(int argc, char *argv[argc + 1]) {
     OPTION_SHAVE,
     OPTION_COMPRESS,
     OPTION_ITER_SHAVE,
+    OPTION_TRACE,
+    OPTION_TRACE_LIMIT,
   };
   static struct option const options[] = {
       {"help", no_argument, nullptr, 'h'},
@@ -277,6 +341,8 @@ int main(int argc, char *argv[argc + 1]) {
       {"kary", required_argument, nullptr, OPTION_KARY},
       {"tree-file", required_argument, nullptr, OPTION_TREE_FILE},
       {"max-host-leaves", required_argument, nullptr, OPTION_MAX_HOST_LEAVES},
+      {"trace", required_argument, nullptr, OPTION_TRACE},
+      {"trace-limit", required_argument, nullptr, OPTION_TRACE_LIMIT},
       {"stats", no_argument, nullptr, OPTION_STATS},
       {"initial-shave", required_argument, nullptr, OPTION_SHAVE},
       {"compress", no_argument, nullptr, OPTION_COMPRESS},
@@ -304,6 +370,8 @@ int main(int argc, char *argv[argc + 1]) {
   char const *tree_path = nullptr;
   bool host_limit_given = false;
   bool print_stats = false;
+  char const *trace_path = nullptr;
+  size_t trace_limit = 1000000;
   bool verify = true;
   PGPreprocessOptions preprocess_options = {0};
   int option = 0;
@@ -412,6 +480,17 @@ int main(int argc, char *argv[argc + 1]) {
       }
       host_limit_given = true;
       break;
+    case OPTION_TRACE:
+      if (optarg[0] == '\0') {
+        return cli_error(argv[0], "Invalid --trace value");
+      }
+      trace_path = optarg;
+      break;
+    case OPTION_TRACE_LIMIT:
+      if (!parse_size(optarg, &trace_limit)) {
+        return cli_error(argv[0], "Invalid --trace-limit value");
+      }
+      break;
     case OPTION_STATS:
       print_stats = true;
       break;
@@ -476,12 +555,50 @@ int main(int argc, char *argv[argc + 1]) {
   }
   lift_options.verify = verify;
 
+  int status = EXIT_SUCCESS;
+  char const *failure_reason = "solver or verification failed";
+  PGGame game = {0};
+  PGPreprocessResult preprocessed = {0};
+  ADResult result = {0};
   OrderedTreeNode *host_tree = nullptr;
+  ADTraceJSON trace_writer = {.game = &game, .limit = trace_limit};
+  ADTrace observer = {.callback = ad_trace_json_event,
+                      .context = &trace_writer};
+#ifdef AD_TRACE_COUNT_ONLY
+  size_t trace_count = 0;
+  observer.callback = count_trace_event;
+  observer.context = &trace_count;
+#endif
+  ADTrace *trace = trace_path == nullptr ? nullptr : &observer;
+  if (trace != nullptr) {
+    trace_writer.stream = open_trace(
+        trace_path,
+        optind < argc && strcmp(argv[optind], "-") != 0 ? argv[optind]
+                                                        : nullptr,
+        tree_path);
+    if (trace_writer.stream == nullptr) {
+      fprintf(stderr, "Cannot open trace %s: %s\n", trace_path,
+              strerror(errno));
+      return EXIT_FAILURE;
+    }
+    static char const *const names[] = {"lifting", "zielonka", "zielonka-sym",
+                                        "lifting-sym"};
+    if (!ad_trace_json_header(
+            &trace_writer, STRAHLER_TREE_VERSION " (git " STRAHLER_TREE_GIT ")",
+            names[algorithm], argc, argv)) {
+      observer.failed = true;
+      status = EXIT_FAILURE;
+      goto cleanup;
+    }
+  }
+  lift_options.trace = trace;
   if (tree_path != nullptr) {
     char *text = read_file(tree_path);
     if (text == nullptr) {
       fprintf(stderr, "Cannot read %s: %s\n", tree_path, strerror(errno));
-      return EXIT_IO;
+      status = EXIT_IO;
+      failure_reason = "cannot read host input";
+      goto cleanup;
     }
     OrderedTreeError tree_error = {0};
     bool const parsed =
@@ -491,25 +608,26 @@ int main(int argc, char *argv[argc + 1]) {
       char message[strlen(tree_path) + sizeof(tree_error.message) + 64];
       snprintf(message, sizeof(message), "%s:%zu:%zu: %s", tree_path,
                tree_error.line, tree_error.column, tree_error.message);
-      return cli_error(argv[0], message);
+      status = cli_error(argv[0], message);
+      failure_reason = "invalid host input";
+      goto cleanup;
     }
     lift_options.tree = host_tree;
   }
 
-  int status = EXIT_SUCCESS;
   FILE *input = stdin;
   bool close_input = false;
   if (optind < argc && strcmp(argv[optind], "-") != 0) {
     input = fopen(argv[optind], "rb");
     if (input == nullptr) {
       fprintf(stderr, "Cannot open %s: %s\n", argv[optind], strerror(errno));
-      ordered_tree_destroy(host_tree);
-      return EXIT_IO;
+      status = EXIT_IO;
+      failure_reason = "cannot open game input";
+      goto cleanup;
     }
     close_input = true;
   }
 
-  PGGame game = {0};
   PGParseError parse_error = {0};
   if (!pg_game_read(input, &game, &parse_error)) {
     fprintf(stderr, "%zu:%zu: %s\n", parse_error.line, parse_error.column,
@@ -517,27 +635,26 @@ int main(int argc, char *argv[argc + 1]) {
     if (close_input) {
       (void)fclose(input);
     }
-    ordered_tree_destroy(host_tree);
-    return EXIT_GAME;
+    status = EXIT_GAME;
+    failure_reason = "invalid game input";
+    goto cleanup;
   }
   if (close_input && fclose(input) != 0) {
-    pg_game_destroy(&game);
-    ordered_tree_destroy(host_tree);
     fputs("Failed to close input file\n", stderr);
-    return EXIT_IO;
+    status = EXIT_IO;
+    failure_reason = "cannot close game input";
+    goto cleanup;
   }
 
   if (game.max_priority == UINT64_MAX) {
-    pg_game_destroy(&game);
-    ordered_tree_destroy(host_tree);
     fputs("Solver failed: the source maximum priority cannot be followed by "
           "an opposite-parity bound\n",
           stderr);
-    return EXIT_SOLVER;
+    status = EXIT_SOLVER;
+    failure_reason = "source maximum priority has no opposite-parity bound";
+    goto cleanup;
   }
 
-  PGPreprocessResult preprocessed = {0};
-  ADResult result = {0};
   errno = 0;
   if (!pg_preprocess(&game, &preprocess_options, &preprocessed)) {
     fputs("Failed to preprocess the game\n", stderr);
@@ -547,6 +664,17 @@ int main(int argc, char *argv[argc + 1]) {
   if (verify && !pg_preprocess_verify(&game, &preprocessed)) {
     fputs("Verification failed: invalid shaved regions\n", stderr);
     status = EXIT_SOLVER;
+    goto cleanup;
+  }
+  trace_writer.initial_won = preprocessed.won;
+  if (observer.failed) {
+    status = EXIT_FAILURE;
+    goto cleanup;
+  }
+  AD_TRACE(trace, .kind = AD_TRACE_PHASE, .name = "preprocessed",
+           .vertices = &preprocessed.active);
+  if (observer.failed) {
+    status = EXIT_FAILURE;
     goto cleanup;
   }
   PGSet const *domain = &preprocessed.active;
@@ -575,8 +703,8 @@ int main(int argc, char *argv[argc + 1]) {
         maximum = game.vertices[vertex].priority;
       }
     }
-    if (!zielonka_decompose_stats(&game, domain, maximum, &result, &stats,
-                                  &solver_error)) {
+    if (!zielonka_decompose_trace(&game, domain, maximum, &result, &stats,
+                                  &solver_error, trace)) {
       fprintf(stderr, "Solver failed: %s\n", solver_error.message);
       status = EXIT_SOLVER;
       goto cleanup;
@@ -587,8 +715,8 @@ int main(int argc, char *argv[argc + 1]) {
   } else if (algorithm == ALGORITHM_ZIELONKA_SYM) {
     ADSymStats stats = {0};
     ADLiftError error = {0};
-    if (!ad_sym_solve(&game, domain, nullptr, verify, &result, &stats,
-                      &error)) {
+    if (!ad_sym_solve_trace(&game, domain, nullptr, verify, &result, &stats,
+                            &error, trace)) {
       fprintf(stderr, "Solver failed: %s\n", error.message);
       status = EXIT_SOLVER;
       goto cleanup;
@@ -677,6 +805,11 @@ int main(int argc, char *argv[argc + 1]) {
             winner);
   }
 
+  if (observer.failed) {
+    status = EXIT_FAILURE;
+    goto cleanup;
+  }
+
   PGPriorityMap const *display_map = priority_mode == PRIORITY_MODE_ORIGINAL
                                          ? &preprocessed.priority_map
                                          : nullptr;
@@ -684,13 +817,37 @@ int main(int argc, char *argv[argc + 1]) {
                          max_set_items, display_map, preprocessed.won)) {
     fputs("Failed to write DOT output\n", stderr);
     status = EXIT_IO;
+    failure_reason = "cannot write DOT output";
   }
   if (fflush(stdout) != 0 || fflush(stderr) != 0 || ferror(stdout) ||
       ferror(stderr)) {
     status = EXIT_IO;
+    failure_reason = "cannot flush output streams";
   }
 
 cleanup:
+  if (trace_writer.stream != nullptr) {
+    if (observer.failed) {
+      status = EXIT_FAILURE;
+      failure_reason = "trace observer failed";
+    }
+    if (status != EXIT_SUCCESS && !trace_writer.truncated &&
+        !ferror(trace_writer.stream) &&
+        !ad_trace_json_incomplete(&trace_writer, observer.step + 1,
+                                  failure_reason, status)) {
+      observer.failed = true;
+    }
+    if (fclose(trace_writer.stream) != 0) {
+      observer.failed = true;
+    }
+    if (observer.failed) {
+      fprintf(stderr, "%s\n",
+              trace_writer.truncated
+                  ? "Trace event limit exceeded; trace ends with truncated"
+                  : "Trace observer failed");
+      status = EXIT_FAILURE;
+    }
+  }
   // Boolean solver/output APIs propagate allocation failure through errno.
   if (status != EXIT_SUCCESS && errno == ENOMEM) {
     fputs("Failed to allocate memory\n", stderr);

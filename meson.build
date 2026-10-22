@@ -108,7 +108,7 @@ pg_preprocess_dep = declare_dependency(
 
 ad_tree_lib = static_library(
   'ad_tree',
-  'src/ad_tree.c',
+  ['src/ad_tree.c', 'src/ad_trace.c'],
   dependencies : pg_attractor_dep,
 )
 ad_tree_dep = declare_dependency(
@@ -1459,7 +1459,7 @@ if python3.found()
     depends : [pg2adot, pg2pmdot])
   test('test_gen_keiren', python3,
     args : [files('tests/test_gen_keiren.py'), meson.current_build_dir()],
-    suite : 'python',
+    suite : 'python', timeout : 120,
     depends : [pg2adot, pg2pmdot])
   # Exit 77 skips this live oracle unless OINK_BIN is set at test time.
   test('oink-oracle', python3,
@@ -1467,3 +1467,50 @@ if python3.found()
       '--failures-dir', meson.current_build_dir() / 'oink-failures'],
     suite : ['oracle', 'python'], timeout : 600)
 endif
+
+trace_check = executable('trace_check', 'tests/trace_check.c',
+  dependencies : [ad_tree_dep, pg_preprocess_dep], c_args : ['-UNDEBUG'])
+trace_count_pg2adot = executable('trace_count_pg2adot', 'src/pg2adot.c',
+  dependencies : [ad_lift_dep, zielonka_dep, ad_tree_dot_dep, cli_version_dep, pg_preprocess_dep],
+  c_args : ['-UNDEBUG', '-DAD_TRACE_COUNT_ONLY'])
+add_test_setup('default', exclude_suites : ['slow'], is_default : true)
+add_test_setup('all')
+foreach mode : ['paper', 'limits', 'hosts', 'host-errors']
+  test('test_trace_' + mode, python,
+    args : [files('tests/test_trace.py'), pg2adot, trace_check, mode],
+    workdir : meson.project_source_root(), suite : 'python', timeout : 120,
+    depends : [pg2pmdot, trace_count_pg2adot])
+endforeach
+foreach backend : ['lifting', 'lifting-adaptive', 'lifting-sym', 'zielonka', 'zielonka-sym']
+  foreach iteration : (backend.startswith('zielonka') ? [''] : ['', '+iter'])
+    foreach pre : ['', '+pre']
+      name = backend + pre + iteration
+      foreach mode : ['games', 'examples', 'property']
+        test('test_trace_' + mode + '_' + name, python,
+          args : [files('tests/test_trace.py'), pg2adot, trace_check, mode, name],
+          workdir : meson.project_source_root(), suite : 'python', timeout : 120,
+          depends : trace_count_pg2adot)
+      endforeach
+    endforeach
+  endforeach
+endforeach
+foreach game : ['cabp_swp.ehoa.pg', 'thesis_f4.pg']
+  foreach suffix : ['', '+pre', '+iter', '+pre+iter']
+    backend = (game == 'cabp_swp.ehoa.pg' ? 'lifting-adaptive' : 'lifting') + suffix
+    test('test_trace_' + game + '_' + backend, python,
+      args : [files('tests/test_trace.py'), pg2adot, trace_check, 'slow', game + '/' + backend],
+      workdir : meson.project_source_root(), suite : ['slow', 'python'], timeout : 2400,
+      depends : trace_count_pg2adot)
+  endforeach
+endforeach
+
+test_ad_trace = executable('test_ad_trace', 'tests/test_ad_trace.c',
+  dependencies : [ad_lift_dep, zielonka_dep], c_args : ['-UNDEBUG'])
+test('test_ad_trace', test_ad_trace)
+test_ad_trace_alloc = executable('test_ad_trace_alloc',
+  ['tests/test_ad_trace_alloc.c', 'src/ad_trace.c', 'src/ad_tree.c',
+   'src/pg_set.c', 'src/pg_attractor.c', 'src/zielonka.c', 'src/ad_lift.c',
+   'src/ad_sym.c', 'src/ad_lift_solve.c'],
+  dependencies : [ad_lift_tree_dep, stree_dep, pg_game_dep],
+  c_args : ['-UNDEBUG', '-include', meson.project_source_root() / 'tests/trace_allocator.h'])
+test('test_ad_trace_alloc', test_ad_trace_alloc, timeout : 120)

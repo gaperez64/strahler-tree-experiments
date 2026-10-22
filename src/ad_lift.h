@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#include "ad_lift_tree.h"
+#include "ad_trace.h"
 #include "ad_tree.h"
 #include "pg_game.h"
 #include "pg_set.h"
@@ -77,6 +77,16 @@ bool ad_lift_continue(PGGame const *game, PGSet const *active,
                       ADLiftTree const *host, ADLiftLabelling *labelling,
                       ADLiftError *error);
 
+[[nodiscard]]
+bool ad_lift_run_trace(PGGame const *game, PGSet const *active,
+                       ADLiftTree const *host, ADLiftSchedule schedule,
+                       PGSet const *known_losing, ADLiftLabelling *result,
+                       ADLiftError *error, ADTrace *trace);
+[[nodiscard]]
+bool ad_lift_continue_trace(PGGame const *game, PGSet const *active,
+                            ADLiftTree const *host, ADLiftLabelling *labelling,
+                            ADLiftError *error, ADTrace *trace);
+
 void ad_lift_labelling_destroy(ADLiftLabelling *labelling);
 
 /* Check a labelling from scratch: ranges, priority compatibility, every
@@ -100,5 +110,13 @@ bool ad_lift_verify(PGGame const *game, PGSet const *active,
 bool ad_lift_materialize(PGGame const *game, ADLiftTree const *host,
                          ADLiftLabelling const *labelling, ADNode **root,
                          ADLiftError *error);
+
+/* Candidate materialization preserves even empty child cores. Problems are
+ * structural, not a claim of validity. The caller frees *problems. */
+[[nodiscard]]
+bool ad_lift_materialize_partial(PGGame const *game, ADLiftTree const *host,
+                                 ADLiftLabelling const *labelling,
+                                 ADNode **root, ADVerifyError **problems,
+                                 size_t *problem_count, ADLiftError *error);
 
 #endif

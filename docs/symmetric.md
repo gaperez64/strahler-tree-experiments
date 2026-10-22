@@ -34,6 +34,13 @@ at level 0. The Even recursive call therefore receives `{1}` with its higher
 the corrected condition includes this call. Even wins vertex 1 by staying
 on its priority-0 loop, while Odd wins vertex 0.
 
+With `--trace=FILE`, the `call` for Even's child has Odd's path at the root,
+and the preceding Odd `labels` event places vertex 1 in that root's S fibre.
+This is the corrected entry condition in the trace: S at a root means TOP.
+The subsequent `check` events record the algorithm's own restricted-labelling
+tests (paper Algorithm 2, entry lines 1 and 4, and the residual test).
+They do not rerun or change the recursion.
+
 ## Proof sketch
 
 Initially both labellings are the least priority-compatible ones. The higher

@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "ad_tree.h"
+#include "ad_trace.h"
 
 typedef struct {
   char message[256];
@@ -14,6 +14,12 @@ typedef struct {
   size_t calls;
   size_t attractors;
 } ZielonkaStats;
+
+[[nodiscard]]
+bool zielonka_decompose_trace(PGGame const *game, PGSet const *domain,
+                              uint64_t bound, ADResult *result,
+                              ZielonkaStats *stats, ZielonkaError *error,
+                              ADTrace *trace);
 
 [[nodiscard]]
 bool zielonka_decompose_stats(PGGame const *game, PGSet const *domain,

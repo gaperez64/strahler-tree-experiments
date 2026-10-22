@@ -23,4 +23,9 @@ bool ad_sym_solve(PGGame const *game, PGSet const *domain,
                   ADLiftTree const *hosts, bool verify, ADResult *result,
                   ADSymStats *stats, ADLiftError *error);
 
+[[nodiscard]]
+bool ad_sym_solve_trace(PGGame const *game, PGSet const *domain,
+                        ADLiftTree const *hosts, bool verify, ADResult *result,
+                        ADSymStats *stats, ADLiftError *error, ADTrace *trace);
+
 #endif
