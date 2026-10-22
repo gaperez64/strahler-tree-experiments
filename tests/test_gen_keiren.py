@@ -515,7 +515,7 @@ class KeirenTests(unittest.TestCase):
             build.assert_called_once_with(BUILD_DIR)
             rows = keiren.load_results(args.results)
             self.assertEqual(len(rows), 1)
-            self.assertRegex(rows[0]["solver_build"], r"^pg2adot 0\.2.*?, \w+ -O\w+$")
+            self.assertRegex(rows[0]["solver_build"], r"^pg2adot \d+(?:\.\d+)+ .*?, \w+ -O\w+$")
             self.assertEqual(rows[0]["outcome"], "complete")
             self.assertEqual((rows[0]["won_even"], rows[0]["won_odd"]), ("1", "1"))
             self.assertEqual(rows[0]["reference_solution"], "true")
