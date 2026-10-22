@@ -128,7 +128,8 @@ per child via `RLIMIT_AS`; macOS does not enforce this limit. `--jobs N` default
 to three concurrent backends. Solver output goes to temporary files; a separate
 capped child extracts its metrics under the same deadline. Peak RSS is the maximum
 of those individual children's `os.wait4` readings. Shared input metadata is
-parsed once per game in a separate child with the same time and memory caps;
+parsed once per game in a separate child with a 600-second deadline
+(`--metadata-timeout SECONDS`) and the same memory cap;
 unavailable metadata does not prevent solver runs. The intended full-run host has
 4 cores and 7 GB RAM. Each row records its actual machine and limits.
 
@@ -139,6 +140,11 @@ missing rows. `--max-games N` limits newly attempted games across all selected
 archives, so another pilot invocation moves on to the next games. Run one writer
 at a time. Changing budgets does not rerun recorded attempts; remove those rows
 or reset the CSV first. `--results PATH` selects another CSV.
+Use `run --refresh-metadata --archives=equivchecking` to fill missing game metadata
+in saved rows under the metadata deadline and the same memory cap. Each affected
+game is downloaded once, and its rows publish atomically without running backends.
+Solver results and details are preserved; a successful refresh clears the old
+`game metadata ...` error.
 CSVs without `start_winner` can still be rendered, but resuming refuses them with
 a message to delete or migrate the old CSV. New CSVs use mode 0644; the ignored
 `.lock` file uses normal file permissions under the current umask.

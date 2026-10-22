@@ -91,6 +91,102 @@ class KeirenTests(unittest.TestCase):
             with self.assertRaisesRegex(OSError, "range"):
                 keiren.RangeReader("https://example/archive.zip")
 
+    def test_corrupt_zip64_offsets_on_both_sides_of_4gib(self):
+        path = self.work / "wrapped.zip"
+        wrap = 1 << 32
+        names = ["games/a.gm.bz2", "games/b.gm.bz2"]
+        with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr(names[0], bz2.compress(GAME))
+            # A sparse gap covers k=1 without allocating or reading 4 GiB.
+            archive.start_dir = archive.fp.seek(wrap)
+            archive.writestr(names[1], bz2.compress(GAME))
+            for member in archive.infolist():
+                member.header_offset += wrap
+        with zipfile.ZipFile(path) as archive:
+            self.assertEqual([member.header_offset for member in archive.infolist()], [wrap, 2 * wrap])
+            for member in archive.infolist():
+                original_offset = member.header_offset
+                keiren.extract_game(archive, member, self.work / "extracted.gm")
+                self.assertEqual((self.work / "extracted.gm").read_bytes(), GAME)
+                self.assertEqual(member.header_offset, original_offset)
+            # Signatures alone must not select the other member at the wrapped offset.
+            missing = zipfile.ZipInfo("games/missing.gm.bz2")
+            missing.header_offset = wrap
+            with self.assertRaisesRegex(zipfile.BadZipFile, "no matching local header"):
+                keiren.open_member(archive, missing)
+
+    def test_corrupt_offset_with_data_descriptor_and_crc_check(self):
+        class Unseekable(io.BytesIO):
+            def seek(self, *args):
+                raise OSError("unseekable")
+        stream = Unseekable()
+        name = "games/é.gm.bz2"
+        with zipfile.ZipFile(stream, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr(name, bz2.compress(GAME))
+            archive.getinfo(name).header_offset += 1 << 32
+        with zipfile.ZipFile(io.BytesIO(stream.getvalue())) as archive:
+            member = archive.getinfo(name)
+            self.assertTrue(member.flag_bits & 8)
+            keiren.extract_game(archive, member, self.work / "extracted.gm")
+            self.assertEqual((self.work / "extracted.gm").read_bytes(), GAME)
+            member.CRC ^= 1
+            with patch.object(keiren.time, "sleep"), self.assertRaisesRegex(zipfile.BadZipFile, "CRC"):
+                keiren.extract_game(archive, member, self.work / "extracted.gm")
+            self.assertFalse((self.work / "extracted.gm").exists())
+
+    def test_recovered_member_can_extend_past_broken_start_dir_with_crc_check(self):
+        stream = io.BytesIO()
+        name, content = "games/a.gm.bz2", bz2.compress(GAME)
+        with zipfile.ZipFile(stream, "w") as archive:
+            archive.writestr(name, content)
+            archive.getinfo(name).header_offset += 1 << 32
+        data = bytearray(stream.getvalue())
+        data_offset = 30 + len(name)
+        for corrupt in (False, True):
+            with self.subTest(corrupt=corrupt):
+                if corrupt:
+                    data[data_offset + len(content) - 1] ^= 1
+                with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                    member = archive.getinfo(name)
+                    archive.start_dir = data_offset + 1
+                    with keiren.open_member(archive, member) as source:
+                        if corrupt:
+                            with self.assertRaisesRegex(zipfile.BadZipFile, "CRC"):
+                                source.read()
+                        else:
+                            self.assertEqual(source.read(), content)
+                    self.assertEqual(member.header_offset, 1 << 32)
+
+    def test_unchanged_offset_with_wrapped_next_boundary_keeps_crc_check(self):
+        stream = io.BytesIO()
+        name = "games/a.gm.bz2"
+        with zipfile.ZipFile(stream, "w") as archive:
+            archive.writestr(name, bz2.compress(GAME))
+            archive.writestr("games/b.gm.bz2", bz2.compress(GAME))
+            archive.infolist()[1].header_offset = 50
+        for corrupt in (False, True):
+            with self.subTest(corrupt=corrupt), zipfile.ZipFile(io.BytesIO(stream.getvalue())) as archive:
+                member = archive.getinfo(name)
+                self.assertEqual((member.header_offset, member._end_offset), (0, 50))
+                if corrupt:
+                    member.CRC ^= 1
+                    with patch.object(keiren.time, "sleep"), self.assertRaisesRegex(zipfile.BadZipFile, "CRC"):
+                        keiren.extract_game(archive, member, self.game)
+                    self.assertFalse(self.game.exists())
+                else:
+                    keiren.extract_game(archive, member, self.game)
+                    self.assertEqual(self.game.read_bytes(), GAME)
+                self.assertEqual((member.header_offset, member._end_offset), (0, 50))
+
+    def test_zip_without_metadata_encoding_attribute(self):
+        with zipfile.ZipFile(self.local_zip()) as archive:
+            member = keiren.game_members(archive)[0]
+            self.assertFalse(member.flag_bits & 0x800)
+            # Python 3.10's ZipFile has no metadata_encoding attribute.
+            legacy = argparse.Namespace(fp=archive.fp, open=archive.open)
+            keiren.extract_game(legacy, member, self.game)
+            self.assertEqual(self.game.read_bytes(), GAME)
+
     def process(self, code, *, timeout=3, memory=256 * 1024 ** 2):
         result = keiren.execute([sys.executable, "-c", code], self.game,
                                 self.work / "out", self.work / "err",
@@ -138,6 +234,24 @@ class KeirenTests(unittest.TestCase):
     def test_memory_limit(self):
         _, (outcome, _) = self.process("x=bytearray(512*1024*1024)")
         self.assertEqual(outcome, "out of memory")
+
+    def test_failure_detail_skips_preprocessing_and_trailing_statistics(self):
+        for code, diagnostic, outcome in (
+            (4, "Solver failed: priority depth exceeds the safe recursion depth", "error"),
+            (4, "Error: errno=12", "error"),
+            (4, "std::bad_alloc\ncleanup finished", "out of memory"),
+            (3, "1:1: failed to allocate the input buffer", "out of memory"),
+            (3, "89:1: unexpected keyword", "invalid input"),
+            (4, "more than the limit of 100", "host limit"),
+        ):
+            with self.subTest(diagnostic=diagnostic):
+                stderr = ("preprocess: residual=3001 shaved_even=0\n"
+                          "earlier message\n" + diagnostic + "\n"
+                          "lifting even: region=0 tree_nodes=0\n")
+                actual, detail = keiren.classify(keiren.ProcessResult(code, 1), stderr, 1 << 30)
+                self.assertEqual(actual, outcome)
+                self.assertIn(diagnostic.splitlines()[0], detail)
+                self.assertNotIn("preprocess", detail)
 
     @unittest.skipIf(sys.platform == "darwin" or os.environ.get("ASAN_OPTIONS"),
                      "requires a small enforced address-space cap without ASan")
@@ -247,8 +361,9 @@ class KeirenTests(unittest.TestCase):
         # ASan reserves terabytes of virtual address space before a solver starts.
         memory = 256 * 1024 if os.environ.get("ASAN_OPTIONS") else 2
         return argparse.Namespace(results=path, work_dir=self.work / "scratch", archives=["mlsolver"],
-            backends=[keiren.decomp.BACKENDS[-2]], build_dir=BUILD_DIR, timeout=30,
-            memory=memory, jobs=3, max_host_leaves=keiren.MAX_HOST_LEAVES, max_games=1)
+            backends=[keiren.decomp.BACKENDS[-2]], build_dir=BUILD_DIR, timeout=30, metadata_timeout=600,
+            memory=memory, jobs=3, max_host_leaves=keiren.MAX_HOST_LEAVES, max_games=1,
+            retry=[], refresh_metadata=False)
 
     @unittest.skipUnless((BUILD_DIR / "pg2adot").is_file(), "build the solver")
     def test_real_run_resume_and_deleted_games(self):
@@ -310,6 +425,255 @@ class KeirenTests(unittest.TestCase):
             self.assertEqual(keiren.run(args), 0)
             extract.assert_not_called()
         self.assertEqual(len(keiren.load_results(args.results)), 2)
+
+    def test_retry_replaces_whole_games_only_when_published(self):
+        archive_path = self.local_zip()
+        @contextmanager
+        def archive(_):
+            with zipfile.ZipFile(archive_path) as stream:
+                yield stream
+        args = self.args(self.work / "results.csv")
+        args.backends = list(keiren.decomp.BACKENDS[-2:])
+        args.max_games = None
+        original = [dict(archive="mlsolver", game=f"mlsolver/games/{game}.gm",
+                         backend=backend.name, outcome=outcome, detail="old detail")
+                    for game, outcomes in (("a", ("complete", "error")), ("b", ("timeout", "complete")))
+                    for backend, outcome in zip(args.backends, outcomes)]
+        keiren.save_results(args.results, original)
+        old_bytes = args.results.read_bytes()
+        old_rows = keiren.load_results(args.results)
+        def measure(archive, member, pending, args):
+            self.assertEqual(pending, args.backends)
+            if member.filename.endswith("a.gm.bz2"):
+                self.assertEqual(args.results.read_bytes(), old_bytes)
+                return [dict(backend=backend.name, outcome="complete", detail="new") for backend in pending]
+            current = keiren.load_results(args.results)
+            self.assertEqual(current[:2], old_rows[2:])
+            self.assertEqual([row["detail"] for row in current[2:]], ["new", "new"])
+            raise KeyboardInterrupt
+        with patch.object(keiren, "remote_zip", archive), patch.object(keiren, "download_metadata", side_effect=OSError("offline")), redirect_stderr(io.StringIO()):
+            with patch.object(keiren, "measure_game") as measured:
+                self.assertEqual(keiren.run(args), 0)
+                measured.assert_not_called()
+            self.assertEqual(args.results.read_bytes(), old_bytes)
+            args.retry = ["error", "timeout"]
+            with patch.object(keiren, "measure_game", side_effect=KeyboardInterrupt):
+                with self.assertRaises(KeyboardInterrupt):
+                    keiren.run(args)
+            self.assertEqual(args.results.read_bytes(), old_bytes)
+            with patch.object(keiren, "measure_game", side_effect=measure):
+                with self.assertRaises(KeyboardInterrupt):
+                    keiren.run(args)
+        rows = keiren.load_results(args.results)
+        self.assertEqual(rows[:2], old_rows[2:])
+        self.assertEqual([row["game"] for row in rows[2:]], ["mlsolver/games/a.gm"] * 2)
+        self.assertEqual([row["outcome"] for row in rows[2:]], ["complete", "complete"])
+
+    def test_retry_argument_validation(self):
+        for value, expected in (("download failed,error", ["download failed", "error"]),
+                                ("", []), ("typo", None)):
+            with self.subTest(value=value), patch.object(sys, "argv", [keiren.SCRIPT, "run",
+                    "--retry=" + value, "--results", str(self.work / "results.csv"),
+                    "--work-dir", str(self.work / "scratch")]), patch.object(keiren.decomp,
+                    "validate_run_arguments", return_value=BUILD_DIR), patch.object(keiren,
+                    "run", return_value=0) as run, redirect_stderr(io.StringIO()):
+                if expected is None:
+                    with self.assertRaises(SystemExit) as error:
+                        keiren.main()
+                    self.assertEqual(error.exception.code, 2)
+                    run.assert_not_called()
+                else:
+                    self.assertEqual(keiren.main(), 0)
+                    self.assertEqual(run.call_args.args[0].retry, expected)
+
+    def test_refresh_metadata_preserves_saved_solver_results(self):
+        archive_path = self.local_zip()
+        @contextmanager
+        def archive(file_id):
+            self.assertEqual(file_id, keiren.ARCHIVES["mlsolver"])
+            with zipfile.ZipFile(archive_path) as stream:
+                yield stream
+        args = self.args(self.work / "results.csv")
+        args.refresh_metadata = True
+        args.max_games = None
+        original = [dict(archive="mlsolver", game="mlsolver/games/a.gm",
+                         backend=backend.name, outcome=outcome, detail=detail,
+                         seconds="1.234", peak_rss_mib="5.678", start_winner="even",
+                         reference_agrees="true", winner_disagrees="false", memory_gib="2")
+                    for backend, outcome, detail in zip(keiren.decomp.BACKENDS[:3],
+                        ("complete", "error", "partial"),
+                        ("game metadata out of memory: MemoryError", "solver failed", "metrics: other error"))]
+        original += [dict(archive="mlsolver", game="mlsolver/games/b.gm", backend="lifting",
+                          outcome="complete", vertices="2", edges="2", distinct_priorities="2",
+                          maximum_priority="1", detail="already measured"),
+                     dict(archive="pgsolver", game="pgsolver/games/other.gm", backend="lifting",
+                          outcome="complete", detail="game metadata error: other archive")]
+        keiren.save_results(args.results, original)
+        expected = keiren.load_results(args.results)
+        for row in expected[:3]:
+            row.update(zip(keiren.GAME_FIELDS, ("2", "2", "2", "1")))
+        expected[0]["detail"] = ""
+        with (patch.object(keiren, "remote_zip", archive),
+              patch.object(keiren, "download_metadata") as references,
+              patch.object(keiren, "extract_game", wraps=keiren.extract_game) as extract,
+              patch.object(keiren, "capped_json", wraps=keiren.capped_json) as metadata,
+              patch.object(keiren, "measure_game") as measure,
+              patch.object(keiren, "run_one") as backend,
+              redirect_stderr(io.StringIO())):
+            self.assertEqual(keiren.run(args), 0)
+            self.assertEqual(keiren.load_results(args.results), expected)
+            extract.assert_called_once()
+            metadata.assert_called_once()
+            self.assertEqual(metadata.call_args.args[0], "_game_info")
+            self.assertEqual(metadata.call_args.args[-1], int(args.memory * 1024 ** 3))
+            references.assert_not_called()
+            measure.assert_not_called()
+            backend.assert_not_called()
+            # No missing rows in the selected archive: even its directory is skipped.
+            with patch.object(keiren, "remote_zip") as remote:
+                self.assertEqual(keiren.run(args), 0)
+                remote.assert_not_called()
+        self.assertFalse(list(args.work_dir.rglob("input.gm")))
+
+    def test_refresh_metadata_publishes_one_game_before_interruption(self):
+        archive_path = self.local_zip()
+        @contextmanager
+        def archive(_):
+            with zipfile.ZipFile(archive_path) as stream:
+                yield stream
+        args = self.args(self.work / "results.csv")
+        args.refresh_metadata = True
+        args.max_games = None
+        keiren.save_results(args.results, [dict(archive="mlsolver", game=f"mlsolver/games/{game}.gm",
+            backend="lifting", outcome="complete", detail="game metadata out of memory: MemoryError")
+            for game in ("a", "b")])
+        old_bytes = args.results.read_bytes()
+        old_rows = keiren.load_results(args.results)
+        extract_game = keiren.extract_game
+        def extract(stream, member, game):
+            if member.filename.endswith("a.gm.bz2"):
+                self.assertEqual(args.results.read_bytes(), old_bytes)
+                return extract_game(stream, member, game)
+            current = keiren.load_results(args.results)
+            self.assertEqual(current[0]["vertices"], "2")
+            self.assertEqual(current[0]["detail"], "")
+            self.assertEqual(current[1], old_rows[1])
+            raise KeyboardInterrupt
+        with (patch.object(keiren, "remote_zip", archive),
+              patch.object(keiren, "extract_game", side_effect=extract),
+              patch.object(keiren, "run_one") as backend,
+              redirect_stderr(io.StringIO())):
+            with self.assertRaises(KeyboardInterrupt):
+                keiren.run(args)
+            backend.assert_not_called()
+        self.assertEqual(keiren.load_results(args.results)[1], old_rows[1])
+        self.assertFalse(list(args.work_dir.rglob("input.gm")))
+
+    def test_refresh_metadata_fills_any_missing_field(self):
+        archive_path = self.local_zip()
+        @contextmanager
+        def archive(_):
+            with zipfile.ZipFile(archive_path) as stream:
+                yield stream
+        args = self.args(self.work / "results.csv")
+        args.refresh_metadata = True
+        for missing in keiren.GAME_FIELDS:
+            with self.subTest(missing=missing):
+                row = dict(archive="mlsolver", game="mlsolver/games/a.gm",
+                           backend="lifting", outcome="complete",
+                           **dict(zip(keiren.GAME_FIELDS, ("2", "2", "2", "1"))))
+                row[missing] = ""
+                keiren.save_results(args.results, [row])
+                with (patch.object(keiren, "remote_zip", archive),
+                      patch.object(keiren, "run_one") as backend,
+                      redirect_stderr(io.StringIO())):
+                    self.assertEqual(keiren.run(args), 0)
+                    backend.assert_not_called()
+                saved = keiren.load_results(args.results)[0]
+                self.assertEqual([saved[field] for field in keiren.GAME_FIELDS], ["2", "2", "2", "1"])
+
+    def test_refresh_metadata_failures_preserve_csv(self):
+        archive_path = self.local_zip()
+        @contextmanager
+        def archive(_):
+            with zipfile.ZipFile(archive_path) as stream:
+                yield stream
+        args = self.args(self.work / "results.csv")
+        args.refresh_metadata = True
+        keiren.save_results(args.results, [dict(archive="mlsolver", game="mlsolver/games/a.gm",
+            backend="lifting", outcome="complete", detail="game metadata out of memory: MemoryError")])
+        old_bytes = args.results.read_bytes()
+        for failure in ("download", "metadata", "listing", "publish"):
+            with (self.subTest(failure=failure),
+                  patch.object(keiren, "remote_zip", archive),
+                  patch.object(keiren.time, "sleep"),
+                  patch.object(keiren, "run_one") as backend,
+                  redirect_stderr(io.StringIO())):
+                if failure == "download":
+                    broken = patch.object(keiren, "extract_game", side_effect=OSError("offline"))
+                elif failure == "metadata":
+                    broken = patch.object(keiren, "capped_json", return_value=(None, "out of memory", "MemoryError", 1))
+                elif failure == "listing":
+                    broken = patch.object(keiren, "remote_zip", side_effect=OSError("offline"))
+                else:
+                    broken = patch.object(keiren.os, "fsync", side_effect=OSError("disk full"))
+                with broken:
+                    if failure == "publish":
+                        with self.assertRaisesRegex(RuntimeError, "previous results preserved"):
+                            keiren.run(args)
+                    else:
+                        self.assertEqual(keiren.run(args), 1)
+                backend.assert_not_called()
+                self.assertEqual(args.results.read_bytes(), old_bytes)
+        self.assertFalse(list(args.work_dir.rglob("input.gm")))
+
+    def test_refresh_metadata_argument_needs_no_solver_binaries(self):
+        with (patch.object(sys, "argv", [keiren.SCRIPT, "run", "--refresh-metadata",
+                  "--archives=equivchecking", "--build-dir", str(self.work / "missing-build"),
+                  "--results", str(self.work / "results.csv"), "--work-dir", str(self.work / "scratch")]),
+              patch.object(keiren, "run", return_value=0) as run):
+            self.assertEqual(keiren.main(), 0)
+        args = run.call_args.args[0]
+        self.assertTrue(args.refresh_metadata)
+        self.assertEqual(args.archives, ["equivchecking"])
+        self.assertEqual(args.metadata_timeout, 600)
+
+    def test_metadata_timeout_argument_validation(self):
+        for value in ("12.5", "0", "-1", "nan", "inf"):
+            with (self.subTest(value=value),
+                  patch.object(sys, "argv", [keiren.SCRIPT, "run", "--metadata-timeout=" + value,
+                      "--results", str(self.work / "results.csv"),
+                      "--work-dir", str(self.work / "scratch")]),
+                  patch.object(keiren.decomp, "validate_run_arguments", return_value=BUILD_DIR),
+                  patch.object(keiren, "run", return_value=0) as run,
+                  redirect_stderr(io.StringIO())):
+                if value == "12.5":
+                    self.assertEqual(keiren.main(), 0)
+                    self.assertEqual(run.call_args.args[0].metadata_timeout, 12.5)
+                    self.assertEqual(run.call_args.args[0].timeout, 30)
+                else:
+                    with self.assertRaises(SystemExit) as error:
+                        keiren.main()
+                    self.assertEqual(error.exception.code, 2)
+                    run.assert_not_called()
+
+    def test_metadata_deadline_is_independent_in_measurement_and_refresh(self):
+        args = self.args(self.work / "results.csv")
+        args.work_dir.mkdir()
+        args.timeout, args.metadata_timeout = 0.01, 123
+        with (zipfile.ZipFile(self.local_zip()) as archive,
+              patch.object(keiren.time, "monotonic", return_value=1000),
+              patch.object(keiren, "capped_json", return_value=([2, 2, 2, 1], "complete", "", 1)) as metadata,
+              patch.object(keiren, "run_one", return_value={"backend": "zielonka", "outcome": "complete", "detail": ""}) as backend):
+            member = keiren.game_members(archive)[0]
+            rows = keiren.measure_game(archive, member, args.backends, args)
+            self.assertEqual(rows[0]["vertices"], 2)
+            backend.assert_called_once()
+            self.assertTrue(keiren.refresh_metadata(archive, member, rows, args))
+            self.assertEqual(metadata.call_count, 2)
+            for call in metadata.call_args_list:
+                self.assertEqual(call.args[0], "_game_info")
+                self.assertEqual(call.args[-2:], (1123, int(args.memory * 1024 ** 3)))
 
     def test_metrics_share_the_backend_deadline(self):
         args = self.args(self.work / "unused.csv")
@@ -393,6 +757,36 @@ class KeirenTests(unittest.TestCase):
         self.assertIn("Older pilot rows", output.read_text())
         self.assertNotIn("REFERENCE MISMATCH", output.read_text())
         self.assertEqual(results.read_bytes(), original)
+
+    def test_dataset_notes_count_games_and_preprocessing_from_rows(self):
+        rows = []
+        for n, priorities in ((1, "1502"), (2, "3002"), (3, "5000")):
+            game = f"pgsolver/games/recursiveladder({n}).gm"
+            rows.extend([
+                dict(archive="pgsolver", game=game, backend="zielonka", outcome="error",
+                     distinct_priorities=priorities, detail="exit 4: Solver failed: priority depth exceeds the safe recursion depth"),
+                dict(archive="pgsolver", game=game, backend="zielonka+pre",
+                     outcome="error" if n == 1 else "complete", detail="exit 4: preprocess: residual=3001" if n == 1 else ""),
+            ])
+        rows.extend(dict(archive="mlsolver", game="games/huge.gm", backend=backend,
+                         outcome="out of memory", detail="1:1: failed to allocate the input buffer")
+                    for backend in ("zielonka", "lifting"))
+        rows.extend([
+            dict(archive="pgsolver", game="pgsolver/games/recursiveladder(1).gm",
+                 backend="pm-strahler+pre", outcome="complete"),
+            dict(archive="mlsolver", game="games/bad.gm", backend="zielonka", outcome="invalid input"),
+            dict(archive="mlsolver", game="mlsolver/games/FLCTLStarLimitClosuren=1.gm",
+                 backend="zielonka", outcome="complete", reference_agrees="false"),
+            dict(archive="equivchecking", game="games/download.gm", backend="zielonka", outcome="download failed"),
+        ])
+        notes = keiren.dataset_notes(rows)
+        for expected in ("3 pgsolver games", "1,502 and 5,000 distinct priorities",
+                         "compression gets 2 games", "remaining 1 recursiveladder",
+                         "1 of the largest games (2 backend runs)", "1 games are invalid",
+                         "`games/bad.gm`", "1 games still marked", "likely error in the reference data"):
+            self.assertIn(expected, notes)
+        self.assertEqual(keiren.dataset_notes([]), "")
+        self.assertEqual(rows[1]["detail"], "exit 4: preprocess: residual=3001")
 
     def test_render_all_metrics_checks_and_pagination(self):
         rows = []

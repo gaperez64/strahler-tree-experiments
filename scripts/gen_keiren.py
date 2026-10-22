@@ -6,6 +6,7 @@ import bz2
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from copy import copy
 import csv
 from dataclasses import dataclass
 import fcntl
@@ -159,10 +160,37 @@ def game_members(archive):
                   key=lambda entry: entry.filename)
 
 
+def open_member(archive, member):
+    """Recover wrapped macOS ZIP64 offsets before letting zipfile read and check CRCs."""
+    stream = archive.fp
+    size = stream.seek(0, os.SEEK_END)
+    wrap = 1 << 32
+    offsets = dict.fromkeys([member.header_offset,
+                            *range(member.header_offset % wrap, size, wrap)])
+    encoding = "utf-8" if member.flag_bits & 0x800 else getattr(archive, "metadata_encoding", None) or "cp437"
+    filename = member.orig_filename.encode(encoding)
+    for offset in offsets:
+        if not 0 <= offset <= size - 30:
+            continue
+        stream.seek(offset)
+        header = stream.read(30)
+        if header[:4] != b"PK\x03\x04" or len(header) != 30:
+            continue
+        if stream.read(int.from_bytes(header[26:28], "little")) != filename:
+            continue
+        member = copy(member)
+        member.header_offset = offset
+        # Wrapped offsets also corrupt boundaries of members whose own offsets are correct.
+        member._end_offset = None
+        # zipfile uses central-directory sizes/CRC even with data descriptors (flag 3).
+        return archive.open(member)
+    raise zipfile.BadZipFile(f"no matching local header for {member.filename}")
+
+
 def extract_game(archive, member, destination):
     def extract():
         try:
-            with archive.open(member) as compressed:
+            with open_member(archive, member) as compressed:
                 with bz2.open(compressed, "rb") as source, destination.open("wb") as target:
                     shutil.copyfileobj(source, target, 1 << 20)
         except BaseException:
@@ -304,23 +332,27 @@ def execute(command, game, stdout, stderr, deadline, memory):
 
 
 def classify(result, stderr, memory, *, solver=True):
-    first = next((line.strip() for line in stderr.splitlines() if line.strip()), "no stderr")
+    lines = [line.strip() for line in stderr.splitlines() if line.strip()]
+    detail = next((line for line in reversed(lines)
+                   if re.search(r"error|fail|alloc|memory|ENOMEM", line, re.IGNORECASE)),
+                  next((line for line in reversed(lines)
+                        if not re.match(r"^[\w+ -]+:\s+\w+=", line)), "no stderr"))
     if result.timed_out:
         return "timeout", "deadline exceeded"
     if re.search(r"out[- ]of[- ]memory|cannot allocate|failed to allocate|allocation fail|"
-                 r"bad_alloc|MemoryError|ENOMEM", stderr, re.IGNORECASE):
-        return "out of memory", first
+                 r"bad_alloc|MemoryError|ENOMEM", detail, re.IGNORECASE):
+        return "out of memory", detail
     if result.code < 0:
         name = signal.Signals(-result.code).name
         cap_hit = (result.code in (-signal.SIGKILL, -signal.SIGABRT, -signal.SIGSEGV)
                    and max(result.peak_address_bytes, result.peak_rss_mib * 1024 ** 2) >= memory * 0.95)
         return ("out of memory", f"{name} after reaching memory cap") if cap_hit else ("crash", name)
-    if solver and re.search(r"more than (?:the limit|\d+ leaves)", stderr):
-        return "host limit", first
+    if solver and re.search(r"more than (?:the limit|\d+ leaves)", detail):
+        return "host limit", detail
     if solver and result.code == 3:
-        return "invalid input", f"exit 3: {first}"
+        return "invalid input", f"exit 3: {detail}"
     if result.code:
-        return "error", f"exit {result.code}: {first}"
+        return "error", f"exit {result.code}: {detail}"
     if solver:
         outcomes = re.findall(r"\bresult=(complete|partial)\b", stderr)
         return (outcomes[-1], "") if outcomes else ("error", "missing result statistics")
@@ -453,17 +485,23 @@ def machine_info():
         return f"{platform.system()} {platform.machine()}, {cpus} CPUs"
 
 
+@contextmanager
+def game_metadata(archive, member, args):
+    directory = retry(lambda: tempfile.TemporaryDirectory(prefix="game-", dir=args.work_dir))
+    with directory:
+        game = Path(directory.name) / "input.gm"
+        extract_game(archive, member, game)
+        info, status, detail, _ = capped_json(
+            "_game_info", [game], game, Path(directory.name),
+            time.monotonic() + args.metadata_timeout, int(args.memory * 1024 ** 3))
+        if status != "complete":
+            print(f"{member.filename}: metadata {status}: {detail}", file=sys.stderr)
+        yield game, info, status, detail
+
+
 def measure_game(archive, member, pending, args):
     try:
-        directory = retry(lambda: tempfile.TemporaryDirectory(prefix="game-", dir=args.work_dir))
-        with directory:
-            game = Path(directory.name) / "input.gm"
-            extract_game(archive, member, game)
-            info, status, detail, _ = capped_json(
-                "_game_info", [game], game, Path(directory.name),
-                time.monotonic() + args.timeout, int(args.memory * 1024 ** 3))
-            if status != "complete":
-                print(f"{member.filename}: metadata {status}: {detail}", file=sys.stderr)
+        with game_metadata(archive, member, args) as (game, info, status, detail):
             with ThreadPoolExecutor(max_workers=args.jobs) as pool:
                 rows = list(pool.map(lambda backend: run_one(backend, game, info, args), pending))
             for row in rows:
@@ -477,6 +515,21 @@ def measure_game(archive, member, pending, args):
                 for backend in pending]
 
 
+def refresh_metadata(archive, member, rows, args):
+    try:
+        with game_metadata(archive, member, args) as (_, info, _, _):
+            if info is None:
+                return False
+            for row in rows:
+                row.update(zip(GAME_FIELDS, info))
+                if row["detail"].startswith("game metadata "):
+                    row["detail"] = ""
+        return True
+    except NETWORK_ERRORS as error:
+        print(f"{member.filename}: metadata download failed: {error}", file=sys.stderr)
+        return False
+
+
 def publish(path, rows):
     try:
         retry(lambda: save_results(path, rows))
@@ -487,35 +540,56 @@ def publish(path, rows):
 
 def run(args):
     rows = load_results(args.results)
+    retry_games = {(row["archive"], row["game"]) for row in rows
+                   if row["outcome"] in args.retry}
+    refresh_games = {(row["archive"], row["game"]) for row in rows
+                     if any(row[field] == "" for field in GAME_FIELDS) and row["game"] != "(archive listing)"}
     machine = machine_info()
     base = dict(timeout_seconds=args.timeout, memory_gib=args.memory, jobs=args.jobs,
                 max_host_leaves=args.max_host_leaves, machine=machine)
     start, attempted = time.monotonic(), 0
+    failed = False
     args.work_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        references = reference_solutions(download_metadata(args.work_dir))
-        print(f"metadata: {len(references)} original-game reference solutions", file=sys.stderr)
-    except Exception as error:
-        references = {}
-        print(f"metadata unavailable: {error}", file=sys.stderr)
+    references = {}
+    if not args.refresh_metadata:
+        try:
+            references = reference_solutions(download_metadata(args.work_dir))
+            print(f"metadata: {len(references)} original-game reference solutions", file=sys.stderr)
+        except Exception as error:
+            print(f"metadata unavailable: {error}", file=sys.stderr)
     for name in args.archives:
+        if args.refresh_metadata and not any(archive == name for archive, _ in refresh_games):
+            continue
         try:
             with remote_zip(ARCHIVES[name]) as archive:
                 members = game_members(archive)
                 if not members:
                     raise OSError("archive contains no games")
                 indexed = [row for row in rows if not (row["archive"] == name and row["game"] == "(archive listing)")]
-                if len(indexed) != len(rows):
+                if not args.refresh_metadata and len(indexed) != len(rows):
                     rows = indexed
                     publish(args.results, rows)
                 for member in members:
                     game_name = member.filename.removesuffix(".bz2")
-                    pending = missing_backends(rows, name, game_name, args.backends)
-                    if not pending:
-                        continue
+                    retrying = (name, game_name) in retry_games
+                    if args.refresh_metadata:
+                        if (name, game_name) not in refresh_games:
+                            continue
+                    else:
+                        pending = args.backends if retrying else missing_backends(rows, name, game_name, args.backends)
+                        if not pending:
+                            continue
                     if args.max_games is not None and attempted >= args.max_games:
                         break
                     attempted += 1
+                    if args.refresh_metadata:
+                        saved = [row for row in rows if row["archive"] == name and row["game"] == game_name]
+                        if refresh_metadata(archive, member, saved, args):
+                            publish(args.results, rows)
+                            print(f"{name}/{game_name}: metadata refreshed", file=sys.stderr, flush=True)
+                        else:
+                            failed = True
+                        continue
                     common = dict(base, archive=name, game=game_name,
                                   reference_solution=reference_for_game(references, game_name))
                     new = measure_game(archive, member, pending, args)
@@ -523,7 +597,7 @@ def run(args):
                         row["detail"] = " ".join(str(row.get("detail", "")).split())[:240]
                     new = [dict(common, **row) for row in new]
                     replaced = {row["backend"] for row in new}
-                    previous = [row for row in rows if row["archive"] == name and row["game"] == game_name and row["backend"] not in replaced]
+                    previous = [] if retrying else [row for row in rows if row["archive"] == name and row["game"] == game_name and row["backend"] not in replaced]
                     flag_winners(previous + new)
                     rows = [row for row in rows if not (row["archive"] == name and row["game"] == game_name)] + previous + new
                     # CSV storage failures must stop, keeping previously published games intact.
@@ -534,6 +608,10 @@ def run(args):
                         if row["outcome"] not in ("complete", "partial"):
                             print(f"  {row['backend']}: {row['outcome']}: {row.get('detail', '')}", file=sys.stderr)
         except NETWORK_ERRORS as error:
+            if args.refresh_metadata:
+                failed = True
+                print(f"{name}: metadata archive listing failed: {error}", file=sys.stderr)
+                continue
             # Without a directory there are no known game names; keep an explicit index failure.
             rows = [row for row in rows if not (row["archive"] == name and row["game"] == "(archive listing)")]
             rows.append(dict(base, archive=name, game="(archive listing)", backend="",
@@ -545,7 +623,7 @@ def run(args):
     if not args.results.exists():
         publish(args.results, rows)
     print(f"{attempted} games attempted in {time.monotonic() - start:.1f} s; {len(rows)} saved rows", file=sys.stderr)
-    return int(any(row["outcome"] == "download failed" for row in rows))
+    return int(failed or any(row["outcome"] == "download failed" for row in rows))
 
 
 def cell(value):
@@ -646,6 +724,62 @@ def inventory(rows):
     return sections
 
 
+def dataset_notes(rows):
+    groups = defaultdict(list)
+    for row in rows:
+        groups[row["archive"], row["game"]].append(row)
+    notes = []
+    invalid = [game for (_, game), group in groups.items()
+               if any(row["outcome"] == "invalid input" for row in group)]
+    if invalid:
+        notes.append(f"{len(invalid)} games are invalid PGSolver input. Each ends with a stray "
+                     "`timeout: WARNING: Wait(N) failed: No child processes` line leaked from the generator:\n\n"
+                     + "".join(f"- `{game}`\n" for game in invalid) + "\n")
+    if any(PurePosixPath(row["game"]).name in ("FLCTLStarLimitClosuren=1.gm", "FLCTLStarLimitClosuren=1_compact.gm") and
+           row.get("reference_agrees") == "false" for row in rows):
+        notes.append("`FLCTLStarLimitClosure n=1` (plain and compact) has a likely error in the reference data. "
+                     "Every complete backend and upstream [Oink](https://github.com/trolando/oink) "
+                     "(`--zlk`) agree that Even wins start vertex 0, with identical Even / Odd winner counts: "
+                     "8,276 / 1,309 for the compact game and 148,284 / 26,383 for the plain game. "
+                     "`data.yaml` records pbespgsolve's answer as false for all reductions.\n\n")
+    refused = {key: group for key, group in groups.items() if key[0] == "pgsolver"
+               and any("+pre" not in row["backend"] and "safe recursion depth" in row.get("detail", "")
+                       for row in group)}
+    if refused:
+        priorities = [int(row["distinct_priorities"]) for group in refused.values()
+                      for row in group if row.get("distinct_priorities") not in (None, "")]
+        # Old +pre details lost the error line; their recorded error outcome survives.
+        remaining = [game for (_, game), group in refused.items()
+                     if any(row["backend"].startswith(("lifting", "zielonka")) and
+                            "+pre" in row["backend"] and row["outcome"] == "error" for row in group)]
+        passed = sum(any(row["backend"].startswith(("lifting", "zielonka")) and
+                         "+pre" in row["backend"] and row["outcome"] in ("complete", "partial")
+                         for row in group) for group in refused.values())
+        families = ", ".join(sorted({PurePosixPath(game).name.split("(")[0] for _, game in refused}))
+        remaining_families = Counter(PurePosixPath(game).name.split("(")[0] for game in remaining)
+        notes.append(f"{len(refused)} pgsolver games ({families}) exceed the recursion depth limit of 1024 "
+                     "in `zielonka`, `zielonka-sym`, `lifting`, `lifting-sym` and `lifting-adaptive`, "
+                     "including `+iter`. "
+                     + (f"They have between {min(priorities):,} and {max(priorities):,} distinct priorities. "
+                        if priorities else "")
+                     + f"With `+pre`, compression gets {passed} games past the guard."
+                     + (" The remaining " + " and ".join(f"{count} {family}" for family, count in sorted(remaining_families.items()))
+                        + " games stay refused because alternating parities leave nothing to merge." if remaining else "")
+                     + "\n\n")
+    buffer_oom = [row for row in rows if "failed to allocate the input buffer" in row.get("detail", "")]
+    if buffer_oom:
+        count = len({(row["archive"], row["game"]) for row in buffer_oom})
+        notes.append(f"{count} of the largest games ({len(buffer_oom)} backend runs) fail before parsing: "
+                     "the tools read the whole file into memory and report "
+                     "`failed to allocate the input buffer` (out of memory).\n\n")
+    downloads = {row["game"] for row in rows if row["archive"] == "equivchecking"
+                 and row["outcome"] == "download failed"}
+    if downloads:
+        notes.append(f"The macOS `equivchecking.zip` has broken ZIP64 offsets; {len(downloads)} games "
+                     "still marked `download failed` need rerunning with local-header offset recovery.\n\n")
+    return "## Dataset notes\n\n" + "".join(notes) if notes else ""
+
+
 def intro(rows):
     budgets = sorted({(row.get("timeout_seconds", ""), row.get("memory_gib", ""), row.get("jobs", ""), row.get("max_host_leaves", ""), row.get("machine", "")) for row in rows})
     measured = any(row["backend"] for row in rows)
@@ -672,7 +806,8 @@ def intro(rows):
         "Older pilot rows lack `start_winner` and remain unchecked. Winner cross-checks compare "
         "complete backends' Even/Odd counts and start winners; different winning sets of equal size "
         "with the same start winner can still go undetected.\n\n"
-        "## Columns and metrics\n\n"
+        + dataset_notes(rows)
+        + "## Columns and metrics\n\n"
         + table(["Column", "Meaning"], [
             ["archive, game", "Source ZIP name and member path, with the .bz2 suffix removed. (archive listing) records a failed ZIP directory download."],
             ["backend", "DECOMP solver name. +pre compresses priorities and repeatedly removes simple winning regions and their attractors; +iter removes certified dominions and their attractors between solver rounds."],
@@ -757,10 +892,15 @@ def main():
     runner = commands.add_parser("run", help="download and run selected games; resume existing CSV")
     runner.add_argument("--archives", default=",".join(ARCHIVES), help="comma-separated ZIP names without .zip")
     runner.add_argument("--backends", default=",".join(b.name for b in decomp.BACKENDS))
+    mode = runner.add_mutually_exclusive_group()
+    mode.add_argument("--retry", default="", help="comma-separated outcomes; replace each matching game's rows after rerunning selected backends")
+    mode.add_argument("--refresh-metadata", action="store_true", help="fill missing game metadata in saved rows without running backends")
     runner.add_argument("--max-games", type=int, help="maximum newly attempted games, across selected archives")
     runner.add_argument("--work-dir", type=Path, default=Path(tempfile.gettempdir()) / "strahler-keiren")
     runner.add_argument("--build-dir", type=Path, default=Path("build"))
     runner.add_argument("--timeout", type=float, default=30)
+    runner.add_argument("--metadata-timeout", type=float, default=600,
+                        help="seconds for input metadata parsing (default: 600)")
     runner.add_argument("--memory", type=float, default=2, help="per-process address space in GiB (default: 2)")
     runner.add_argument("--jobs", type=int, default=3)
     runner.add_argument("--max-host-leaves", type=int, default=MAX_HOST_LEAVES)
@@ -772,6 +912,9 @@ def main():
         render(args.results, args.output)
         return 0
     args.archives = list(dict.fromkeys(args.archives.split(",")))
+    args.retry = [outcome.strip() for outcome in args.retry.split(",")] if args.retry else []
+    if any(outcome not in OUTCOMES for outcome in args.retry):
+        parser.error("unknown retry outcome; choose from " + ", ".join(OUTCOMES))
     valid = {backend.name: backend for backend in decomp.BACKENDS}
     names = list(dict.fromkeys(args.backends.split(",")))
     if any(name not in ARCHIVES for name in args.archives):
@@ -781,9 +924,11 @@ def main():
     args.backends = [valid[name] for name in names]
     if not math.isfinite(args.memory) or args.memory <= 0:
         parser.error("--memory must be finite and positive")
+    if not math.isfinite(args.metadata_timeout) or args.metadata_timeout <= 0:
+        parser.error("--metadata-timeout must be finite and positive")
     if args.jobs <= 0 or (args.max_games is not None and args.max_games <= 0):
         parser.error("--jobs and --max-games must be positive")
-    args.build_dir = decomp.validate_run_arguments(parser, args, args.backends)
+    args.build_dir = decomp.validate_run_arguments(parser, args, [] if args.refresh_metadata else args.backends)
     args.work_dir = args.work_dir.resolve()
     if args.work_dir.is_relative_to(decomp.ROOT):
         parser.error("--work-dir must be outside the repository")

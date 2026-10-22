@@ -2,6 +2,7 @@
 """Regenerate decomp/ and DECOMP.md from the built, verified game tools."""
 
 import argparse
+from array import array
 from collections import Counter
 from dataclasses import dataclass
 from hashlib import sha256
@@ -107,6 +108,7 @@ VERTEX = re.compile(
     r'(\d+)\s+(\d+)\s+[01]\s+(\d+(?:\s*,\s*\d+)*)\s*'
     r'(?:"[^"]*"\s*)?;'
 )
+GAME_RECORD = re.compile(r"\s*(?:" + VERTEX.pattern + r"|(?P<directive>parity|start)\s+\d+\s*;)")
 
 
 def discover_games(paths):
@@ -130,23 +132,62 @@ def discover_games(paths):
     return games
 
 
-def game_info(path):
-    """Count final declarations; the header can mean maximum ID or vertex count."""
-    vertices = {}
-    text = path.read_text(encoding="utf-8")
-    text = re.sub(r"\A\s*parity\s+\d+\s*;", "", text)
-    text = re.sub(r"\A\s*start\s+\d+\s*;", "", text)
-    end = 0
-    for match in VERTEX.finditer(text):
-        if text[end:match.start()].strip():
+def game_records(stream, chunk_size):
+    buffer = ""
+    while chunk := stream.read(chunk_size):
+        buffer += chunk
+        end = 0
+        while match := GAME_RECORD.match(buffer, end):
+            yield match
+            end = match.end()
+        buffer = buffer[end:].lstrip()
+        # Reject complete malformed records without retaining the rest of the file.
+        if re.match(r'[^;"]*(?:"[^"]*"[^;"]*)*;', buffer):
             raise ValueError("invalid PGSolver vertex record")
-        vertices[int(match[1])] = (int(match[2]), match[3].count(",") + 1)
-        end = match.end()
-    if text[end:].strip():
+    if buffer:
         raise ValueError("invalid PGSolver vertex record")
-    priorities = {priority for priority, _ in vertices.values()}
-    edges = sum(count for _, count in vertices.values())
-    return len(vertices), edges, len(priorities), max(priorities, default=0)
+
+
+def game_info(path, chunk_size=1 << 16):
+    """Count final declarations; the header can mean maximum ID or vertex count."""
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be positive")
+    priorities, degrees = array("I"), array("I")
+    limit = 1 << (8 * degrees.itemsize)
+    sparse, count = {}, 0
+    header, start = True, True
+    with path.open(encoding="utf-8") as stream:
+        for match in game_records(stream, chunk_size):
+            if header and match["directive"] == "parity":
+                header = False
+                continue
+            header = False
+            if start and match["directive"] == "start":
+                start = False
+                continue
+            start = False
+            if match["directive"] is not None:
+                raise ValueError("invalid PGSolver vertex record")
+            vertex, priority = int(match[1]), int(match[2])
+            degree = match[3].count(",") + 1
+            if vertex not in sparse and (vertex >= len(degrees) or not degrees[vertex]):
+                count += 1
+            # Zero degree marks unused slots; distant IDs and oversized values stay sparse.
+            if vertex <= max(1024, 2 * count) and priority < limit and degree < limit:
+                if vertex >= len(degrees):
+                    growth = max(vertex + 1, 2 * len(degrees), 1024) - len(degrees)
+                    priorities.extend(array("I", [0]) * growth)
+                    degrees.extend(array("I", [0]) * growth)
+                priorities[vertex], degrees[vertex] = priority, degree
+                sparse.pop(vertex, None)
+            else:
+                if vertex < len(degrees):
+                    degrees[vertex] = 0
+                sparse[vertex] = (priority, degree)
+    distinct = {priority for priority, degree in zip(priorities, degrees) if degree}
+    distinct.update(priority for priority, _ in sparse.values())
+    edges = sum(degrees) + sum(degree for _, degree in sparse.values())
+    return count, edges, len(distinct), max(distinct, default=0)
 
 
 def stable_stats(stderr, root, build_dir):
