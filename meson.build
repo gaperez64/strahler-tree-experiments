@@ -61,13 +61,26 @@ dot_utils_dep = declare_dependency(
   link_with : dot_utils_lib,
 )
 
+pg_set_lib = static_library('pg_set', 'src/pg_set.c')
+pg_set_dep = declare_dependency(
+  include_directories : source_includes,
+  link_with : pg_set_lib,
+)
+
+json_utils_lib = static_library('json_utils', 'src/json_utils.c', dependencies : pg_set_dep)
+json_utils_dep = declare_dependency(
+  dependencies : pg_set_dep,
+  include_directories : source_includes,
+  link_with : json_utils_lib,
+)
+
 ordered_tree_lib = static_library(
   'ordered_tree',
   'src/ordered_tree.c',
-  dependencies : dot_utils_dep,
+  dependencies : [dot_utils_dep, json_utils_dep],
 )
 ordered_tree_dep = declare_dependency(
-  dependencies : dot_utils_dep,
+  dependencies : [dot_utils_dep, json_utils_dep],
   include_directories : source_includes,
   link_with : ordered_tree_lib,
 )
@@ -76,12 +89,6 @@ pg_game_lib = static_library('pg_game', 'src/pg_game.c')
 pg_game_dep = declare_dependency(
   include_directories : source_includes,
   link_with : pg_game_lib,
-)
-
-pg_set_lib = static_library('pg_set', 'src/pg_set.c')
-pg_set_dep = declare_dependency(
-  include_directories : source_includes,
-  link_with : pg_set_lib,
 )
 
 pg_attractor_lib = static_library(
@@ -108,11 +115,11 @@ pg_preprocess_dep = declare_dependency(
 
 ad_tree_lib = static_library(
   'ad_tree',
-  ['src/ad_tree.c', 'src/ad_trace.c'],
-  dependencies : pg_attractor_dep,
+  ['src/ad_tree.c', 'src/ad_trace.c', 'src/ad_tree_json.c'],
+  dependencies : [pg_attractor_dep, json_utils_dep],
 )
 ad_tree_dep = declare_dependency(
-  dependencies : pg_attractor_dep,
+  dependencies : [pg_attractor_dep, json_utils_dep],
   include_directories : source_includes,
   link_with : ad_tree_lib,
 )
@@ -172,7 +179,7 @@ ad_tree_dot_dep = declare_dependency(
 pm_lift_lib = static_library(
   'pm_lift',
   ['src/pm_lift.c', 'src/pm_solve.c', 'src/strpm.c', 'src/sspm.c'],
-  dependencies : pg_attractor_dep,
+  dependencies : [pg_attractor_dep, json_utils_dep],
 )
 pm_lift_dep = declare_dependency(
   dependencies : pg_attractor_dep,
@@ -264,7 +271,7 @@ test('test_ordered_tree', test_ordered_tree_exe)
 test_dot_utils_exe = executable(
   'test_dot_utils',
   'tests/test_dot_utils.c',
-  dependencies : dot_utils_dep,
+  dependencies : [dot_utils_dep, json_utils_dep],
 )
 test('test_dot_utils', test_dot_utils_exe)
 
@@ -291,7 +298,7 @@ test('test_pg_set', test_pg_set_exe)
 test_pg_attractor_exe = executable(
   'test_pg_attractor',
   ['tests/test_pg_attractor.c', 'tests/reference_attractor.c'],
-  dependencies : pg_attractor_dep,
+  dependencies : [pg_attractor_dep, json_utils_dep],
 )
 test('test_pg_attractor', test_pg_attractor_exe)
 
@@ -1452,15 +1459,15 @@ if python3.found()
   test('test_gen_decomp', python3,
     args : [files('tests/test_gen_decomp.py'), meson.current_build_dir()],
     suite : 'python',
-    depends : [pg2adot, pg2pmdot])
+    depends : [pg2adot, pg2pmdot, pms2dot])
   test('test_make_trees', python3,
     args : [files('tests/test_make_trees.py'), meson.current_build_dir()],
     suite : 'python',
-    depends : [pg2adot, pg2pmdot])
+    depends : [pg2adot, pg2pmdot, pms2dot])
   test('test_gen_keiren', python3,
     args : [files('tests/test_gen_keiren.py'), meson.current_build_dir()],
     suite : 'python', timeout : 120,
-    depends : [pg2adot, pg2pmdot])
+    depends : [pg2adot, pg2pmdot, pms2dot])
   # Exit 77 skips this live oracle unless OINK_BIN is set at test time.
   test('oink-oracle', python3,
     args : [files('scripts/compare_oink.py'), pg2pmdot,
@@ -1494,13 +1501,18 @@ foreach backend : ['lifting', 'lifting-adaptive', 'lifting-sym', 'zielonka', 'zi
     endforeach
   endforeach
 endforeach
-foreach game : ['cabp_swp.ehoa.pg', 'thesis_f4.pg']
-  foreach suffix : ['', '+pre', '+iter', '+pre+iter']
-    backend = (game == 'cabp_swp.ehoa.pg' ? 'lifting-adaptive' : 'lifting') + suffix
-    test('test_trace_' + game + '_' + backend, python,
-      args : [files('tests/test_trace.py'), pg2adot, trace_check, 'slow', game + '/' + backend],
-      workdir : meson.project_source_root(), suite : ['slow', 'python'], timeout : 2400,
-      depends : trace_count_pg2adot)
+foreach game, bases : {
+  'cabp_swp.ehoa.pg' : ['lifting-adaptive', 'zielonka-sym'],
+  'thesis_f4.pg' : ['lifting'],
+}
+  foreach base : bases
+    foreach suffix : (base.startswith('zielonka') ? ['', '+pre'] : ['', '+pre', '+iter', '+pre+iter'])
+      backend = base + suffix
+      test('test_trace_' + game + '_' + backend, python,
+        args : [files('tests/test_trace.py'), pg2adot, trace_check, 'slow', game + '/' + backend],
+        workdir : meson.project_source_root(), suite : ['slow', 'python'], timeout : 2400,
+        depends : trace_count_pg2adot)
+    endforeach
   endforeach
 endforeach
 
@@ -1508,9 +1520,67 @@ test_ad_trace = executable('test_ad_trace', 'tests/test_ad_trace.c',
   dependencies : [ad_lift_dep, zielonka_dep], c_args : ['-UNDEBUG'])
 test('test_ad_trace', test_ad_trace)
 test_ad_trace_alloc = executable('test_ad_trace_alloc',
-  ['tests/test_ad_trace_alloc.c', 'src/ad_trace.c', 'src/ad_tree.c',
+  ['tests/test_ad_trace_alloc.c', 'src/ad_trace.c', 'src/ad_tree_json.c', 'src/json_utils.c', 'src/ad_tree.c',
    'src/pg_set.c', 'src/pg_attractor.c', 'src/zielonka.c', 'src/ad_lift.c',
    'src/ad_sym.c', 'src/ad_lift_solve.c'],
   dependencies : [ad_lift_tree_dep, stree_dep, pg_game_dep],
   c_args : ['-UNDEBUG', '-include', meson.project_source_root() / 'tests/trace_allocator.h'])
 test('test_ad_trace_alloc', test_ad_trace_alloc, timeout : 120)
+
+foreach mode : ['tools', 'limits', 'goldens']
+  test('test_json_' + mode, python,
+    args : [files('tests/test_json.py'), meson.current_build_dir(), mode],
+    workdir : meson.project_source_root(), suite : 'python', timeout : 120,
+    depends : [genstree, pms2dot, pg2adot, pg2pmdot])
+endforeach
+foreach backend : ['lifting', 'lifting-adaptive', 'lifting-sym', 'zielonka', 'zielonka-sym', 'pm-strahler', 'pm-succinct']
+  foreach iteration : (backend.startswith('zielonka') ? [''] : ['', '+iter'])
+    foreach pre : ['', '+pre']
+      name = backend + pre + iteration
+      foreach mode : ['games', 'examples']
+        test('test_json_' + mode + '_' + name, python,
+          args : [files('tests/test_json.py'), meson.current_build_dir(), mode, name],
+          workdir : meson.project_source_root(), suite : 'python', timeout : 120,
+          depends : [pg2adot, pg2pmdot, pms2dot])
+      endforeach
+    endforeach
+  endforeach
+endforeach
+foreach game, bases : {
+  'cabp_swp.ehoa.pg' : ['lifting-adaptive', 'zielonka-sym', 'pm-strahler', 'pm-succinct'],
+  'thesis_f4.pg' : ['lifting'],
+  'FairSchedulern=2_compact.gm' : ['pm-strahler', 'pm-succinct'],
+}
+  foreach base : bases
+    foreach suffix : (base.startswith('zielonka') ? ['', '+pre'] : ['', '+pre', '+iter', '+pre+iter'])
+      name = base + suffix
+      test('test_json_' + game + '_' + name, python,
+        args : [files('tests/test_json.py'), meson.current_build_dir(), 'slow', name, game],
+        workdir : meson.project_source_root(), suite : ['slow', 'python'], timeout : 2400,
+        depends : [pg2adot, pg2pmdot, pms2dot])
+    endforeach
+  endforeach
+endforeach
+
+test_json_alloc = executable('test_json_alloc',
+  ['tests/test_json_alloc.c', 'src/json_utils.c', 'src/ad_tree_json.c',
+   'src/ordered_tree.c', 'src/pm_tree_dot.c', 'src/pg_set.c'],
+  dependencies : [zielonka_dep, pm_tree_dot_dep],
+  c_args : ['-UNDEBUG', '-D_POSIX_C_SOURCE=200809L', '-include', meson.project_source_root() / 'tests/trace_allocator.h'])
+test('test_json_alloc', test_json_alloc, timeout : 120)
+
+# Large result-event comparisons reuse the counting observer and production
+# JSON writer; the corpus cases exercise complete trace streams.
+foreach backend : ['lifting', 'lifting-adaptive', 'lifting-sym', 'zielonka', 'zielonka-sym']
+  foreach iteration : (backend.startswith('zielonka') ? [''] : ['', '+iter'])
+    foreach pre : ['', '+pre']
+      name = backend + pre + iteration
+      foreach game : ['Button.tlsf.ehoa.pg', 'FairSchedulern=2_compact.gm', 'cabp_swp.ehoa.pg', 'thesis_f4.pg']
+        test('test_json_trace_' + game + '_' + name, python,
+          args : [files('tests/test_json.py'), meson.current_build_dir(), 'trace', name, game],
+          workdir : meson.project_source_root(), suite : ['slow', 'python'], timeout : 2400,
+          depends : [pg2adot, trace_count_pg2adot])
+      endforeach
+    endforeach
+  endforeach
+endforeach

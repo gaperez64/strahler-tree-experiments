@@ -271,3 +271,17 @@ were compared. Four Strahler cases had matching partial results with no Oink
 stream (three generated games plus the search-limit fixture). The large
 `cabp_swp.ehoa.pg` example exceeded the timeout for both algorithms. The regular
 Meson suite also passed, with the live test skipped when `OINK_BIN` was unset.
+
+Tree JSON tests use `json_check.py` as a dependency-free schema checker and
+`test_json.py` to compare all DECOMP backends over examples and game fixtures
+against uncapped set-labelled DOT. Each PM round also feeds its measures through
+`pms2dot` in both formats; generator cases include every parameter example in
+`examples/*.hpp`. They also check prefix-tree order, generated
+trees, JSON goldens, option conflicts, partial hosts, player selection and write
+failures. Small game runs compare raw tree bytes with trace results; large cases
+have separate counting-observer result tests in `slow`, using the production
+trace writer for the actual final event. Expensive DOT/JSON pairs have
+explicit tests in `slow`, following PR #30 and adding both PM algorithms on
+`cabp_swp.ehoa.pg` and `FairSchedulern=2_compact.gm`. `test_json_alloc` injects each allocation
+failure into metrics, measure-tree construction and prefix-tree parsing and
+checks cleanup and write-error propagation. No new Python dependencies are used.

@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "dot_utils.h"
+#include "json_utils.h"
 #include "ordered_tree.h"
 #include "utils.h"
 
@@ -549,4 +550,26 @@ bool ordered_tree_write_p_partition(FILE *out, OrderedTreeNode const *root,
   }
   bool stopped = false;
   return write_partition_at_depth(out, root, 0, (size_t)p + 1, &stopped);
+}
+
+bool ordered_tree_write_json(FILE *out, OrderedTreeNode const *root) {
+  if (root == nullptr) {
+    return fputs("null", out) >= 0;
+  }
+  if (fputs("{\"children\":[", out) < 0) {
+    return false;
+  }
+  for (size_t index = 0; index < root->child_count; index++) {
+    if (index != 0) {
+      fputc(',', out);
+    }
+    fputs("{\"label\":", out);
+    json_string(out, root->children[index].label);
+    fputs(",\"node\":", out);
+    if (!ordered_tree_write_json(out, root->children[index].child) ||
+        fputc('}', out) == EOF) {
+      return false;
+    }
+  }
+  return fputs("]}", out) >= 0 && !ferror(out);
 }

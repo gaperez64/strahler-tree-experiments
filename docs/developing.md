@@ -728,6 +728,145 @@ the lifting host that the final labelling occupies; see
 [attractor-decomposition lifting](#attractor-decomposition-lifting).
 In a partial result the root reads `Even dominion` or `Odd dominion`.
 
+## Tree JSON documents
+
+All four tree-printing tools can stream one JSON document followed by one newline.
+The default output remains unchanged. Object keys follow the order shown below;
+there is no trailing whitespace. Vertex arrays contain sorted, unique original
+PGSolver IDs, without a label cap. Children retain DOT order. Writers do not
+buffer a serialized document; allocation or output errors produce a nonzero exit
+status and can leave an incomplete prefix, which must not be read as a result.
+
+Every document starts with `schema`, `version` (the tool version and Git build
+identifier), `algorithm`, and `options` (the command's arguments, excluding its
+executable name). Paths and options are JSON strings.
+The two game tools then include `game: {vertices, edges, priorities}`: vertex
+and edge counts and the sorted distinct **input** priorities, before compression.
+
+### Decompositions: strahler-decomp/1
+
+```sh
+build/pg2adot --algorithm=zielonka --format=json game.pg > decomposition.json
+```
+
+`--format=dot|json` defaults to `dot`. JSON conflicts with any explicit `--view`,
+`--labels`, or `--max-set-items`, including their default values, and exits 2.
+JSON uses tree-relative sets; `--priority-mode` affects DOT display only.
+
+Following the common header and `game`, the document contains, in order:
+
+- `initial_won: [even, odd]`: the vertices solved by initial preprocessing.
+- `complete`: boolean; false certifies only the reported dominions.
+- `regions: [even, odd]`: residual winning regions, each a vertex array.
+- `unresolved`: the remaining vertices, without a winning claim.
+- `trees: [even, odd]`: each tree is `null` or the recursive object below.
+- `shaves`: ordered entries `{certified, attracted: [even, odd]}`. Each
+  `certified` is exactly `{complete, regions, unresolved, trees, shaves}` with
+  these same meanings; `attracted` records the whole removed winning region.
+- `metrics: {trees: [even, odd], shaves}`: metrics for the residual trees;
+  `shaves[i]` recursively describes `shaves[i].certified` in the same metrics
+  format. Metrics are kept outside tree objects for trace compatibility.
+
+A decomposition node has exactly these keys, in this order:
+
+```json
+{"h":2,"H":[0],"T":[1],"S":[],"children":[]}
+```
+
+`h` is the solver's compact priority bound (including `--compress`). At each
+node, the outer region is partitioned into the core and `S` (vertices outside
+that core). `H` contains the core's vertices of priority `h`; `T` contains the
+stored top attractor minus `H`. Remaining core vertices belong to the ordered
+children. A root's outer region and core both equal its residual dominion, so
+root `S` is empty. Each child carries its own outer attractor and core trap.
+A `null` tree denotes no decomposition. This object, including key order and
+compact serialization, is **byte-for-byte identical** to the same tree in an
+algorithm trace's `result` event. Its sets and `h` do not depend on the DOT view.
+
+`--player=even|odd` replaces the other player's trees with `null`, recursively
+including shaving certificates; regions and winning summaries remain complete.
+The corresponding metrics slots are also `null`. Otherwise an absent tree has
+all-zero metrics. Metrics use `ad_tree_metrics` for `nodes`, `leaves`, `height`,
+and `strahler`, supplemented with DECOMP's shape metrics. Each metrics object
+has these keys in order: `nodes`, `leaves`, `internal_nodes`, `height`, `width`,
+`max_arity`, `mean_internal_arity`, `branching_nodes`, `min_leaf_depth`,
+`mean_leaf_depth`, `strahler`. Depth counts nodes from 1; width is the largest
+level size; branching nodes have at least two children. Internal nodes have
+children; max arity is the largest child count. The means average child counts
+over internal nodes and leaf depths over leaves, respectively, rounded to three
+decimals (zero for an empty denominator). A leaf's Strahler number is 1; an
+internal node takes the largest child number, adding 1 when at least two
+children share that maximum. Empty trees have number 0. These metrics
+describe the represented trees, including partial results, rather than claiming
+a minimum over all possible decompositions. Final winners combine
+`initial_won`, residual `regions`, and each shave's `attracted` arrays.
+
+### Progress measures and prefix trees: strahler-pm/1
+
+```sh
+build/pg2pmdot --algorithm=succinct --format=json game.pg > measures.json
+printf '0,e|1,e|\n' | build/pms2dot --format=json > prefix.json
+```
+
+`pg2pmdot --format=dot|leaves|json` defaults to `dot`. Its document has the common
+header (`algorithm` is `strahler` or `succinct`), `game`, and `rounds`. `rounds`
+is an ordered array, retaining **every** graph DOT would print under
+`--iter-shave`, within one JSON document. Each round has keys:
+
+```text
+{round, complete, unresolved, trees: [even, odd]}
+```
+
+`round` is the solver's positive search-round number; gaps are possible without
+iterative shaving. `complete` is true exactly when `unresolved` is empty and
+has the same per-round meaning as DOT's complete/partial label. A selected
+player's entry is `{parameters: {k, t, bits, depth}, tree, shaved, attracted}`.
+The parameter tuple comes from the solver: `k`/`t` apply to Strahler, `bits`
+to succinct; ignore the other budget fields. `depth` counts measure components.
+`shaved` is the initial preprocessing summary;
+`attracted` contains additional winners outside this round's measure tree.
+These correspond to DOT's grey dashed children. Across rounds, winners are
+the union of leaf vertices, `attracted`, and `shaved`; the last `unresolved`
+array describes the remaining vertices. `--player` replaces the other
+entry with `null`. A `null` inner `tree` means no non-TOP measures, corresponding
+to DOT's labelled placeholder root. Node objects have exactly these keys:
+
+```json
+{"priority":3,"vertices":null,"children":[{"label":"0","node":{"priority":null,"vertices":[7],"children":[]}}]}
+```
+
+Internal nodes have a numeric `priority`, `vertices: null`, and ordered children.
+Leaves have `priority: null`, the sorted vertices sharing that measure, and no
+children. `priority` uses the chosen `--priority-mode` scale, matching DOT's `p`.
+Every branch is `{label, node}`: `label` is its bitstring, with the empty string
+representing epsilon, exactly as on the DOT edge. `--labels` and
+`--max-set-items` affect DOT only; JSON always includes full information.
+
+`pms2dot --format=dot|json` also defaults to `dot`. Its header uses
+`algorithm: "prefix"`; it then has just `tree`, since its input is a measure
+stream with no game or vertex mapping. Prefix nodes have only `children`, in
+the same `{label, node}` format; `children: []` is a leaf. `--check-order` and
+`--reorder` retain their ordinary meanings. Leaf labels are the ordered branch
+labels on the root-to-leaf path, as in DOT.
+
+### Generated Strahler trees: strahler-tree/1
+
+```sh
+build/genstree --strahler=2 --height=3 --log-leaves=1 --json > tree.json
+```
+
+`--json` is exclusive with `--dot`, `--count`, `--leaf` and `--p-level`; conflicting
+output options exit 2. The common header uses `algorithm: "strahler"`, followed
+by `parameters: {k, h, t}` (the supplied Strahler bound, height, and leaf-budget
+exponent) and `tree`. Each node is `{children}`, with ordered branches
+`{label, node}`; epsilon is the empty label and leaves have `children: []`.
+The paths reproduce exactly the leaf labels and structure of `--dot`, sharing
+the prefix-node shape of `pms2dot`. There is no game or vertex mapping.
+
+`tests/json_check.py` validates these schemas without dependencies;
+`tests/test_json.py` compares sets, priorities, ordered branches, shaving
+summaries, metrics and trace result bytes against the existing output paths.
+
 ## Algorithm traces
 
 For example, from the repository root:
@@ -812,7 +951,11 @@ share the counter and emit exactly one top-level result.
 The default tests serialize and replay the bounded games, property, paper, and
 host corpora. Every example/backend pair instead compares stdout, `--stats`,
 and exit status with a test-only build of the same CLI whose observer counts
-events and discards their data (`trace_count_pg2adot`). It uses the backend's
+events and discards intermediate data (`trace_count_pg2adot`). The counting
+observer writes the actual final result with the production JSON writer, so
+large JSON/trace tree comparisons do not serialize every intermediate event.
+These test-only summaries are not replayable full traces; production `--trace`
+continues to emit every event. It uses the backend's
 actual options and host budget. Deliberately restricted budgets have separate
 `test_trace_host-errors` and lifecycle tests.
 Games and examples are split by backend to bound each test's sanitizer runtime.
@@ -833,19 +976,30 @@ every delegated pair; the suite registers these exact pairs as individual tests:
 - `cabp_swp.ehoa.pg/lifting-adaptive+pre`
 - `cabp_swp.ehoa.pg/lifting-adaptive+iter`
 - `cabp_swp.ehoa.pg/lifting-adaptive+pre+iter`
+- `cabp_swp.ehoa.pg/zielonka-sym`
+- `cabp_swp.ehoa.pg/zielonka-sym+pre`
 - `thesis_f4.pg/lifting`
 - `thesis_f4.pg/lifting+pre`
 - `thesis_f4.pg/lifting+iter`
 - `thesis_f4.pg/lifting+pre+iter`
 
-The cabp runs exceed 20 seconds even without tracing in release builds (about
-71 million lifts). The four full-host F₄ invariance tests exceed 120 seconds
-under ASan even using the counting observer. Both groups retain their real
-default host budgets and successful solves in this suite. Build the required
-tools and run all eight invariance tests explicitly with:
+The cabp adaptive runs exceed 20 seconds even without tracing in release builds
+(about 71 million lifts). The cabp Zielonka-sym pairs also have individual slow
+DOT/JSON comparisons; keeping them in the default examples tests exceeds the
+120-second CI budget under debug ASan/UBSan. The four full-host F₄ invariance
+tests exceed 120 seconds under ASan even using the counting observer. These
+invariance tests retain their real default host budgets and successful solves.
+
+The slow DOT/JSON comparisons for `cabp_swp.ehoa.pg/pm-strahler+iter` and
+`cabp_swp.ehoa.pg/pm-strahler+pre+iter` use explicit `--k=1 --t=1` budgets to
+check large partial results. Their full-budget DOT references exceed the
+1800-second subprocess timeout before JSON runs. Smaller game fixtures retain
+the backend's default budgets to cover multiple shaving rounds.
+
+Build the required tools and run the full slow suite explicitly with:
 
 ```sh
-meson compile -C build pg2adot trace_count_pg2adot trace_check
+meson compile -C build pg2adot pg2pmdot pms2dot trace_count_pg2adot trace_check
 meson test -C build --no-rebuild --setup=all --suite slow --print-errorlogs
 ```
 

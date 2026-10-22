@@ -1,0 +1,123 @@
+{
+  "schema": "strahler-tree/1",
+  "version": "<version>",
+  "algorithm": "strahler",
+  "options": [
+    "--strahler=2",
+    "--height=3",
+    "--log-leaves=1",
+    "--json"
+  ],
+  "parameters": {
+    "k": 2,
+    "h": 3,
+    "t": 1
+  },
+  "tree": {
+    "children": [
+      {
+        "label": "00",
+        "node": {
+          "children": [
+            {
+              "label": "",
+              "node": {
+                "children": []
+              }
+            }
+          ]
+        }
+      },
+      {
+        "label": "0",
+        "node": {
+          "children": [
+            {
+              "label": "",
+              "node": {
+                "children": []
+              }
+            }
+          ]
+        }
+      },
+      {
+        "label": "01",
+        "node": {
+          "children": [
+            {
+              "label": "",
+              "node": {
+                "children": []
+              }
+            }
+          ]
+        }
+      },
+      {
+        "label": "",
+        "node": {
+          "children": [
+            {
+              "label": "00",
+              "node": {
+                "children": []
+              }
+            },
+            {
+              "label": "0",
+              "node": {
+                "children": []
+              }
+            },
+            {
+              "label": "01",
+              "node": {
+                "children": []
+              }
+            }
+          ]
+        }
+      },
+      {
+        "label": "10",
+        "node": {
+          "children": [
+            {
+              "label": "",
+              "node": {
+                "children": []
+              }
+            }
+          ]
+        }
+      },
+      {
+        "label": "1",
+        "node": {
+          "children": [
+            {
+              "label": "",
+              "node": {
+                "children": []
+              }
+            }
+          ]
+        }
+      },
+      {
+        "label": "11",
+        "node": {
+          "children": [
+            {
+              "label": "",
+              "node": {
+                "children": []
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

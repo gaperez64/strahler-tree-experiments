@@ -6,15 +6,19 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "cli_version.h"
+#include "json_utils.h"
 #include "ordered_tree.h"
+#include "strahler_tree_version.h"
 
-enum { OPT_CHECK_ORDER = 256, OPT_REORDER };
+enum { OPT_CHECK_ORDER = 256, OPT_REORDER, OPT_FORMAT };
 
 static void print_usage(FILE *out, char *argv[]) {
   cli_usage(out, argv[0], "");
-  fputs("  --check-order                               Reject branches outside "
+  fputs("  --format=dot|json                           default: dot\n"
+        "  --check-order                               Reject branches outside "
         "bitstring-vector order\n"
         "  --reorder                                   Sort branches into "
         "bitstring-vector order\n"
@@ -28,10 +32,12 @@ static void print_usage(FILE *out, char *argv[]) {
 
 int main(int argc, char *argv[argc + 1]) {
   int opt;
+  bool json = false;
   OrderedTreeBranchOrder branch_order = ORDERED_TREE_PRESERVE_INPUT_ORDER;
   static struct option const long_options[] = {
       {"help", no_argument, nullptr, 'h'},
       {"version", no_argument, nullptr, 'v'},
+      {"format", required_argument, nullptr, OPT_FORMAT},
       {"check-order", no_argument, nullptr, OPT_CHECK_ORDER},
       {"reorder", no_argument, nullptr, OPT_REORDER},
       {nullptr, 0, nullptr, 0},
@@ -44,6 +50,15 @@ int main(int argc, char *argv[argc + 1]) {
     case 'h':
       print_usage(stdout, argv);
       return EXIT_SUCCESS;
+    case OPT_FORMAT:
+      if (strcmp(optarg, "json") == 0) {
+        json = true;
+      } else if (strcmp(optarg, "dot") == 0) {
+        json = false;
+      } else {
+        return cli_error(argv[0], "Invalid --format value");
+      }
+      break;
     case OPT_CHECK_ORDER:
       if (branch_order == ORDERED_TREE_REORDER_VECTOR_ORDER) {
         return cli_error(argv[0],
@@ -86,11 +101,24 @@ int main(int argc, char *argv[argc + 1]) {
     return EXIT_FAILURE;
   }
 
-  bool const wrote_tree = ordered_tree_write_dot(stdout, tree);
+  bool wrote_tree = false;
+  if (json) {
+    fputc('{', stdout);
+    json_header(stdout, "strahler-pm/1",
+                STRAHLER_TREE_VERSION " (git " STRAHLER_TREE_GIT ")", "prefix",
+                argc, argv);
+    fputs(",\"tree\":", stdout);
+    wrote_tree =
+        ordered_tree_write_json(stdout, tree) && fputs("}\n", stdout) >= 0;
+  } else {
+    wrote_tree = ordered_tree_write_dot(stdout, tree);
+  }
   ordered_tree_destroy(tree);
   free(buffer);
-  if (!wrote_tree) {
-    fputs("Failed to write DOT output\n", stderr);
+  if (!wrote_tree || fflush(stdout) != 0 || ferror(stdout)) {
+    fputs(json ? "Failed to write JSON output\n"
+               : "Failed to write DOT output\n",
+          stderr);
     return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;

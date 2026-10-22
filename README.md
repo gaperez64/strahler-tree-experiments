@@ -23,12 +23,12 @@ Executables go in `build/`. Release binaries for `linux-x86_64` and
 
 | Command | What it does |
 | --- | --- |
-| `genstree` | Generate a Strahler tree, count its leaves, or print DOT. |
+| `genstree` | Generate a Strahler tree, count its leaves, or print DOT/JSON. |
 | `lenstree` | Count leaves or look up a leaf with the Boost-based implementation. |
-| `pms2dot` | Convert progress-measure branches from standard input to a DOT prefix tree. |
+| `pms2dot` | Convert progress-measure branches from standard input to a DOT/JSON prefix tree. |
 | `pgfilt` | Check a PGSolver game from standard input; print statistics or normalize it. |
-| `pg2adot` | Compute and verify attractor decompositions; write DOT. |
-| `pg2pmdot` | Compute Strahler or succinct progress measures; write DOT or leaf streams. |
+| `pg2adot` | Compute and verify attractor decompositions; write DOT/JSON. |
+| `pg2pmdot` | Compute Strahler or succinct progress measures; write DOT/JSON or leaf streams. |
 | `str-tree` | Check p-level successors in a compiled-in example tree. |
 
 `pg2adot` and `pg2pmdot` read a PGSolver file. Use `-` or omit the filename to
@@ -40,6 +40,10 @@ read standard input:
 ./build/pg2pmdot --algorithm=strahler --initial-shave=all --compress game.pg > measures.dot
 ./build/pg2adot --adaptive-t --iter-shave game.pg > decomposition.dot
 ./build/pg2pmdot --algorithm=succinct --labels=sets game.pg > measures.dot
+./build/pg2adot --format=json game.pg > decomposition.json
+./build/pg2pmdot --format=json game.pg > measures.json
+./build/genstree --strahler=2 --height=3 --log-leaves=1 --json > tree.json
+printf '0,e|1,e|\n' | ./build/pms2dot --format=json > prefix.json
 dot -Tsvg decomposition.dot > decomposition.svg
 ```
 
