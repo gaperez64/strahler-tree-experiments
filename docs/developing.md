@@ -822,8 +822,9 @@ the default test budget. The other game fixtures retain JSON replay coverage
 for every backend option combination.
 
 Uncapped invariance can legitimately exceed 2³² execution hits on hot lines.
-CI and local coverage reports use `gcovr --gcov-suspicious-hits-threshold 0`
-to retain those counters; negative counters still cause a reporting error.
+CI's gcovr 7.0 (Ubuntu 24.04) reports them as is. Newer gcovr releases treat
+such counts as suspicious and stop; pass `--gcov-suspicious-hits-threshold 0`
+when generating a local report with one of those.
 
 Plain `meson test` excludes the `slow` suite. The default examples test prints
 every delegated pair; the suite registers these exact pairs as individual tests:
