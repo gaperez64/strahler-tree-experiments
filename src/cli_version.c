@@ -103,7 +103,8 @@ int cli_next_option(int const argc, char *argv[], CLIParser *parser,
   }
   char *argument = argv[next];
   // Move options ahead of operands without changing either group's order.
-  memmove(argv + parser->index + 1, argv + parser->index,
+  memmove((void *)(argv + parser->index + 1),
+          (void const *)(argv + parser->index),
           (size_t)(next - parser->index) * sizeof(*argv));
   argv[parser->index++] = argument;
   if (strcmp(argument, "--") == 0) {
