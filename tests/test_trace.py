@@ -341,7 +341,7 @@ def main():
             slow(binary, checker, directory, sys.argv[4])
         else:
             backends = [b.options for b in BACKENDS if b.binary == 'pg2adot'
-                        and (mode != 'games' or b.name == sys.argv[4])]
+                        and (mode not in ('games', 'property') or b.name == sys.argv[4])]
             assert backends
             extra_hosts = (
                 ('--tree-k=1',), ('--kary=1',), ('--kary=2',),

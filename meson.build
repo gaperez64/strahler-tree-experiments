@@ -1475,7 +1475,7 @@ trace_count_pg2adot = executable('trace_count_pg2adot', 'src/pg2adot.c',
   c_args : ['-UNDEBUG', '-DAD_TRACE_COUNT_ONLY'])
 add_test_setup('default', exclude_suites : ['slow'], is_default : true)
 add_test_setup('all')
-foreach mode : ['paper', 'limits', 'property', 'hosts', 'host-errors']
+foreach mode : ['paper', 'limits', 'hosts', 'host-errors']
   test('test_trace_' + mode, python,
     args : [files('tests/test_trace.py'), pg2adot, trace_check, mode],
     workdir : meson.project_source_root(), suite : 'python', timeout : 120,
@@ -1485,7 +1485,7 @@ foreach backend : ['lifting', 'lifting-adaptive', 'lifting-sym', 'zielonka', 'zi
   foreach iteration : (backend.startswith('zielonka') ? [''] : ['', '+iter'])
     foreach pre : ['', '+pre']
       name = backend + pre + iteration
-      foreach mode : ['games', 'examples']
+      foreach mode : ['games', 'examples', 'property']
         test('test_trace_' + mode + '_' + name, python,
           args : [files('tests/test_trace.py'), pg2adot, trace_check, mode, name],
           workdir : meson.project_source_root(), suite : 'python', timeout : 120,
