@@ -82,6 +82,8 @@ typedef struct {
   size_t limit;
   bool truncated;
   PGSet const *initial_won;
+  bool (*callback)(void *context, char const *line, size_t length);
+  void *context;
 } ADTraceJSON;
 
 [[nodiscard]] bool ad_trace_json_header(ADTraceJSON *writer,

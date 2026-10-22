@@ -16,9 +16,9 @@ program = binary.name
 wrapper = shlex.split(os.environ.get("STRAHLER_TEST_WRAPPER", ""))
 
 
-def run(*arguments, input=""):
+def run(*arguments, input="", env=None):
     result = subprocess.run([*wrapper, str(binary), *arguments], input=input,
-                            text=True, capture_output=True, timeout=90)
+                            text=True, capture_output=True, timeout=90, env=env)
     assert result.returncode != 99, result.stderr
     return result
 
@@ -52,8 +52,14 @@ else:
     assert version_result.stdout == f"{program} {version}\n", version_result
 
 for arguments in [("--unknown-option",), ("-h",), ("--he",),
-                  ("--help=bad",), ("--version=bad",)]:
+                  ("--help=bad",), ("--version=bad",),
+                  ("--help", "--wat"), ("--version", "--wat"),
+                  ("--help", "--he"), ("--help", "-h")]:
     invalid(*arguments)
+
+# The initial syntax check ends at --, even after help/version.
+assert run("--help", "--", "--wat").stdout == help_result.stdout
+assert run("--version", "--", "--wat").stdout == version_result.stdout
 
 if program in ("genstree", "lenstree"):
     base = ("--strahler=2", "--log-leaves=1", "--height=2")
@@ -130,6 +136,25 @@ else:
         for arguments in [(), ("-",), ("--", "-")]:
             result = run(*arguments, input=game)
             assert result.returncode == 0, result
+        for posix in (False, True):
+            env = dict(os.environ)
+            env.pop('POSIXLY_CORRECT', None)
+            if posix:
+                env['POSIXLY_CORRECT'] = '1'
+            for operand in ('-', str(source / 'tests/games/strahler_two.pg')):
+                before = run('--stats', operand, input=game, env=env)
+                after = run(operand, '--stats', input=game, env=env)
+                if posix:
+                    message = ('Unknown option or invalid argument; use --name=value'
+                               if program == 'pg2adot' else
+                               'Invalid or incompatible option; use --name=value '
+                               '(Strahler requires both --k and --t)')
+                    assert (after.returncode, after.stdout, after.stderr) == (
+                        2, '', f"{program}: {message}\n"
+                        f"Try '{program} --help'.\n"), after
+                else:
+                    assert (after.returncode, after.stdout, after.stderr) == (
+                        before.returncode, before.stdout, before.stderr), after
         for option in ("max-set-items", "tree-k" if program == "pg2adot" else "k"):
             for value in ("", "-1", "+1", " 1", "1x", "999999999999999999999"):
                 invalid(f"--{option}={value}")

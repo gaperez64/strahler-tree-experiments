@@ -261,6 +261,22 @@ cleanup:
   return succeeded;
 }
 
+bool pg_preprocess_priority_map(PGGame const *game, bool compress,
+                                PGPriorityMap *map) {
+  if (!pg_priority_map_build(game, map)) {
+    return false;
+  }
+  if (compress) {
+
+    for (size_t index = 1; index < map->count; index++) {
+      map->entries[index].compact = map->entries[index - 1].compact +
+                                    (map->entries[index].original % 2 !=
+                                     map->entries[index - 1].original % 2);
+    }
+  }
+  return true;
+}
+
 bool pg_preprocess(PGGame *game, PGPreprocessOptions const *options,
                    PGPreprocessResult *result) {
   if (game == nullptr || options == nullptr || result == nullptr ||
@@ -269,7 +285,8 @@ bool pg_preprocess(PGGame *game, PGPreprocessOptions const *options,
   }
   *result = (PGPreprocessResult){0};
   PGSet target[2] = {0};
-  if (!pg_priority_map_build(game, &result->priority_map) ||
+  if (!pg_preprocess_priority_map(game, options->compress,
+                                  &result->priority_map) ||
       !pg_set_init(&result->active, game->vertex_count) ||
       !pg_set_init(&result->won[PG_EVEN], game->vertex_count) ||
       !pg_set_init(&result->won[PG_ODD], game->vertex_count) ||
@@ -281,14 +298,7 @@ bool pg_preprocess(PGGame *game, PGPreprocessOptions const *options,
   if (!pg_subgame_is_total(game, &result->active)) {
     goto failure;
   }
-  if (options->compress) {
-    PGPriorityMap *map = &result->priority_map;
-    for (size_t index = 1; index < map->count; index++) {
-      map->entries[index].compact = map->entries[index - 1].compact +
-                                    (map->entries[index].original % 2 !=
-                                     map->entries[index - 1].original % 2);
-    }
-  }
+
   /* Shaving only uses priority order and parity, so delay mutation until all
    * allocation-dependent work succeeds. */
   size_t before = 0;

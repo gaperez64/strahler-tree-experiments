@@ -1,5 +1,7 @@
 #include <assert.h>
+#include <errno.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -146,9 +148,26 @@ allocation_failure:
   return 0;
 }
 
+static bool cache_fits(int k, int t, int h, size_t element_size) {
+  if (k < 1 || t < 0 || h < k || k == INT_MAX || t == INT_MAX || h == INT_MAX) {
+    return false;
+  }
+  size_t bytes = 2 * element_size;
+  int const dimensions[] = {k, t, h};
+  for (size_t i = 0; i < 3; i++) {
+    size_t const dimension = (size_t)dimensions[i] + 1;
+    if (bytes > SIZE_MAX / dimension) {
+      errno = ENOMEM;
+      return false;
+    }
+    bytes *= dimension;
+  }
+  return true;
+}
+
 [[nodiscard]]
 unsigned stree_count_leaves(int const k, int const t, int const h) {
-  if (k < 1 || t < 0 || h < k) {
+  if (!cache_fits(k, t, h, sizeof(unsigned))) {
     return 0;
   }
   unsigned(*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));
@@ -232,7 +251,7 @@ static char *concat3(char const left[restrict static 1],
 
 char *stree_leaf_label(int const k, int const t, int const h,
                        int const leaf_number) {
-  if (k < 1 || t < 0 || h < k || leaf_number < 1) {
+  if (!cache_fits(k, t, h, sizeof(unsigned)) || leaf_number < 1) {
     return nullptr;
   }
   unsigned(*count_cache)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*count_cache));
@@ -368,7 +387,7 @@ char *stree_leaf_label(int const k, int const t, int const h,
 }
 
 char *stree_leaf_stream(int const k, int const t, int const h) {
-  if (k < 1 || t < 0 || h < k) {
+  if (!cache_fits(k, t, h, sizeof(char *))) {
     return nullptr;
   }
   char *(*tree)[k + 1][t + 1][h + 1] = calloc(2, sizeof(*tree));

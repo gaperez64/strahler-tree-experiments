@@ -50,6 +50,11 @@ static void test_leaf_stream(void) {
 }
 
 int main(void) {
+  assert(stree_count_leaves(1, 0, INT_MAX) == 0);
+  assert(stree_leaf_label(INT_MAX, 0, INT_MAX, 1) == nullptr);
+  assert(stree_leaf_stream(1, INT_MAX, 1) == nullptr);
+  assert(stree_count_leaves(INT_MAX - 1, INT_MAX - 1, INT_MAX - 1) == 0);
+
   test_count_leaves();
   test_leaf_label();
   test_leaf_stream();
