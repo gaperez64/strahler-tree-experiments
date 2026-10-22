@@ -12,3 +12,4 @@ iter-shave: rounds=3 shaved=263
 strahler: round=3 result=complete unresolved=0
 even: k=2 t=2 depth=5 vertices=263 lifts=158 attempts=689 non_top=263 top=0 attracted=0
 odd: k=2 t=2 depth=6 vertices=0 lifts=0 attempts=0 non_top=0 top=0 attracted=0
+start: vertex=0 winner=even

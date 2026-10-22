@@ -1,12 +1,23 @@
+/* LP64, no names: CSR payload is 48 V + 16 E bytes. With geometric
+ * growth, sorted-input peak is max(192 V + 16 E, 56 V + 24 E) + 64 KiB + 16;
+ * unsorted input adds an 8 V pointer index and may overlap the 8 E predecessor
+ * buffer with declarations. V/E count all input declarations/edges, including
+ * superseded ones. Allocator/qsort workspace and individually owned names
+ * are additional; retained successor capacity adds up to 8 E slack. */
 #include <ctype.h>
-#include <errno.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "pg_game.h"
+#include "pg_game_internal.h"
+
+#ifdef PG_GAME_TEST_ALLOCATOR
+#define malloc pg_game_test_malloc
+#define calloc pg_game_test_calloc
+#define realloc pg_game_test_realloc
+#endif
 #include "utils.h"
 
 typedef enum {
@@ -23,36 +34,31 @@ typedef enum {
 typedef struct {
   TokenKind kind;
   uint64_t natural;
-  size_t begin;
-  size_t length;
   size_t line;
   size_t column;
 } Token;
 
 typedef struct {
-  char *text;
+  FILE *input;
+  unsigned char *buffer;
+  size_t chunk;
   size_t length;
   size_t offset;
   size_t line;
   size_t column;
+  bool ended;
+  bool failed;
+  char *name;
   PGParseError *error;
 } Lexer;
-
-typedef struct {
-  uint64_t external_id;
-  size_t line;
-  size_t column;
-} TempSuccessor;
 
 typedef struct {
   uint64_t external_id;
   uint64_t priority;
   PGPlayer owner;
   char *name;
-  TempSuccessor *successors;
+  size_t first_successor;
   size_t successor_count;
-  size_t successor_capacity;
-  size_t source_order;
   size_t line;
   size_t column;
 } TempDeclaration;
@@ -63,70 +69,46 @@ typedef struct {
   TempDeclaration *declarations;
   size_t declaration_count;
   size_t declaration_capacity;
+  uint64_t *successors;
+  size_t successor_count;
+  size_t successor_capacity;
+  bool sorted;
   bool has_header;
   uint64_t header_maximum;
+  uint64_t start_id;
 } Parser;
 
 static void set_error(PGParseError *error, size_t const line,
                       size_t const column, char const *message) {
-  if (error == nullptr) {
-    return;
+  if (error != nullptr) {
+    error->line = line;
+    error->column = column;
+    (void)snprintf(error->message, sizeof(error->message), "%s", message);
   }
-  error->line = line;
-  error->column = column;
-
-  (void)snprintf(error->message, sizeof(error->message), "%s", message);
 }
 
-[[nodiscard]] static bool read_stream(FILE *input, char **text, size_t *length,
-                                      PGParseError *error) {
-  char *result = nullptr;
-  size_t used = 0;
-  size_t capacity = 0;
-
-  int byte = 0;
-  while ((byte = fgetc(input)) != EOF) {
-    if (used == capacity) {
-      ArrayGrowth const growth = grow_array(result, capacity, sizeof(*result));
-      if (!growth.succeeded) {
-        free(result);
-        set_error(error, 1, 1, "failed to allocate the input buffer");
-        return false;
-      }
-      result = growth.data;
-      capacity = growth.capacity;
+[[nodiscard]] static int lexer_peek(Lexer *lexer) {
+  if (lexer->offset == lexer->length && !lexer->ended && !lexer->failed) {
+    lexer->offset = 0;
+    lexer->length = fread(lexer->buffer, 1, lexer->chunk, lexer->input);
+    lexer->ended = feof(lexer->input) != 0;
+    if (ferror(lexer->input)) {
+      lexer->failed = true;
+      set_error(lexer->error, 1, 1, "failed to read the input stream");
     }
-    result[used++] = (char)byte;
   }
-  if (ferror(input)) {
-    free(result);
-    set_error(error, 1, 1, "failed to read the input stream");
-    return false;
-  }
-
-  if (used == capacity) {
-    ArrayGrowth const growth = grow_array(result, capacity, sizeof(*result));
-    if (!growth.succeeded) {
-      free(result);
-      set_error(error, 1, 1, "failed to terminate the input buffer");
-      return false;
-    }
-    result = growth.data;
-  }
-  result[used] = '\0';
-  *text = result;
-  *length = used;
-  return true;
+  return lexer->failed || lexer->offset == lexer->length
+             ? EOF
+             : lexer->buffer[lexer->offset];
 }
 
 static void lexer_advance_byte(Lexer *lexer) {
-  if (lexer->text[lexer->offset] == '\n') {
+  if (lexer->buffer[lexer->offset++] == '\n') {
     lexer->line++;
     lexer->column = 1;
   } else {
     lexer->column++;
   }
-  lexer->offset++;
 }
 
 [[nodiscard]] static Token lexer_error(Lexer *lexer, size_t const line,
@@ -137,108 +119,108 @@ static void lexer_advance_byte(Lexer *lexer) {
 }
 
 [[nodiscard]] static Token lexer_next(Lexer *lexer) {
-  while (lexer->offset < lexer->length &&
-         isspace((unsigned char)lexer->text[lexer->offset])) {
+  int byte = lexer_peek(lexer);
+  while (byte != EOF && isspace(byte)) {
     lexer_advance_byte(lexer);
+    byte = lexer_peek(lexer);
   }
-
-  size_t const begin = lexer->offset;
   size_t const line = lexer->line;
   size_t const column = lexer->column;
-  if (begin == lexer->length) {
-    return (Token){
-        .kind = TOKEN_EOF, .begin = begin, .line = line, .column = column};
+  Token token = {.line = line, .column = column};
+  if (byte == EOF) {
+    token.kind = lexer->failed ? TOKEN_ERROR : TOKEN_EOF;
+    return token;
   }
-
-  unsigned char const first = (unsigned char)lexer->text[begin];
-  if (isdigit(first)) {
-    while (lexer->offset < lexer->length &&
-           isdigit((unsigned char)lexer->text[lexer->offset])) {
+  if (isdigit(byte)) {
+    uint64_t natural = 0;
+    bool overflow = false;
+    do {
+      unsigned const digit = (unsigned)(byte - '0');
+      if (natural > (UINT64_MAX - digit) / 10) {
+        overflow = true;
+      } else {
+        natural = natural * 10 + digit;
+      }
       lexer_advance_byte(lexer);
-    }
-    char const saved = lexer->text[lexer->offset];
-    lexer->text[lexer->offset] = '\0';
-    errno = 0;
-    char *end = nullptr;
-    uintmax_t const natural = strtoumax(lexer->text + begin, &end, 10);
-    lexer->text[lexer->offset] = saved;
-    if (errno == ERANGE || end != lexer->text + lexer->offset ||
-        natural > UINT64_MAX) {
+      byte = lexer_peek(lexer);
+    } while (byte != EOF && isdigit(byte));
+    if (lexer->failed) {
+      token.kind = TOKEN_ERROR;
+    } else if (overflow) {
       return lexer_error(lexer, line, column,
                          "natural number does not fit in uint64_t");
+    } else {
+      token.kind = TOKEN_NATURAL;
+      token.natural = natural;
     }
-    return (Token){.kind = TOKEN_NATURAL,
-                   .natural = (uint64_t)natural,
-                   .begin = begin,
-                   .length = lexer->offset - begin,
-                   .line = line,
-                   .column = column};
+    return token;
   }
-
-  if (isalpha(first)) {
-    while (lexer->offset < lexer->length &&
-           isalpha((unsigned char)lexer->text[lexer->offset])) {
+  if (isalpha(byte)) {
+    char word[6];
+    size_t length = 0;
+    bool too_long = false;
+    do {
+      if (length < sizeof(word)) {
+        word[length++] = (char)byte;
+      } else {
+        too_long = true;
+      }
       lexer_advance_byte(lexer);
+      byte = lexer_peek(lexer);
+    } while (byte != EOF && isalpha(byte));
+    if (lexer->failed) {
+      token.kind = TOKEN_ERROR;
+    } else if (!too_long && length == 6 && memcmp(word, "parity", 6) == 0) {
+      token.kind = TOKEN_KW_PARITY;
+    } else if (!too_long && length == 5 && memcmp(word, "start", 5) == 0) {
+      token.kind = TOKEN_KW_START;
+    } else {
+      return lexer_error(lexer, line, column, "unexpected keyword");
     }
-    size_t const length = lexer->offset - begin;
-    if (length == 6 && memcmp(lexer->text + begin, "parity", length) == 0) {
-      return (Token){.kind = TOKEN_KW_PARITY,
-                     .begin = begin,
-                     .length = length,
-                     .line = line,
-                     .column = column};
-    }
-    if (length == 5 && memcmp(lexer->text + begin, "start", length) == 0) {
-      return (Token){.kind = TOKEN_KW_START,
-                     .begin = begin,
-                     .length = length,
-                     .line = line,
-                     .column = column};
-    }
-    return lexer_error(lexer, line, column, "unexpected keyword");
+    return token;
   }
-
-  if (first == ',') {
-    lexer_advance_byte(lexer);
-    return (Token){.kind = TOKEN_COMMA,
-                   .begin = begin,
-                   .length = 1,
-                   .line = line,
-                   .column = column};
-  }
-  if (first == ';') {
-    lexer_advance_byte(lexer);
-    return (Token){.kind = TOKEN_SEMICOLON,
-                   .begin = begin,
-                   .length = 1,
-                   .line = line,
-                   .column = column};
-  }
-  if (first == '"') {
-    lexer_advance_byte(lexer);
-    size_t const content_begin = lexer->offset;
-    while (lexer->offset < lexer->length && lexer->text[lexer->offset] != '"') {
-      unsigned char const byte = (unsigned char)lexer->text[lexer->offset];
-      if (byte == 0 || byte > 0x7fU) {
+  lexer_advance_byte(lexer);
+  if (byte == ',') {
+    token.kind = TOKEN_COMMA;
+  } else if (byte == ';') {
+    token.kind = TOKEN_SEMICOLON;
+  } else if (byte == '"') {
+    size_t used = 0;
+    size_t capacity = 0;
+    while (true) {
+      byte = lexer_peek(lexer);
+      if (lexer->failed) {
+        token.kind = TOKEN_ERROR;
+        return token;
+      }
+      if (byte == EOF) {
+        return lexer_error(lexer, line, column, "unterminated quoted name");
+      }
+      if (byte == 0 || byte > 0x7f) {
         return lexer_error(lexer, lexer->line, lexer->column,
                            "a name must contain only non-NUL ASCII bytes");
       }
+      if (used == capacity) {
+        ArrayGrowth const growth = grow_array(lexer->name, capacity, 1);
+        if (!growth.succeeded) {
+          return lexer_error(lexer, line, column,
+                             "failed to allocate the node name");
+        }
+        lexer->name = growth.data;
+        capacity = growth.capacity;
+      }
       lexer_advance_byte(lexer);
+      if (byte == '"') {
+        lexer->name[used] = '\0';
+        token.kind = TOKEN_QUOTED_NAME;
+        break;
+      }
+      lexer->name[used++] = (char)byte;
     }
-    if (lexer->offset == lexer->length) {
-      return lexer_error(lexer, line, column, "unterminated quoted name");
-    }
-    size_t const content_length = lexer->offset - content_begin;
-    lexer_advance_byte(lexer);
-    return (Token){.kind = TOKEN_QUOTED_NAME,
-                   .begin = content_begin,
-                   .length = content_length,
-                   .line = line,
-                   .column = column};
+  } else {
+    return lexer_error(lexer, line, column, "unexpected character");
   }
-
-  lexer_advance_byte(lexer);
-  return lexer_error(lexer, line, column, "unexpected character");
+  return token;
 }
 
 static void parser_advance(Parser *parser) {
@@ -259,29 +241,10 @@ static void parser_advance(Parser *parser) {
   return false;
 }
 
-[[nodiscard]] static char *copy_token_text(Parser const *parser,
-                                           Token const token) {
-  if (token.length == SIZE_MAX) {
-    return nullptr;
-  }
-  char *copy = malloc(token.length + 1);
-  if (copy != nullptr) {
-    memcpy(copy, parser->lexer.text + token.begin, token.length);
-    copy[token.length] = '\0';
-  }
-  return copy;
-}
-
-static void destroy_declaration(TempDeclaration *declaration) {
-  free(declaration->name);
-  free(declaration->successors);
-  *declaration = (TempDeclaration){0};
-}
-
 static void destroy_declarations(TempDeclaration *declarations,
                                  size_t const count) {
   for (size_t index = 0; index < count; index++) {
-    destroy_declaration(declarations + index);
+    free(declarations[index].name);
   }
   free(declarations);
 }
@@ -289,20 +252,20 @@ static void destroy_declarations(TempDeclaration *declarations,
 [[nodiscard]] static bool append_successor(Parser *parser,
                                            TempDeclaration *declaration,
                                            Token const token) {
-  if (declaration->successor_count == declaration->successor_capacity) {
+  if (parser->successor_count == parser->successor_capacity) {
     ArrayGrowth const growth =
-        grow_array(declaration->successors, declaration->successor_capacity,
-                   sizeof(declaration->successors[0]));
+        grow_array(parser->successors, parser->successor_capacity,
+                   sizeof(parser->successors[0]));
     if (!growth.succeeded) {
       set_error(parser->lexer.error, token.line, token.column,
                 "failed to allocate the successor list");
       return false;
     }
-    declaration->successors = growth.data;
-    declaration->successor_capacity = growth.capacity;
+    parser->successors = growth.data;
+    parser->successor_capacity = growth.capacity;
   }
-  declaration->successors[declaration->successor_count++] = (TempSuccessor){
-      .external_id = token.natural, .line = token.line, .column = token.column};
+  parser->successors[parser->successor_count++] = token.natural;
+  declaration->successor_count++;
   return true;
 }
 
@@ -320,7 +283,11 @@ static void destroy_declarations(TempDeclaration *declarations,
     parser->declarations = growth.data;
     parser->declaration_capacity = growth.capacity;
   }
-  declaration->source_order = parser->declaration_count;
+  if (parser->declaration_count != 0 &&
+      parser->declarations[parser->declaration_count - 1].external_id >=
+          declaration->external_id) {
+    parser->sorted = false;
+  }
   parser->declarations[parser->declaration_count++] = *declaration;
   *declaration = (TempDeclaration){0};
   return true;
@@ -329,6 +296,7 @@ static void destroy_declarations(TempDeclaration *declarations,
 [[nodiscard]] static bool parse_declaration(Parser *parser) {
   TempDeclaration declaration = {
       .external_id = parser->token.natural,
+      .first_successor = parser->successor_count,
       .line = parser->token.line,
       .column = parser->token.column,
   };
@@ -382,12 +350,8 @@ static void destroy_declarations(TempDeclaration *declarations,
   }
 
   if (parser->token.kind == TOKEN_QUOTED_NAME) {
-    declaration.name = copy_token_text(parser, parser->token);
-    if (declaration.name == nullptr) {
-      set_error(parser->lexer.error, parser->token.line, parser->token.column,
-                "failed to allocate the node name");
-      goto failure;
-    }
+    declaration.name = parser->lexer.name;
+    parser->lexer.name = nullptr;
     parser_advance(parser);
   }
 
@@ -402,7 +366,7 @@ static void destroy_declarations(TempDeclaration *declarations,
   return true;
 
 failure:
-  destroy_declaration(&declaration);
+  free(declaration.name);
   return false;
 }
 
@@ -430,6 +394,7 @@ failure:
                 "expected a vertex identifier after 'start'")) {
       return false;
     }
+    parser->start_id = parser->token.natural;
     parser_advance(parser);
     if (!expect(parser, TOKEN_SEMICOLON,
                 "expected ';' after the start directive")) {
@@ -453,45 +418,6 @@ failure:
   return true;
 }
 
-[[nodiscard]] static int compare_declarations(void const *left,
-                                              void const *right) {
-  TempDeclaration const *first = left;
-  TempDeclaration const *second = right;
-  if (first->external_id < second->external_id) {
-    return -1;
-  }
-  if (first->external_id > second->external_id) {
-    return 1;
-  }
-  if (first->source_order < second->source_order) {
-    return -1;
-  }
-  return first->source_order > second->source_order ? 1 : 0;
-}
-
-[[nodiscard]] static size_t
-retain_last_declarations(TempDeclaration *declarations, size_t const count) {
-  qsort(declarations, count, sizeof(declarations[0]), compare_declarations);
-  size_t write_index = 0;
-  for (size_t begin = 0; begin < count;) {
-    size_t end = begin + 1;
-    while (end < count &&
-           declarations[end].external_id == declarations[begin].external_id) {
-      end++;
-    }
-    for (size_t index = begin; index + 1 < end; index++) {
-      destroy_declaration(declarations + index);
-    }
-    if (write_index != end - 1) {
-      declarations[write_index] = declarations[end - 1];
-      declarations[end - 1] = (TempDeclaration){0};
-    }
-    write_index++;
-    begin = end;
-  }
-  return write_index;
-}
-
 [[nodiscard]] static size_t find_vertex(PGGame const *game,
                                         uint64_t const external_id) {
   size_t begin = 0;
@@ -511,155 +437,240 @@ retain_last_declarations(TempDeclaration *declarations, size_t const count) {
              : SIZE_MAX;
 }
 
-[[nodiscard]] static bool allocate_csr(PGGame *game, size_t const edge_count,
-                                       PGParseError *error) {
-  if (game->vertex_count == SIZE_MAX ||
-      edge_count > SIZE_MAX / sizeof(game->successors[0])) {
-    set_error(error, 1, 1, "the graph is too large for this platform");
-    return false;
+[[nodiscard]] static int compare_declarations(void const *left,
+                                              void const *right) {
+  TempDeclaration const *first = *(TempDeclaration *const *)left;
+  TempDeclaration const *second = *(TempDeclaration *const *)right;
+  if (first->external_id != second->external_id) {
+    return first->external_id < second->external_id ? -1 : 1;
   }
-  game->succ_offsets =
-      calloc(game->vertex_count + 1, sizeof(game->succ_offsets[0]));
-  game->pred_offsets =
-      calloc(game->vertex_count + 1, sizeof(game->pred_offsets[0]));
-  game->successors = malloc(edge_count * sizeof(game->successors[0]));
-  game->predecessors = malloc(edge_count * sizeof(game->predecessors[0]));
-  if (game->succ_offsets == nullptr || game->pred_offsets == nullptr ||
-      (edge_count != 0 &&
-       (game->successors == nullptr || game->predecessors == nullptr))) {
-    set_error(error, 1, 1, "failed to allocate the graph edges");
-    return false;
+  return first < second ? -1 : first > second ? 1 : 0;
+}
+
+/* Sort only pointers; obsolete edge spans are compacted in source order. */
+[[nodiscard]] static size_t retain_last_declarations(Parser *parser,
+                                                     TempDeclaration **order) {
+  size_t const count = parser->declaration_count;
+  for (size_t index = 0; index < count; index++) {
+    order[index] = parser->declarations + index;
   }
-  return true;
+  qsort((void *)order, count, sizeof(TempDeclaration *), compare_declarations);
+  size_t retained = 0;
+  for (size_t index = 0; index < count; index++) {
+    if (index + 1 < count &&
+        order[index]->external_id == order[index + 1]->external_id) {
+      free(order[index]->name);
+      order[index]->name = nullptr;
+      order[index]->successor_count = 0;
+    } else {
+      order[retained++] = order[index];
+    }
+  }
+  size_t used = 0;
+  for (size_t index = 0; index < count; index++) {
+    TempDeclaration *declaration = parser->declarations + index;
+    size_t const length = declaration->successor_count;
+    memmove(parser->successors + used,
+            parser->successors + declaration->first_successor,
+            length * sizeof(parser->successors[0]));
+    declaration->first_successor = used;
+    used += length;
+  }
+  parser->successor_count = used;
+  return retained;
 }
 
 [[nodiscard]] static bool finalize_game(Parser *parser, PGGame *game) {
-  size_t const count =
-      retain_last_declarations(parser->declarations, parser->declaration_count);
-  if (count == 0) {
-    set_error(parser->lexer.error, 1, 1,
-              "cannot finalize a game without declarations");
-    return false;
+  PGParseError *error = parser->lexer.error;
+  size_t count = parser->declaration_count;
+  TempDeclaration **order = nullptr;
+  if (!parser->sorted) {
+    if (count > SIZE_MAX / sizeof(TempDeclaration *)) {
+      set_error(error, 1, 1, "the graph is too large for this platform");
+      return false;
+    }
+    order = (TempDeclaration **)malloc(count * sizeof(TempDeclaration *));
+    if (order == nullptr) {
+      set_error(error, 1, 1, "failed to allocate the declaration index");
+      return false;
+    }
+    count = retain_last_declarations(parser, order);
   }
+  size_t const edges = parser->successor_count;
   if (count > SIZE_MAX / sizeof(game->vertices[0])) {
-    set_error(parser->lexer.error, 1, 1,
-              "the graph has too many vertices for this platform");
-    return false;
+    set_error(error, 1, 1, "the graph has too many vertices for this platform");
+    goto failure;
+  }
+  if (count >= SIZE_MAX / sizeof(game->succ_offsets[0]) ||
+      edges > SIZE_MAX / sizeof(game->successors[0])) {
+    set_error(error, 1, 1, "the graph is too large for this platform");
+    goto failure;
   }
   game->vertices = calloc(count, sizeof(game->vertices[0]));
   if (game->vertices == nullptr) {
-    set_error(parser->lexer.error, 1, 1, "failed to allocate graph vertices");
-    return false;
+    set_error(error, 1, 1, "failed to allocate graph vertices");
+    goto failure;
   }
   game->vertex_count = count;
-
-  size_t edge_count = 0;
-  for (size_t index = 0; index < count; index++) {
-    TempDeclaration *declaration = parser->declarations + index;
-    game->vertices[index] = (PGVertex){.external_id = declaration->external_id,
-                                       .priority = declaration->priority,
-                                       .owner = declaration->owner,
-                                       .name = declaration->name};
+  game->edge_count = edges;
+  game->succ_offsets = calloc(count + 1, sizeof(game->succ_offsets[0]));
+  game->pred_offsets = calloc(count + 1, sizeof(game->pred_offsets[0]));
+  if (game->succ_offsets == nullptr || game->pred_offsets == nullptr) {
+    set_error(error, 1, 1, "failed to allocate the graph edges");
+    goto failure;
+  }
+  bool dense = true;
+  for (size_t source = 0; source < count; source++) {
+    TempDeclaration *declaration =
+        order == nullptr ? parser->declarations + source : order[source];
+    game->vertices[source] = (PGVertex){.external_id = declaration->external_id,
+                                        .priority = declaration->priority,
+                                        .owner = declaration->owner,
+                                        .name = declaration->name};
     declaration->name = nullptr;
+    if (declaration->external_id != source) {
+      dense = false;
+    }
     if (declaration->priority > game->max_priority) {
       game->max_priority = declaration->priority;
     }
-    if (edge_count > SIZE_MAX - declaration->successor_count) {
-      set_error(parser->lexer.error, declaration->line, declaration->column,
-                "the graph has too many edges for this platform");
-      return false;
+    /* All offset/count sums are bounded by the checked shared edge count. */
+    game->succ_offsets[source + 1] =
+        game->succ_offsets[source] + declaration->successor_count;
+  }
+  game->start_id = parser->start_id;
+  game->start_vertex = find_vertex(game, game->start_id);
+
+  bool const reuse = sizeof(size_t) == sizeof(uint64_t);
+  if (reuse) {
+    game->successors = (void *)parser->successors;
+    /* Unsorted edge spans use the eventual predecessor buffer as scratch. */
+    if (order != nullptr) {
+      game->predecessors = malloc(edges * sizeof(game->predecessors[0]));
     }
-    edge_count += declaration->successor_count;
+  } else {
+    game->successors = malloc(edges * sizeof(game->successors[0]));
   }
-  game->edge_count = edge_count;
-  if (!allocate_csr(game, edge_count, parser->lexer.error)) {
-    return false;
+  if (game->successors == nullptr ||
+      (reuse && order != nullptr && game->predecessors == nullptr)) {
+    set_error(error, 1, 1, "failed to allocate the graph edges");
+    if (reuse) {
+      game->successors = nullptr;
+    }
+    goto failure;
   }
-
-  size_t *predecessor_counts = calloc(count, sizeof(predecessor_counts[0]));
-  if (predecessor_counts == nullptr) {
-    set_error(parser->lexer.error, 1, 1,
-              "failed to allocate predecessor counts");
-    return false;
-  }
-
-  size_t edge = 0;
+  size_t *targets =
+      reuse && order != nullptr ? game->predecessors : game->successors;
   for (size_t source = 0; source < count; source++) {
-    TempDeclaration const *declaration = parser->declarations + source;
-    game->succ_offsets[source] = edge;
+    TempDeclaration const *declaration =
+        order == nullptr ? parser->declarations + source : order[source];
     for (size_t index = 0; index < declaration->successor_count; index++) {
-      TempSuccessor const successor = declaration->successors[index];
-      size_t const target = find_vertex(game, successor.external_id);
+      uint64_t id = 0;
+      memcpy(&id, parser->successors + declaration->first_successor + index,
+             sizeof(id));
+      size_t const target =
+          dense ? (id < count ? (size_t)id : SIZE_MAX) : find_vertex(game, id);
       if (target == SIZE_MAX) {
-        set_error(parser->lexer.error, successor.line, successor.column,
-                  "successor identifier has no final declaration");
-        free(predecessor_counts);
-        return false;
+        char message[256];
+        (void)snprintf(message, sizeof(message),
+                       "successor %" PRIu64 " (position %zu) of node %" PRIu64
+                       " has no final declaration",
+                       id, index + 1, declaration->external_id);
+        set_error(error, declaration->line, declaration->column, message);
+        if (reuse) {
+          game->successors = nullptr;
+        }
+        goto failure;
       }
-      game->successors[edge++] = target;
-      predecessor_counts[target]++;
+      /* memcpy also permits equal-width, distinct size_t/uint64_t types. */
+      memcpy(targets + game->succ_offsets[source] + index, &target,
+             sizeof(target));
+      game->pred_offsets[target + 1]++;
     }
   }
-  game->succ_offsets[count] = edge;
+  if (reuse) {
+    if (order != nullptr) {
+      memcpy(game->successors, targets, edges * sizeof(targets[0]));
+    }
+    parser->successors = nullptr;
+  }
+  free(parser->successors);
+  parser->successors = nullptr;
+  free((void *)order);
+  order = nullptr;
+  destroy_declarations(parser->declarations, parser->declaration_count);
+  parser->declarations = nullptr;
+  parser->declaration_count = 0;
 
-  for (size_t index = 0; index < count; index++) {
-    if (game->pred_offsets[index] > SIZE_MAX - predecessor_counts[index]) {
-      set_error(parser->lexer.error, 1, 1,
-                "predecessor offsets overflow size_t");
-      free(predecessor_counts);
+  for (size_t vertex = 0; vertex < count; vertex++) {
+    game->pred_offsets[vertex + 1] += game->pred_offsets[vertex];
+  }
+  if (game->predecessors == nullptr) {
+    game->predecessors = malloc(edges * sizeof(game->predecessors[0]));
+    if (game->predecessors == nullptr) {
+      set_error(error, 1, 1, "failed to allocate the graph edges");
       return false;
     }
-    game->pred_offsets[index + 1] =
-        game->pred_offsets[index] + predecessor_counts[index];
   }
-
   size_t *cursor = malloc(count * sizeof(cursor[0]));
   if (cursor == nullptr) {
-    set_error(parser->lexer.error, 1, 1,
-              "failed to allocate predecessor cursors");
-    free(predecessor_counts);
+    set_error(error, 1, 1, "failed to allocate predecessor cursors");
     return false;
   }
   memcpy(cursor, game->pred_offsets, count * sizeof(cursor[0]));
   for (size_t source = 0; source < count; source++) {
-    for (size_t index = game->succ_offsets[source];
-         index < game->succ_offsets[source + 1]; index++) {
-      size_t const target = game->successors[index];
-      game->predecessors[cursor[target]++] = source;
+    for (size_t edge = game->succ_offsets[source];
+         edge < game->succ_offsets[source + 1]; edge++) {
+      game->predecessors[cursor[game->successors[edge]]++] = source;
     }
   }
   free(cursor);
-  free(predecessor_counts);
   return true;
+
+failure:
+  free((void *)order);
+  return false;
 }
 
-bool pg_game_read(FILE *input, PGGame *game, PGParseError *error) {
+bool pg_game_read_chunked(FILE *input, size_t const chunk, PGGame *game,
+                          PGParseError *error) {
   if (error != nullptr) {
-    *error = (PGParseError){.line = 1, .column = 1, .message = ""};
+    *error = (PGParseError){.line = 1, .column = 1};
   }
   if (input == nullptr || game == nullptr) {
     set_error(error, 1, 1, "input and game must not be null");
     return false;
   }
   *game = (PGGame){0};
-
-  char *text = nullptr;
-  size_t length = 0;
-  if (!read_stream(input, &text, &length, error)) {
+  if (chunk == 0) {
+    set_error(error, 1, 1, "input chunk size must be positive");
     return false;
   }
-  Parser parser = {.lexer = {.text = text,
-                             .length = length,
+  unsigned char *buffer = malloc(chunk);
+  if (buffer == nullptr) {
+    set_error(error, 1, 1, "failed to allocate the input buffer");
+    return false;
+  }
+  Parser parser = {.lexer = {.input = input,
+                             .buffer = buffer,
+                             .chunk = chunk,
                              .line = 1,
                              .column = 1,
-                             .error = error}};
+                             .error = error},
+                   .sorted = true};
   bool const parsed = parse_stream(&parser) && finalize_game(&parser, game);
   if (!parsed) {
     pg_game_destroy(game);
   }
   destroy_declarations(parser.declarations, parser.declaration_count);
-  free(text);
+  free(parser.successors);
+  free(parser.lexer.name);
+  free(buffer);
   return parsed;
+}
+
+bool pg_game_read(FILE *input, PGGame *game, PGParseError *error) {
+  return pg_game_read_chunked(input, PG_GAME_DEFAULT_CHUNK, game, error);
 }
 
 void pg_game_destroy(PGGame *game) {

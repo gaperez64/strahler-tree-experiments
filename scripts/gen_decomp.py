@@ -2,6 +2,7 @@
 """Regenerate decomp/ and DECOMP.md from the built, verified game tools."""
 
 import argparse
+from array import array
 from collections import Counter
 from dataclasses import dataclass
 from hashlib import sha256
@@ -22,6 +23,42 @@ TREE_METRICS = (
     "nodes", "leaves", "internal_nodes", "height", "width", "max_arity",
     "mean_internal_arity", "branching_nodes", "min_leaf_depth",
     "mean_leaf_depth", "strahler",
+)
+
+
+PARAMETERS_GUIDE = (
+    "Final search bounds: lifting uses `H` (host height), `K` (Strahler bound), "
+    "`t` (size allowance); `pm-strahler` uses `k` (Strahler bound), "
+    "`t` (size allowance), `depth` (number of measure levels); "
+    "`pm-succinct` uses `bits` (bit budget per measure) and `depth`. "
+    "Zielonka methods have no search parameters."
+)
+
+TREE_METRIC_GUIDE = (
+    "Depth counts nodes from the root (depth 1); means have three decimal "
+    "places.\n\n"
+    "- `nodes`: Number of nodes in the result tree. Several game vertices "
+    "can belong to one tree node.\n"
+    "- `leaves`: Number of tree nodes with no children.\n"
+    "- `internal_nodes`: Number of tree nodes with at least one child.\n"
+    "- `height`: Number of nodes on the longest path from the root to a leaf.\n"
+    "- `width`: Largest number of nodes on one level.\n"
+    "- `max_arity`: Largest number of children of one node.\n"
+    "- `mean_internal_arity`: Mean number of children over internal nodes; "
+    "zero if there are none.\n"
+    "- `branching_nodes`: Number of tree nodes with at least two children.\n"
+    "- `min_leaf_depth`: Fewest nodes on a path from the root to a leaf.\n"
+    "- `mean_leaf_depth`: Mean number of nodes on a path from the root to a leaf, "
+    "over all leaves.\n"
+    "- `strahler`: A leaf has value 1. At an internal node, take the largest "
+    "child value and add 1 if at least two children share that largest value. "
+    "The tree's value is the root's value.\n\n"
+    "Each player's Strahler number is the smallest Strahler number among that\n"
+    "player's attractor decompositions; the game's Strahler number is the larger of\n"
+    "the two. For a complete result without shaving, the larger of the reported Even\n"
+    "and Odd values is an upper bound for the game's.\n"
+    "With shaving or partial results, the metrics describe only the represented\n"
+    "residual region.\n\n"
 )
 
 
@@ -71,6 +108,7 @@ VERTEX = re.compile(
     r'(\d+)\s+(\d+)\s+[01]\s+(\d+(?:\s*,\s*\d+)*)\s*'
     r'(?:"[^"]*"\s*)?;'
 )
+GAME_RECORD = re.compile(r"\s*(?:" + VERTEX.pattern + r"|(?P<directive>parity|start)\s+\d+\s*;)")
 
 
 def discover_games(paths):
@@ -94,23 +132,62 @@ def discover_games(paths):
     return games
 
 
-def game_info(path):
-    """Count final declarations; the header can mean maximum ID or vertex count."""
-    vertices = {}
-    text = path.read_text(encoding="utf-8")
-    text = re.sub(r"\A\s*parity\s+\d+\s*;", "", text)
-    text = re.sub(r"\A\s*start\s+\d+\s*;", "", text)
-    end = 0
-    for match in VERTEX.finditer(text):
-        if text[end:match.start()].strip():
+def game_records(stream, chunk_size):
+    buffer = ""
+    while chunk := stream.read(chunk_size):
+        buffer += chunk
+        end = 0
+        while match := GAME_RECORD.match(buffer, end):
+            yield match
+            end = match.end()
+        buffer = buffer[end:].lstrip()
+        # Reject complete malformed records without retaining the rest of the file.
+        if re.match(r'[^;"]*(?:"[^"]*"[^;"]*)*;', buffer):
             raise ValueError("invalid PGSolver vertex record")
-        vertices[int(match[1])] = (int(match[2]), match[3].count(",") + 1)
-        end = match.end()
-    if text[end:].strip():
+    if buffer:
         raise ValueError("invalid PGSolver vertex record")
-    priorities = {priority for priority, _ in vertices.values()}
-    edges = sum(count for _, count in vertices.values())
-    return len(vertices), edges, len(priorities), max(priorities, default=0)
+
+
+def game_info(path, chunk_size=1 << 16):
+    """Count final declarations; the header can mean maximum ID or vertex count."""
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be positive")
+    priorities, degrees = array("I"), array("I")
+    limit = 1 << (8 * degrees.itemsize)
+    sparse, count = {}, 0
+    header, start = True, True
+    with path.open(encoding="utf-8") as stream:
+        for match in game_records(stream, chunk_size):
+            if header and match["directive"] == "parity":
+                header = False
+                continue
+            header = False
+            if start and match["directive"] == "start":
+                start = False
+                continue
+            start = False
+            if match["directive"] is not None:
+                raise ValueError("invalid PGSolver vertex record")
+            vertex, priority = int(match[1]), int(match[2])
+            degree = match[3].count(",") + 1
+            if vertex not in sparse and (vertex >= len(degrees) or not degrees[vertex]):
+                count += 1
+            # Zero degree marks unused slots; distant IDs and oversized values stay sparse.
+            if vertex <= max(1024, 2 * count) and priority < limit and degree < limit:
+                if vertex >= len(degrees):
+                    growth = max(vertex + 1, 2 * len(degrees), 1024) - len(degrees)
+                    priorities.extend(array("I", [0]) * growth)
+                    degrees.extend(array("I", [0]) * growth)
+                priorities[vertex], degrees[vertex] = priority, degree
+                sparse.pop(vertex, None)
+            else:
+                if vertex < len(degrees):
+                    degrees[vertex] = 0
+                sparse[vertex] = (priority, degree)
+    distinct = {priority for priority, degree in zip(priorities, degrees) if degree}
+    distinct.update(priority for priority, _ in sparse.values())
+    edges = sum(degrees) + sum(degree for _, degree in sparse.values())
+    return count, edges, len(distinct), max(distinct, default=0)
 
 
 def stable_stats(stderr, root, build_dir):
@@ -160,17 +237,22 @@ def invoke(command, game, root, build_dir, timeout):
     return Run(outcomes[-1], stats, result.stdout)
 
 
-def run_backend(backend, game, root, build_dir, timeout, limit, *, skip_runs=False,
-                compare_adaptive=True):
-    if skip_runs and (game.name, backend.name) in SKIP_RUNS:
-        seconds = SKIP_RUNS[game.name, backend.name]
-        return Run(f"skipped (> {seconds:g} s locally)")
+def backend_command(backend, game, build_dir, limit):
     command = [str(build_dir / backend.binary), *backend.options,
                "--player=both", "--stats",
                "--labels=" + GAME_LABELS.get(game.stem, "sets"),
                f"--max-set-items={MAX_SET_ITEMS}"]
     if backend.binary == "pg2adot" and backend.name.startswith("lifting"):
         command.append(f"--max-host-leaves={limit}")
+    return command
+
+
+def run_backend(backend, game, root, build_dir, timeout, limit, *, skip_runs=False,
+                compare_adaptive=True):
+    if skip_runs and (game.name, backend.name) in SKIP_RUNS:
+        seconds = SKIP_RUNS[game.name, backend.name]
+        return Run(f"skipped (> {seconds:g} s locally)")
+    command = backend_command(backend, game, build_dir, limit)
     run = invoke(command, game, root, build_dir, timeout)
     if run.outcome not in ("complete", "partial"):
         return run
@@ -290,13 +372,32 @@ def run_metrics(backend, run, vertices):
             count += int(current.get("non_top" if pm else "region",
                                      current.get("dominion", 0)))
         won.append(count)
-    if run.outcome == "complete":
+    if run.outcome == "complete" and vertices is not None:
         assert sum(won) == vertices, "incomplete regions"
     parameters = tuple(
         ", ".join(f"{key}={s[key]}" for key in
                   ("H", "K", "k", "t", "bits", "depth") if key in s) or "—"
         for s in stats)
     return dict(info=info, won=tuple(won), parameters=parameters)
+
+
+SUMMARY_FIELDS = ["game", "backend", "outcome", "vertices", "edges",
+                  "distinct_priorities", "maximum_priority"] + [
+    f"{metric}_{player}" for metric in ("won", *TREE_METRICS, "parameters")
+    for player in ("even", "odd")]
+
+
+def metric_columns(metrics):
+    if metrics["info"] is None:
+        return {}
+    row = {}
+    for p, player in enumerate(("even", "odd")):
+        row[f"won_{player}"] = metrics["won"][p]
+        row[f"parameters_{player}"] = metrics["parameters"][p]
+        for metric in TREE_METRICS:
+            row[f"{metric}_{player}"] = format_metric(
+                metric, metrics["info"][p][0][metric])
+    return row
 
 
 def write_run(folder, backend, run, info):
@@ -335,11 +436,7 @@ def generate(root, destination, build_dir, timeout, limit):
         "belong to one tree node. |\n"
         "| Leaves | Number of tree nodes with no children. |\n"
         "| Height | Number of nodes on the longest path from the root to a leaf. |\n"
-        "| Parameters | Final search bounds: lifting uses `H` (host height), "
-        "`K` (Strahler bound), `t` (size allowance); `pm-strahler` uses `k` "
-        "(Strahler bound), `t` (size allowance), `depth` (number of measure "
-        "levels); `pm-succinct` uses `bits` (bit budget per measure) and `depth`. "
-        "Zielonka methods have no search parameters. |\n"
+        "| Parameters | " + PARAMETERS_GUIDE + " |\n"
         "| Tree | PNG links open the pictures; DOT links open their graph "
         "descriptions; leaves links list the distinct progress measures; "
         "metrics links give the final tree statistics. |\n\n",
@@ -350,31 +447,8 @@ def generate(root, destination, build_dir, timeout, limit):
         "zero metrics;\n"
         "connector boxes, shaved regions and unresolved vertices do not count.\n\n",
         "The `.metrics` files have one line per field, with `even=` and `odd=` "
-        "values.\n"
-        "Depth counts nodes from the root (depth 1); means have three decimal "
-        "places.\n\n"
-        "- `nodes`: Number of nodes in the result tree. Several game vertices "
-        "can belong to one tree node.\n"
-        "- `leaves`: Number of tree nodes with no children.\n"
-        "- `internal_nodes`: Number of tree nodes with at least one child.\n"
-        "- `height`: Number of nodes on the longest path from the root to a leaf.\n"
-        "- `width`: Largest number of nodes on one level.\n"
-        "- `max_arity`: Largest number of children of one node.\n"
-        "- `mean_internal_arity`: Mean number of children over internal nodes; "
-        "zero if there are none.\n"
-        "- `branching_nodes`: Number of tree nodes with at least two children.\n"
-        "- `min_leaf_depth`: Fewest nodes on a path from the root to a leaf.\n"
-        "- `mean_leaf_depth`: Mean number of nodes on a path from the root to a leaf, "
-        "over all leaves.\n"
-        "- `strahler`: A leaf has value 1. At an internal node, take the largest "
-        "child value and add 1 if at least two children share that largest value. "
-        "The tree's value is the root's value.\n\n"
-        "Each player's Strahler number is the smallest Strahler number among that\n"
-        "player's attractor decompositions; the game's Strahler number is the larger of\n"
-        "the two. For a complete result without shaving, the larger of the reported Even\n"
-        "and Odd values is an upper bound for the game's.\n"
-        "With shaving or partial results, the metrics describe only the represented\n"
-        "residual region.\n\n",
+        "values.\n",
+        TREE_METRIC_GUIDE,
         "## Preprocessing and shaving\n\n",
         "The `+pre` rows pass `--initial-shave=all --compress` before running the "
         "selected solver:\n\n",

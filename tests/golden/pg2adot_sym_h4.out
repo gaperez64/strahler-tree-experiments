@@ -1,6 +1,7 @@
 zielonka-sym: vertices=20 result=complete calls=23 attractors=115 moves=45 sets=89 certification_lifts=0 separator=10
 zielonka-sym even: region=10 tree_nodes=5 tree_leaves=3 tree_height=3 strahler=2
 zielonka-sym odd: region=10 tree_nodes=5 tree_leaves=3 tree_height=3 strahler=2
+start: vertex=0 winner=even
 digraph attractor_decompositions {
   graph [rankdir=TB, ordering=out];
   node [shape=box];

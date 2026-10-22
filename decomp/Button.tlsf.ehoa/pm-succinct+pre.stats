@@ -3,3 +3,4 @@ preprocess: residual=7 shaved_even=0 shaved_odd=0 single=0 loops=0 wcwc=0
 succinct: round=1 result=complete unresolved=0
 even: bits=1 depth=1 vertices=7 lifts=9 attempts=21 non_top=4 top=3 attracted=0
 odd: bits=1 depth=2 vertices=7 lifts=14 attempts=24 non_top=3 top=4 attracted=0
+start: vertex=0 winner=even

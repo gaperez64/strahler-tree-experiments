@@ -36,7 +36,7 @@ jobs:
           "$RUNNER_TEMP/actionlint" .github/workflows/*.yml
 
       - name: Check Python syntax
-        run: python3 -m py_compile src/convert_out.py scripts/compare_oink.py scripts/gen_decomp.py scripts/make_trees.py tests/test_gen_decomp.py tests/test_make_trees.py
+        run: python3 -m py_compile src/convert_out.py scripts/compare_oink.py scripts/gen_decomp.py scripts/make_trees.py scripts/gen_keiren.py tests/test_gen_decomp.py tests/test_make_trees.py tests/test_gen_keiren.py tests/test_pg_game_property.py tests/test_pg_game_memory.py tests/test_cli.py tests/test_source_version.py
 
   decomp:
     name: Tracked decompositions
@@ -221,8 +221,8 @@ jobs:
       - name: Analyze
         run: ci/check-tidy.sh build-tidy
 
-  coverage-75:
-    name: GCC 14 coverage (minimum 75%)
+  coverage-87:
+    name: GCC 14 coverage (minimum 87%)
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
@@ -259,7 +259,7 @@ jobs:
             --xml build-coverage/coverage.xml \
             --html-details build-coverage/coverage.html \
             --print-summary \
-            --fail-under-line 75
+            --fail-under-line 87
 
       - name: Upload coverage reports
         if: always()

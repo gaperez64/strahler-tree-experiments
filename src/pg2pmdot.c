@@ -23,6 +23,7 @@ typedef struct {
   bool leaves;
   bool stats;
   bool incremental;
+  char const *start_winner;
 } Output;
 
 static void usage(FILE *out, char *argv[]) {
@@ -71,7 +72,7 @@ static bool parse_size(char const *text, size_t *value) {
 static bool write_output(PMResult const result[static 2],
                          PGSet const *unresolved, size_t const round,
                          void *context) {
-  Output const *output = context;
+  Output *output = context;
   bool const partial = !pg_set_empty(unresolved);
   if (output->stats) {
     if (output->incremental) {
@@ -86,6 +87,12 @@ static bool write_output(PMResult const result[static 2],
             partial ? "partial" : "complete", pg_set_count(unresolved));
     for (size_t player = 0; player < 2; player++) {
       PMResult const *current = &result[player];
+      size_t const start = output->game->start_vertex;
+      if (pg_set_contains(&output->preprocessed->won[player], start) ||
+          pg_set_contains(&current->region, start) ||
+          pg_set_contains(&current->attracted, start)) {
+        output->start_winner = player == PG_EVEN ? "even" : "odd";
+      }
       fprintf(stderr, "%s: ", player == PG_EVEN ? "even" : "odd");
       if (current->algorithm == PM_STRAHLER) {
         fprintf(stderr, "k=%zu t=%zu ", current->parameters.k,
@@ -174,7 +181,8 @@ int main(int argc, char *argv[argc + 1]) {
   Output output = {.player = AD_DOT_PLAYER_BOTH,
                    .labels = AD_DOT_LABEL_COUNTS,
                    .max_items = 32,
-                   .original = true};
+                   .original = true,
+                   .start_winner = "unresolved"};
   bool k_given = false;
   bool t_given = false;
   bool bits_given = false;
@@ -311,6 +319,7 @@ int main(int argc, char *argv[argc + 1]) {
   }
   int status = EXIT_SOLVER;
   PGPreprocessResult preprocessed = {0};
+  errno = 0;
   if (!pg_preprocess(&game, &preprocess_options, &preprocessed) ||
       (solve_options.verify && !pg_preprocess_verify(&game, &preprocessed))) {
     fputs("Failed to preprocess or verify shaved regions\n", stderr);
@@ -339,8 +348,19 @@ int main(int argc, char *argv[argc + 1]) {
     fprintf(stderr, "Solver failed: %s\n", error.message);
     goto cleanup;
   }
-  status = fflush(stdout) == 0 ? EXIT_SUCCESS : EXIT_IO;
+  if (output.stats) {
+    fprintf(stderr, "start: vertex=%" PRIu64 " winner=%s\n", game.start_id,
+            output.start_winner);
+  }
+  status = fflush(stdout) == 0 && fflush(stderr) == 0 && !ferror(stdout) &&
+                   !ferror(stderr)
+               ? EXIT_SUCCESS
+               : EXIT_IO;
 cleanup:
+  // Boolean solver/output APIs propagate allocation failure through errno.
+  if (status != EXIT_SUCCESS && errno == ENOMEM) {
+    fputs("Failed to allocate memory\n", stderr);
+  }
   pg_preprocess_destroy(&preprocessed);
   pg_game_destroy(&game);
   return status;

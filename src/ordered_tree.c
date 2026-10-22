@@ -112,7 +112,7 @@ static void leaf_path_list_destroy(LeafPathList *list) {
         grow_array((void *)path->components, path->component_capacity,
                    sizeof(path->components[0]));
     if (!growth.succeeded) {
-      set_error(error, input, offset, "failed to grow a leaf path");
+      set_error(error, input, offset, "failed to allocate a leaf path");
       return false;
     }
     path->components = (char **)growth.data;
@@ -129,7 +129,7 @@ static void leaf_path_list_destroy(LeafPathList *list) {
     ArrayGrowth const growth =
         grow_array(list->paths, list->path_capacity, sizeof(list->paths[0]));
     if (!growth.succeeded) {
-      set_error(error, input, offset, "failed to grow the leaf-path list");
+      set_error(error, input, offset, "failed to allocate the leaf-path list");
       return false;
     }
     list->paths = growth.data;
@@ -276,7 +276,7 @@ find_or_append_child(OrderedTreeNode *parent, char *label, char const *input,
     if (!growth.succeeded) {
       free(label);
       free(child);
-      set_error(error, input, offset, "failed to grow the child list");
+      set_error(error, input, offset, "failed to allocate the child list");
       return nullptr;
     }
     parent->children = growth.data;

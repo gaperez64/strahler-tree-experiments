@@ -218,11 +218,70 @@ static void test_random_reference_agreement(void) {
   }
 }
 
+static void test_solver_errors(void) {
+  PGGame game = parse("0 2 0 1;1 0 1 1;");
+  PGSet domain = {0};
+  assert(pg_set_init(&domain, game.vertex_count));
+  ADResult result = {0};
+  ZielonkaError error = {0};
+  ZielonkaStats stats = {.calls = 99, .attractors = 99};
+  assert(zielonka_decompose_stats(&game, &domain, 2, &result, &stats, &error));
+  assert(stats.calls == 0 && stats.attractors == 0);
+  assert(pg_set_empty(&result.region[0]) && pg_set_empty(&result.region[1]));
+  ad_result_destroy(&result);
+  pg_set_fill(&domain);
+  assert(!zielonka_decompose(nullptr, &domain, 2, &result, &error));
+  assert(strstr(error.message, "invalid solver input") != nullptr);
+  assert(!zielonka_decompose(&game, nullptr, 2, &result, &error));
+  assert(!zielonka_decompose(&game, &domain, 2, nullptr, &error));
+  PGSet wrong_size = {0};
+  assert(!zielonka_decompose(&game, &wrong_size, 2, &result, &error));
+  assert(!zielonka_decompose(&game, &domain, UINT64_MAX, &result, &error));
+  assert(!zielonka_decompose(&game, &domain, 1025, &result, nullptr));
+  assert(!zielonka_decompose(&game, &domain, 1, &result, &error));
+  assert(strstr(error.message, "bound or totality") != nullptr);
+  assert(result.region[0].words == nullptr &&
+         result.region[1].words == nullptr);
+  pg_set_remove(&domain, 1);
+  assert(!zielonka_decompose(&game, &domain, 2, &result, &error));
+  assert(strstr(error.message, "bound or totality") != nullptr);
+  ad_result_destroy(&result);
+  pg_set_fill(&domain);
+  assert(zielonka_decompose(&game, &domain, 2, &result, &error));
+  ADNode *root = result.decomposition[PG_EVEN];
+  assert(root != nullptr && root->child_count != 0);
+  ADVerifyError verification = {0};
+  root->priority_bound = 0;
+  assert(!ad_tree_verify(&game, &domain, root, &verification));
+  assert(strstr(verification.message, "exceeds the node bound") != nullptr);
+  assert(!ad_tree_relative_verify(&game, &domain, root, &verification));
+  root->priority_bound = 2;
+  root->player = PG_ODD;
+  assert(!ad_tree_verify(&game, &domain, root, &verification));
+  assert(strstr(verification.message, "metadata") != nullptr);
+  root->player = PG_EVEN;
+  size_t const children = root->child_count;
+  root->child_count = 0;
+  assert(!ad_tree_verify(&game, &domain, root, &verification));
+  assert(strstr(verification.message, "exhaust") != nullptr);
+  root->child_count = children;
+  result.decomposition[PG_EVEN] = nullptr;
+  assert(!ad_result_verify_complete(&game, &domain, &result, &verification));
+  assert(strstr(verification.message, "region/decomposition mismatch") !=
+         nullptr);
+  result.decomposition[PG_EVEN] = root;
+  assert(ad_result_verify_complete(&game, &domain, &result, &verification));
+  ad_result_destroy(&result);
+  pg_set_destroy(&domain);
+  pg_game_destroy(&game);
+}
+
 int main(void) {
   test_basic_games();
   test_ordered_two_children();
   test_literal_priority_gap();
   test_tree_relative_top_partition();
   test_random_reference_agreement();
+  test_solver_errors();
   return 0;
 }

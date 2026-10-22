@@ -6,6 +6,7 @@ iter-shave: rounds=2 shaved=2
 strahler: round=2 result=complete unresolved=0
 even: k=2 t=1 depth=2 vertices=2 lifts=0 attempts=2 non_top=2 top=0 attracted=0
 odd: k=2 t=1 depth=2 vertices=0 lifts=0 attempts=0 non_top=0 top=0 attracted=0
+start: vertex=0 winner=even
 # round 1 k=1 t=1
 even: 0,e|
 odd: 

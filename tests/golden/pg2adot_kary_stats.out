@@ -1,6 +1,7 @@
 lifting: vertices=5 t_full=2 result=complete
 lifting even: root_level=4 H=3 k_full=3 host=kary arity=2 host_nodes=7 host_leaves=4 positions=21 rounds=8 lifts=14 top=0 region=5 tree_nodes=4 tree_leaves=2 tree_height=3 strahler=2
 lifting odd: root_level=3 H=2 k_full=2 host=kary arity=2 host_nodes=3 host_leaves=2 positions=9 rounds=11 lifts=17 top=5 region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+start: vertex=0 winner=even
 digraph attractor_decompositions {
   graph [rankdir=TB, ordering=out];
   node [shape=box];

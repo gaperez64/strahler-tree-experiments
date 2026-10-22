@@ -3,3 +3,4 @@ preprocess: residual=5583 shaved_even=13 shaved_odd=0 single=0 loops=13 wcwc=0
 zielonka-sym: vertices=5583 result=complete calls=24 attractors=156 moves=47 sets=93 certification_lifts=0 separator=5583
 zielonka-sym even: region=5583 tree_nodes=17 tree_leaves=8 tree_height=5 strahler=3
 zielonka-sym odd: region=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+start: vertex=0 winner=even

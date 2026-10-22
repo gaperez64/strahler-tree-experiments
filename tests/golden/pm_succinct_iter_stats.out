@@ -2,6 +2,7 @@ iter-shave: rounds=1 shaved=5
 succinct: round=1 result=complete unresolved=0
 even: bits=1 depth=2 vertices=5 lifts=3 attempts=8 non_top=5 top=0 attracted=0
 odd: bits=1 depth=2 vertices=0 lifts=0 attempts=0 non_top=0 top=0 attracted=0
+start: vertex=0 winner=even
 # round 1 bits=1
 even: e,0|0,e|
 odd: 

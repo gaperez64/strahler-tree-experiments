@@ -7,3 +7,4 @@ iter-shave: round=1 t=0 shaved=7 even=4 odd=3
 lifting: first_complete_t=0 even_first_full_t=0 odd_first_full_t=0 budget_exhausted=no
 lifting even: root_level=2 H=2 k_full=2 host=strahler K=1 t=0 host_nodes=2 host_leaves=1 positions=6 rounds=4 lifts=8 top=3 total_lifts=8 region=4 tree_nodes=1 tree_leaves=1 tree_height=1 strahler=1
 lifting odd: root_level=3 H=2 k_full=2 host=strahler K=1 t=0 host_nodes=2 host_leaves=1 positions=6 rounds=3 lifts=14 top=4 total_lifts=14 region=3 tree_nodes=2 tree_leaves=1 tree_height=2 strahler=1
+start: vertex=0 winner=even

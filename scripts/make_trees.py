@@ -36,12 +36,7 @@ def main():
     dot = None if args.no_png else shutil.which(args.dot)
     if not args.no_png and dot is None:
         print(f"warning: Graphviz {args.dot!r} not found; skipping PNGs", file=sys.stderr)
-    fields = ["game", "backend", "outcome", "vertices", "edges",
-              "distinct_priorities", "maximum_priority"]
-    fields += [f"{metric}_{player}" for metric in
-               ("won", *decomp.TREE_METRICS, "parameters")
-               for player in ("even", "odd")]
-    fields.append("tree")
+    fields = [*decomp.SUMMARY_FIELDS, "tree"]
     args.out.mkdir(parents=True, exist_ok=True)
     failed = False
     with (args.out / "summary.csv").open("w", encoding="utf-8", newline="") as stream:
@@ -71,13 +66,8 @@ def main():
                 row = dict(game=str(game), backend=backend.name, outcome=run.outcome,
                            vertices=vertices, edges=edges, distinct_priorities=priorities,
                            maximum_priority=maximum)
+                row.update(decomp.metric_columns(metrics))
                 if metrics["info"] is not None:
-                    for p, player in enumerate(("even", "odd")):
-                        row[f"won_{player}"] = metrics["won"][p]
-                        row[f"parameters_{player}"] = metrics["parameters"][p]
-                        for metric in decomp.TREE_METRICS:
-                            row[f"{metric}_{player}"] = decomp.format_metric(
-                                metric, metrics["info"][p][0][metric])
                     row["tree"] = f"{game.stem}/{backend.name}.dot"
                 writer.writerow(row)
                 print(f"{game}: {backend.name}: {run.outcome}", file=sys.stderr, flush=True)

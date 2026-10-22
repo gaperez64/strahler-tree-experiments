@@ -4,11 +4,13 @@
 from contextlib import redirect_stdout
 from hashlib import sha256
 import io
+import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+import tracemalloc
 import unittest
 from unittest.mock import patch
 import zlib
@@ -236,6 +238,90 @@ class DecompTests(unittest.TestCase):
             game.write_text('parity 0;\n0 0 0 0 "escaped\\"quote";\n')
             with self.assertRaisesRegex(ValueError, "invalid PGSolver vertex record"):
                 decomp.game_info(game)
+
+    def test_metadata_chunk_boundaries_and_headers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            game = Path(directory) / "chunked.pg"
+            for headers in ("", "parity 20;", "start 4;", "parity 20; start 4;"):
+                game.write_text(headers + '\n4 9 0 4,20 "é; name\\";\n20 2 1 4;\n')
+                for chunk_size in (1, 2, 7, 64):
+                    with self.subTest(headers=headers, chunk_size=chunk_size):
+                        self.assertEqual(decomp.game_info(game, chunk_size), (2, 3, 2, 9))
+            for invalid in ('0 1 0 0', '0 1 2 0;', '0 1 0 0 "unfinished;',
+                            'parity 1; parity 1;', 'start 0; parity 1;',
+                            '0 1 0 0; garbage;', ';'):
+                with self.subTest(invalid=invalid):
+                    game.write_text(invalid)
+                    with self.assertRaisesRegex(ValueError, "invalid PGSolver vertex record"):
+                        decomp.game_info(game, chunk_size=2)
+            with self.assertRaisesRegex(ValueError, "chunk_size"):
+                decomp.game_info(game, chunk_size=0)
+            for empty in ("", " \n", "parity 0; start 0;\n"):
+                game.write_text(empty)
+                self.assertEqual(decomp.game_info(game, chunk_size=1), (0, 0, 0, 0))
+
+    def test_metadata_rejects_invalid_record_before_reading_rest(self):
+        for record in ("bad;", 'bad "name; with semicolon";'):
+            stream = io.StringIO()
+            with (self.subTest(record=record),
+                  patch.object(Path, "open", return_value=stream),
+                  patch.object(stream, "read", side_effect=[record, AssertionError("read past invalid record")]),
+                  self.assertRaisesRegex(ValueError, "invalid PGSolver vertex record")):
+                decomp.game_info(Path("invalid.pg"))
+
+    def test_metadata_sparse_ids_and_duplicate_storage_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            game = Path(directory) / "sparse.pg"
+            huge = 10 ** 30
+            game.write_text(f"{huge} 9 0 {huge},0; 0 1 0 0; "
+                            f"0 {huge} 0 0,0; {huge} 2 0 0; 0 3 0 0; "
+                            "1025 7 0 0;\n" + "".join(
+                                f"{vertex} 0 0 0;\n" for vertex in range(1, 1025))
+                            + "1025 0 0 0;\n")
+            self.assertEqual(decomp.game_info(game, chunk_size=7), (1027, 1027, 3, 3))
+            game.write_text(f"0 {huge} 0 0; {huge} 1 0 0;\n")
+            self.assertEqual(decomp.game_info(game), (2, 2, 2, huge))
+
+    def test_metadata_discards_generated_trailing_whitespace(self):
+        class PaddedStream(io.StringIO):
+            remaining = 16 * 1024 ** 2
+
+            def read(self, size):
+                if text := super().read(size):
+                    return text
+                length = min(size, self.remaining)
+                self.remaining -= length
+                return " " * length
+
+        with patch.object(Path, "open", return_value=PaddedStream("parity 0; 0 0 0 0;")):
+            tracemalloc.start()
+            try:
+                self.assertEqual(decomp.game_info(Path("padded.pg")), (1, 1, 1, 0))
+                _, peak = tracemalloc.get_traced_memory()
+            finally:
+                tracemalloc.stop()
+        self.assertLess(peak, 2 * 1024 ** 2)
+
+    @unittest.skipIf(sys.platform == "darwin", "macOS does not enforce RLIMIT_AS")
+    def test_metadata_million_vertices_under_memory_cap(self):
+        with tempfile.TemporaryDirectory() as directory:
+            game = Path(directory) / "million.pg"
+            with game.open("w") as stream:
+                stream.write("parity 999999;\n")
+                stream.writelines(f"{vertex} {vertex % 4} {vertex % 2} {vertex};\n"
+                                  for vertex in range(1_000_000))
+            # Match the runner's locale so system locale mappings do not consume the cap.
+            result = subprocess.run([
+                sys.executable, "-c",
+                "import resource, sys; from pathlib import Path; "
+                "sys.path.insert(0, sys.argv[1]); import gen_decomp; "
+                "cap = 96 * 1024 ** 2; "
+                "resource.setrlimit(resource.RLIMIT_AS, (cap, cap)); "
+                "assert gen_decomp.game_info(Path(sys.argv[2])) == (1000000, 1000000, 4, 3)",
+                str(ROOT / "scripts"), str(game),
+            ], capture_output=True, text=True, timeout=60,
+                env={**os.environ, "LC_ALL": "C", "LANG": "C"})
+            self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_stable_stats(self):
         self.assertEqual(decomp.stable_stats(

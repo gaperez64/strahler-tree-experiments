@@ -3,6 +3,7 @@ iter-shave: rounds=1
 iter-shave: round=1 shaved=0 even=0 odd=0
 lifting even: root_level=4 H=3 k_full=3 host=kary arity=1 host_nodes=3 host_leaves=1 positions=9 rounds=8 lifts=40 top=10 dominion=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
 lifting odd: root_level=3 H=2 k_full=2 host=kary arity=1 host_nodes=2 host_leaves=1 positions=6 rounds=10 lifts=26 top=10 dominion=0 tree_nodes=0 tree_leaves=0 tree_height=0 strahler=0
+start: vertex=0 winner=unresolved
 digraph attractor_decompositions {
   graph [rankdir=TB, ordering=out];
   node [shape=box];

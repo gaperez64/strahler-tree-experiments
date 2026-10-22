@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(prefix="source version ") as directory:
     run("git", "-C", str(parent), "tag", "unrelated-version")
     build = parent / "build"
     run(meson, "setup", str(build), str(copied), "-Dlenstree=disabled")
-    run(meson, "compile", "-C", str(build), "genstree")
+    run(meson, "compile", "-C", str(build), "-j1", "genstree")
     wrapper = shlex.split(os.environ.get("STRAHLER_TEST_WRAPPER", ""))
     result = subprocess.run([*wrapper, str(build / "genstree"), "--version"],
                             check=True, text=True, capture_output=True, timeout=90)
