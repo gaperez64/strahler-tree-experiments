@@ -61,6 +61,14 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install boost graphviz meson ninja
 
+      - name: Check release version
+        run: |
+          project_version=$(meson introspect --projectinfo meson.build | python3 -c 'import json, sys; print(json.load(sys.stdin)["version"])')
+          if [[ "$project_version" != "${RELEASE_TAG#v}" ]]; then
+            echo "::error::Meson project version $project_version does not match release tag $RELEASE_TAG. Update meson.build before tagging."
+            exit 1
+          fi
+
       - name: Build and test
         run: |
           if [[ "$RUNNER_OS" == macOS ]]; then

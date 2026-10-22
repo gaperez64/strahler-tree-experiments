@@ -2,7 +2,7 @@ project(
   'strahler-tree-experiments',
   'c',
   'cpp',
-  version : '0.2',
+  version : '0.3',
   meson_version : '>=1.4.0',
   default_options : [
     'warning_level=3',
@@ -465,43 +465,13 @@ test(
 )
 test('pms2dot_help_exit', pms2dot, args : ['--help'])
 check_version = find_program('tests/check-version.sh')
-test(
-  'genstree_version',
-  check_version,
-  args : [genstree, meson.project_version()],
-)
-test(
-  'pgfilt_version',
-  check_version,
-  args : [pgfilt, meson.project_version()],
-)
-test(
-  'pms2dot_version',
-  check_version,
-  args : [pms2dot, meson.project_version()],
-)
-test(
-  'pg2adot_version',
-  check_version,
-  args : [pg2adot, meson.project_version()],
-)
-test(
-  'str_tree_version',
-  check_version,
-  args : [str_tree, meson.project_version()],
-)
-if boost_dep.found()
-  test(
-    'lenstree_version',
-    check_version,
-    args : [lenstree, meson.project_version()],
-  )
-endif
 cli_programs = [genstree, pgfilt, pms2dot, pg2adot, pg2pmdot, str_tree]
 if boost_dep.found()
   cli_programs += [lenstree]
 endif
 foreach program : cli_programs
+  test(program.name() + '_version', check_version,
+    args : [program, meson.project_version()])
   test(program.name() + '_cli', python,
     args : [files('tests/test_cli.py'), program, meson.project_version()],
     suite : 'python')
@@ -1417,8 +1387,6 @@ test_pm_lift_exe = executable('test_pm_lift', 'tests/test_pm_lift.c',
 test('test_pm_lift', test_pm_lift_exe, workdir : meson.project_source_root())
 
 test('pg2pmdot_help', pg2pmdot, args : ['--help'])
-test('pg2pmdot_version', check_version,
-  args : [pg2pmdot, meson.project_version()])
 foreach bad : [
   ['--algorithm=bad'], ['--format=bad'], ['--player=bad'], ['--labels=bad'],
   ['--priority-mode=bad'], ['--initial-shave=loops,'], ['--k=0', '--t=0'], ['--k=1'],

@@ -98,7 +98,14 @@ and `strahler-tree-experiments-<version>-macos-arm64.tar.gz`, each containing
 `bin/`, README.md, LICENSE, and LICENSE-APACHE-2.0. Dispatch
 [the release workflow](../.github/workflows/release.yml) with an existing tag
 to rebuild and replace its assets.
-Update the Meson project version before tagging so `--version` matches the release.
+
+Before creating a release tag `v<version>`, set `version : '<version>'` in the
+root `meson.build`, without the `v`. Rebuild and run
+`meson test -C <build-dir> --print-errorlogs`, then commit the version bump and
+tag that commit. The generated version header and test expectations follow
+Meson automatically. The regular suite checks every built command's version;
+the release workflow rejects tags that differ from the Meson project version
+before building.
 
 ## Regenerating example trees
 
