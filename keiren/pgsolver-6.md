@@ -9,69 +9,6 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 ## Inventory
 
 <details>
-<summary>pgsolver/games/steadygame(10000,_1,_20,_1,_20)id=19.gm · 10000 vertices / 101342 edges · 16 complete · 8 error</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 10000 | 101342 | 10000 | 9999 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | error | - / - | - / - | - / - | - / - | - / - | 0.157 | 124.797 | - | true | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
-| lifting+pre | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.435 | 124.797 | even | true | true | false | - |
-| lifting+iter | error | - / - | - / - | - / - | - / - | - / - | 0.156 | 124.797 | - | true | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
-| lifting+pre+iter | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.443 | 124.797 | even | true | true | false | - |
-| lifting-adaptive | error | - / - | - / - | - / - | - / - | - / - | 0.155 | 124.797 | - | true | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
-| lifting-adaptive+pre | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.434 | 124.797 | even | true | true | false | - |
-| lifting-adaptive+iter | error | - / - | - / - | - / - | - / - | - / - | 0.154 | 124.797 | - | true | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
-| lifting-adaptive+pre+iter | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.433 | 124.797 | even | true | true | false | - |
-| lifting-sym | error | - / - | - / - | - / - | - / - | - / - | 0.156 | 124.797 | - | true | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
-| lifting-sym+pre | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.432 | 124.797 | even | true | true | false | - |
-| lifting-sym+iter | error | - / - | - / - | - / - | - / - | - / - | 0.155 | 124.797 | - | true | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
-| lifting-sym+pre+iter | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.443 | 124.797 | even | true | true | false | - |
-| pm-strahler | complete | 4976 / 5024 | 20001 / 20001 | 4 / 4 | 5001 / 5001 | k=2, t=1, depth=5000 / k=2, t=1, depth=5000 | 0.776 | 124.797 | even | true | true | false | - |
-| pm-strahler+pre | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=5000 / k=1, t=1, depth=5000 | 0.433 | 124.797 | even | true | true | false | - |
-| pm-strahler+iter | complete | 4976 / 5024 | 5001 / 5001 | 1 / 1 | 5001 / 5001 | k=1, t=1, depth=5000 / k=1, t=1, depth=5000 | 0.508 | 124.797 | even | true | true | false | - |
-| pm-strahler+pre+iter | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=5000 / k=1, t=1, depth=5000 | 0.455 | 124.797 | even | true | true | false | - |
-| pm-succinct | complete | 4976 / 5024 | 19998 / 19998 | 4 / 4 | 5001 / 5001 | bits=1, depth=5000 / bits=1, depth=5000 | 0.723 | 124.797 | even | true | true | false | - |
-| pm-succinct+pre | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=5000 / bits=0, depth=5000 | 0.434 | 124.797 | even | true | true | false | - |
-| pm-succinct+iter | complete | 4976 / 5024 | 19998 / 19998 | 4 / 4 | 5001 / 5001 | bits=1, depth=5000 / bits=1, depth=5000 | 0.701 | 124.797 | even | true | true | false | - |
-| pm-succinct+pre+iter | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=5000 / bits=0, depth=5000 | 0.435 | 124.797 | even | true | true | false | - |
-| zielonka | error | - / - | - / - | - / - | - / - | - / - | 0.155 | 124.797 | - | true | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
-| zielonka+pre | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.425 | 124.797 | even | true | true | false | - |
-| zielonka-sym | error | - / - | - / - | - / - | - / - | - / - | 0.157 | 124.797 | - | true | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
-| zielonka-sym+pre | complete | 4976 / 5024 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.423 | 124.797 | even | true | true | false | - |
-
-| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-adaptive | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-adaptive+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-strahler | 19997 / 19997 | 4 / 4 | 4 / 4 | 1.000 / 1.000 | 1 / 1 | 5001 / 5001 | 5001.000 / 5001.000 | 2 / 2 |
-| pm-strahler+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-strahler+iter | 5000 / 5000 | 1 / 1 | 1 / 1 | 1.000 / 1.000 | 0 / 0 | 5001 / 5001 | 5001.000 / 5001.000 | 1 / 1 |
-| pm-strahler+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-succinct | 19994 / 19994 | 4 / 4 | 2 / 2 | 1.000 / 1.000 | 3 / 3 | 5001 / 5001 | 5001.000 / 5001.000 | 2 / 2 |
-| pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-succinct+iter | 19994 / 19994 | 4 / 4 | 2 / 2 | 1.000 / 1.000 | 3 / 3 | 5001 / 5001 | 5001.000 / 5001.000 | 2 / 2 |
-| pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| zielonka | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| zielonka-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-
-</details>
-
-<details>
 <summary>pgsolver/games/steadygame(10000,_1,_20,_1,_20)id=2.gm · 10000 vertices / 97147 edges · 16 complete · 8 error</summary>
 
 | Vertices | Edges | Distinct priorities | Maximum priority |
@@ -2646,6 +2583,69 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | pm-succinct | 9994 / 9994 | 4 / 4 | 2 / 2 | 1.000 / 1.000 | 3 / 3 | 2501 / 2501 | 2501.000 / 2501.000 | 2 / 2 |
 | pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
 | pm-succinct+iter | 9994 / 9994 | 4 / 4 | 2 / 2 | 1.000 / 1.000 | 3 / 3 | 2501 / 2501 | 2501.000 / 2501.000 | 2 / 2 |
+| pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+
+</details>
+
+<details>
+<summary>pgsolver/games/steadygame(5000,_1,_20,_1,_20)id=11.gm · 5000 vertices / 56081 edges · 16 complete · 8 error</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 5000 | 56081 | 5000 | 4999 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | error | - / - | - / - | - / - | - / - | - / - | 0.148 | 124.797 | - | false | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
+| lifting+pre | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.416 | 124.797 | odd | false | true | false | - |
+| lifting+iter | error | - / - | - / - | - / - | - / - | - / - | 0.146 | 124.797 | - | false | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
+| lifting+pre+iter | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.412 | 124.797 | odd | false | true | false | - |
+| lifting-adaptive | error | - / - | - / - | - / - | - / - | - / - | 0.144 | 124.797 | - | false | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
+| lifting-adaptive+pre | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.412 | 124.797 | odd | false | true | false | - |
+| lifting-adaptive+iter | error | - / - | - / - | - / - | - / - | - / - | 0.144 | 124.797 | - | false | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
+| lifting-adaptive+pre+iter | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.413 | 124.797 | odd | false | true | false | - |
+| lifting-sym | error | - / - | - / - | - / - | - / - | - / - | 0.144 | 124.797 | - | false | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
+| lifting-sym+pre | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.413 | 124.797 | odd | false | true | false | - |
+| lifting-sym+iter | error | - / - | - / - | - / - | - / - | - / - | 0.145 | 124.797 | - | false | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
+| lifting-sym+pre+iter | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.413 | 124.797 | odd | false | true | false | - |
+| pm-strahler | complete | 2484 / 2516 | 10001 / 10001 | 4 / 4 | 2501 / 2501 | k=2, t=1, depth=2500 / k=2, t=1, depth=2500 | 0.578 | 124.797 | odd | false | true | false | - |
+| pm-strahler+pre | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=2500 / k=1, t=1, depth=2500 | 0.414 | 124.797 | odd | false | true | false | - |
+| pm-strahler+iter | complete | 2484 / 2516 | 2501 / 2501 | 1 / 1 | 2501 / 2501 | k=1, t=1, depth=2500 / k=1, t=1, depth=2500 | 0.445 | 124.797 | odd | false | true | false | - |
+| pm-strahler+pre+iter | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=2500 / k=1, t=1, depth=2500 | 0.412 | 124.797 | odd | false | true | false | - |
+| pm-succinct | complete | 2484 / 2516 | 12498 / 9998 | 5 / 4 | 2501 / 2501 | bits=1, depth=2500 / bits=1, depth=2500 | 0.578 | 124.797 | odd | false | true | false | - |
+| pm-succinct+pre | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=2500 / bits=0, depth=2500 | 0.423 | 124.797 | odd | false | true | false | - |
+| pm-succinct+iter | complete | 2484 / 2516 | 12498 / 9998 | 5 / 4 | 2501 / 2501 | bits=1, depth=2500 / bits=1, depth=2500 | 0.557 | 124.797 | odd | false | true | false | - |
+| pm-succinct+pre+iter | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=2500 / bits=0, depth=2500 | 0.413 | 124.797 | odd | false | true | false | - |
+| zielonka | error | - / - | - / - | - / - | - / - | - / - | 0.145 | 124.797 | - | false | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
+| zielonka+pre | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.414 | 124.797 | odd | false | true | false | - |
+| zielonka-sym | error | - / - | - / - | - / - | - / - | - / - | 0.145 | 124.797 | - | false | - | - | exit 4: Solver failed: priority depth exceeds the safe recursion depth |
+| zielonka-sym+pre | complete | 2484 / 2516 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.393 | 124.797 | odd | false | true | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler | 9997 / 9997 | 4 / 4 | 4 / 4 | 1.000 / 1.000 | 1 / 1 | 2501 / 2501 | 2501.000 / 2501.000 | 2 / 2 |
+| pm-strahler+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler+iter | 2500 / 2500 | 1 / 1 | 1 / 1 | 1.000 / 1.000 | 0 / 0 | 2501 / 2501 | 2501.000 / 2501.000 | 1 / 1 |
+| pm-strahler+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct | 12493 / 9994 | 5 / 4 | 3 / 2 | 1.000 / 1.000 | 3 / 3 | 2501 / 2501 | 2501.000 / 2501.000 | 2 / 2 |
+| pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct+iter | 12493 / 9994 | 5 / 4 | 3 / 2 | 1.000 / 1.000 | 3 / 3 | 2501 / 2501 | 2501.000 / 2501.000 | 2 / 2 |
 | pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
 | zielonka | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
 | zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |

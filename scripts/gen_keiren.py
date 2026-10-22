@@ -44,7 +44,7 @@ ARCHIVES = {
 }
 FIELDS = ["archive", *decomp.SUMMARY_FIELDS, "seconds", "peak_rss_mib", "detail",
           "start_winner", "reference_solution", "reference_agrees", "winner_disagrees",
-          "timeout_seconds", "memory_gib", "jobs", "max_host_leaves", "machine"]
+          "timeout_seconds", "memory_gib", "jobs", "max_host_leaves", "machine", "solver_build"]
 GAME_FIELDS = ("vertices", "edges", "distinct_priorities", "maximum_priority")
 # pg2adot's parse_size accepts SIZE_MAX.
 MAX_HOST_LEAVES = 2 * sys.maxsize + 1
@@ -422,15 +422,20 @@ def load_results(path, *, allow_legacy=False):
         return []
     with path.open(encoding="utf-8", newline="") as stream:
         reader = csv.DictReader(stream)
-        legacy = reader.fieldnames == [field for field in FIELDS if field != "start_winner"]
+        fields = [field for field in FIELDS if field != "solver_build"]
+        legacy = reader.fieldnames in ([field for field in schema if field != "start_winner"]
+                                      for schema in (FIELDS, fields))
         if legacy and not allow_legacy:
             raise ValueError(f"CSV lacks start_winner: {path}; delete or migrate it before resuming")
-        if reader.fieldnames != FIELDS and not (legacy and allow_legacy):
+        if reader.fieldnames not in (FIELDS, fields) and not (legacy and allow_legacy):
             raise ValueError(f"unexpected CSV columns: {path}")
         rows = list(reader)
         if legacy:
             for row in rows:
                 row["start_winner"] = ""
+        if "solver_build" not in reader.fieldnames:
+            for row in rows:
+                row["solver_build"] = ""
     if any(None in row or any(value is None for value in row.values()) for row in rows):
         raise ValueError(f"incomplete CSV row: {path}")
     if any(row["archive"] not in ARCHIVES for row in rows):
@@ -483,6 +488,18 @@ def machine_info():
         return f"{platform.system()} {platform.machine()}, {cpus} CPUs, {ram:.1f} GiB RAM"
     except (OSError, ValueError):
         return f"{platform.system()} {platform.machine()}, {cpus} CPUs"
+
+
+def solver_build(build_dir):
+    version = subprocess.run([build_dir / "pg2adot", "--version"], check=True,
+                             capture_output=True, text=True, timeout=10).stdout.splitlines()[0]
+    try:
+        result = subprocess.run(["meson", "introspect", "--buildoptions", build_dir],
+                                check=True, capture_output=True, text=True, timeout=10)
+        options = {option["name"]: option["value"] for option in json.loads(result.stdout)}
+        return f"{version}, {options['buildtype']} -O{options['optimization']}"
+    except (OSError, subprocess.SubprocessError, ValueError, KeyError):
+        return version
 
 
 @contextmanager
@@ -540,13 +557,21 @@ def publish(path, rows):
 
 def run(args):
     rows = load_results(args.results)
+    if args.backfill_build is not None:
+        for row in rows:
+            if not row["solver_build"]:
+                row["solver_build"] = args.backfill_build
+        publish(args.results, rows)
+        return 0
     retry_games = {(row["archive"], row["game"]) for row in rows
                    if row["outcome"] in args.retry}
     refresh_games = {(row["archive"], row["game"]) for row in rows
-                     if any(row[field] == "" for field in GAME_FIELDS) and row["game"] != "(archive listing)"}
+                     if any(row[field] == "" for field in GAME_FIELDS) and row["game"] != "(archive listing)"
+                     and args.games.search(row["game"])}
     machine = machine_info()
     base = dict(timeout_seconds=args.timeout, memory_gib=args.memory, jobs=args.jobs,
-                max_host_leaves=args.max_host_leaves, machine=machine)
+                max_host_leaves=args.max_host_leaves, machine=machine,
+                solver_build=solver_build(args.build_dir) if not args.refresh_metadata else "")
     start, attempted = time.monotonic(), 0
     failed = False
     args.work_dir.mkdir(parents=True, exist_ok=True)
@@ -571,6 +596,8 @@ def run(args):
                     publish(args.results, rows)
                 for member in members:
                     game_name = member.filename.removesuffix(".bz2")
+                    if not args.games.search(game_name):
+                        continue
                     retrying = (name, game_name) in retry_games
                     if args.refresh_metadata:
                         if (name, game_name) not in refresh_games:
@@ -729,6 +756,24 @@ def dataset_notes(rows):
     for row in rows:
         groups[row["archive"], row["game"]].append(row)
     notes = []
+    builds = defaultdict(list)
+    for row in rows:
+        builds[row.get("solver_build", "")].append(row)
+    if builds:
+        notes.append("Recorded solver builds (blank provenance is unrecorded):\n\n" + table(
+            ["Solver build", "Rows", "Games"],
+            [[build or "(unrecorded)", len(group),
+              len({(row["archive"], row["game"]) for row in group if row["game"] != "(archive listing)"})]
+             for build, group in sorted(builds.items())]))
+    if len(builds) > 1:
+        majority = max(map(len, builds.values()))
+        rerun = sorted({(row["archive"], row["game"]) for build, group in builds.items()
+                        if build and len(group) < majority for row in group
+                        if row["game"] != "(archive listing)"})
+        if rerun:
+            notes.append("Games with rows from a non-majority build were rerun after earlier rows "
+                         "reported the parser allocation failure `failed to allocate the input buffer`:\n\n"
+                         + "".join(f"- {cell(archive)}: <code>{cell(game)}</code>\n" for archive, game in rerun) + "\n")
     invalid = [game for (_, game), group in groups.items()
                if any(row["outcome"] == "invalid input" for row in group)]
     if invalid:
@@ -818,11 +863,12 @@ def intro(rows):
             ["parameters_even, parameters_odd", decomp.PARAMETERS_GUIDE],
             ["seconds", "Wall seconds for a backend, including launch, solver execution and metric parsing. Downloading and shared game-metadata parsing are excluded."],
             ["peak_rss_mib", "Maximum individual child peak RSS, measured with os.wait4 for the solver and metric parser; MiB is 2^20 bytes. It is not a cumulative RUSAGE_CHILDREN reading."],
-            ["detail", "Short error, signal or unavailable-metadata explanation."],
+            ["detail", "Short error, signal or unavailable-metadata explanation. Older non-complete +pre rows with only preprocessing statistics show (error text not recorded); the CSV is unchanged."],
             ["start_winner", "even or odd for the declared start vertex (default 0), including shaved winners; unresolved if uncertified or the vertex is absent. Blank in older pilot rows."],
             ["reference_solution, reference_agrees", "Original reference Boolean and true/false agreement with a certified start winner; blank means unchecked."],
             ["winner_disagrees", "true marks complete rows when complete backends disagree on winning counts or known start winners; false means no disagreement found; blank means incomplete."],
             ["timeout_seconds, memory_gib, jobs, max_host_leaves, machine", "Recorded execution limits and machine for each row; memory_gib is in 2^30 bytes."],
+            ["solver_build", "First line of pg2adot --version, with Meson build type and optimization when available. Empty for older rows until explicitly backfilled."],
         ])
         + "Paired values use Even / Odd (E / O); CSV columns use _even and _odd. "
         "A hyphen in the tables or an empty CSV field means unavailable. "
@@ -845,6 +891,9 @@ def render(results, output, page_limit=300_000):
     rows = load_results(results, allow_legacy=True)
     by_archive = defaultdict(list)
     for row in rows:
+        if ("+pre" in row["backend"] and row["outcome"] != "complete"
+                and re.match(r"(?:exit \d+: )?preprocess: residual=", row["detail"])):
+            row["detail"] = "(error text not recorded)"
         by_archive[row["archive"]].append(row)
     introduction, totals = intro(rows), summary(rows)
     sections = {name: inventory(group) for name, group in by_archive.items()}
@@ -891,10 +940,12 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     runner = commands.add_parser("run", help="download and run selected games; resume existing CSV")
     runner.add_argument("--archives", default=",".join(ARCHIVES), help="comma-separated ZIP names without .zip")
+    runner.add_argument("--games", default="", metavar="REGEX", help="re.search filter on the saved game path, without .bz2")
     runner.add_argument("--backends", default=",".join(b.name for b in decomp.BACKENDS))
     mode = runner.add_mutually_exclusive_group()
     mode.add_argument("--retry", default="", help="comma-separated outcomes; replace each matching game's rows after rerunning selected backends")
     mode.add_argument("--refresh-metadata", action="store_true", help="fill missing game metadata in saved rows without running backends")
+    mode.add_argument("--backfill-build", metavar="TEXT", help="fill only empty solver_build cells atomically; no downloads or solver runs")
     runner.add_argument("--max-games", type=int, help="maximum newly attempted games, across selected archives")
     runner.add_argument("--work-dir", type=Path, default=Path(tempfile.gettempdir()) / "strahler-keiren")
     runner.add_argument("--build-dir", type=Path, default=Path("build"))
@@ -911,6 +962,12 @@ def main():
     if args.command == "render":
         render(args.results, args.output)
         return 0
+    if args.backfill_build is not None and not args.backfill_build.strip():
+        parser.error("--backfill-build must not be empty")
+    try:
+        args.games = re.compile(args.games)
+    except re.error as error:
+        parser.error(f"invalid --games regex: {error}")
     args.archives = list(dict.fromkeys(args.archives.split(",")))
     args.retry = [outcome.strip() for outcome in args.retry.split(",")] if args.retry else []
     if any(outcome not in OUTCOMES for outcome in args.retry):
@@ -928,7 +985,8 @@ def main():
         parser.error("--metadata-timeout must be finite and positive")
     if args.jobs <= 0 or (args.max_games is not None and args.max_games <= 0):
         parser.error("--jobs and --max-games must be positive")
-    args.build_dir = decomp.validate_run_arguments(parser, args, [] if args.refresh_metadata else args.backends)
+    args.build_dir = decomp.validate_run_arguments(parser, args,
+        [] if args.refresh_metadata or args.backfill_build is not None else args.backends)
     args.work_dir = args.work_dir.resolve()
     if args.work_dir.is_relative_to(decomp.ROOT):
         parser.error("--work-dir must be outside the repository")

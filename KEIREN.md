@@ -16,6 +16,60 @@ The default budget is 30 seconds per game and backend, including solver output p
 
 ## Dataset notes
 
+Recorded solver builds (blank provenance is unrecorded):
+
+| Solver build | Rows | Games |
+| --- | --- | --- |
+| pg2adot 0.2 (git v0.3-4-g685789d), release -O3 | 23832 | 993 |
+| pg2adot 0.2 (git v0.3-6-g210e150), release -O3 | 1056 | 44 |
+
+Games with rows from a non-majority build were rerun after earlier rows reported the parser allocation failure `failed to allocate the input buffer`:
+
+- equivchecking: <code>equivchecking/games/ABP(BW)_Onebit_(datasize=2_capacity=1_windowsize=1)eq=branching-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP(BW)_Onebit_(datasize=2_capacity=1_windowsize=1)eq=branching-sim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP(BW)_Onebit_(datasize=2_capacity=1_windowsize=1)eq=weak-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP(BW)_Onebit_(datasize=3_capacity=1_windowsize=1)eq=branching-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP(BW)_Onebit_(datasize=3_capacity=1_windowsize=1)eq=branching-sim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP(BW)_Onebit_(datasize=3_capacity=1_windowsize=1)eq=weak-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP_Onebit_(datasize=2_capacity=1_windowsize=1)eq=branching-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP_Onebit_(datasize=2_capacity=1_windowsize=1)eq=branching-sim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP_Onebit_(datasize=2_capacity=1_windowsize=1)eq=weak-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP_Onebit_(datasize=3_capacity=1_windowsize=1)eq=branching-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP_Onebit_(datasize=3_capacity=1_windowsize=1)eq=branching-sim.gm</code>
+- equivchecking: <code>equivchecking/games/ABP_Onebit_(datasize=3_capacity=1_windowsize=1)eq=weak-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/CABP_Onebit_(datasize=2_capacity=1_windowsize=1)eq=strong-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/CABP_Onebit_(datasize=3_capacity=1_windowsize=1)eq=strong-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/Onebit_SWP_(datasize=3_capacity=1_windowsize=1)eq=strong-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/Par_Onebit_(datasize=2_capacity=1_windowsize=1)eq=branching-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/Par_Onebit_(datasize=2_capacity=1_windowsize=1)eq=branching-sim.gm</code>
+- equivchecking: <code>equivchecking/games/Par_Onebit_(datasize=2_capacity=1_windowsize=1)eq=weak-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/SWP_SWP_(datasize=2_capacity=1_windowsize=2)eq=branching-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/SWP_SWP_(datasize=2_capacity=1_windowsize=2)eq=branching-sim.gm</code>
+- equivchecking: <code>equivchecking/games/SWP_SWP_(datasize=2_capacity=1_windowsize=2)eq=weak-bisim.gm</code>
+- equivchecking: <code>equivchecking/games/SWP_SWP_(datasize=3_capacity=1_windowsize=2)eq=strong-bisim.gm</code>
+- equivchecking-hesselink: <code>equivchecking-hesselink/games/Hesselink_(Implementation)_Hesselink_(Specification)_(datasize=2)eq=branching-bisim.gm</code>
+- equivchecking-hesselink: <code>equivchecking-hesselink/games/Hesselink_(Implementation)_Hesselink_(Specification)_(datasize=2)eq=branching-sim.gm</code>
+- equivchecking-hesselink: <code>equivchecking-hesselink/games/Hesselink_(Implementation)_Hesselink_(Specification)_(datasize=2)eq=weak-bisim.gm</code>
+- equivchecking-hesselink: <code>equivchecking-hesselink/games/Hesselink_(Specification)_Hesselink_(Implementation)_(datasize=2)eq=branching-bisim.gm</code>
+- equivchecking-hesselink: <code>equivchecking-hesselink/games/Hesselink_(Specification)_Hesselink_(Implementation)_(datasize=2)eq=branching-sim.gm</code>
+- equivchecking-hesselink: <code>equivchecking-hesselink/games/Hesselink_(Specification)_Hesselink_(Implementation)_(datasize=2)eq=weak-bisim.gm</code>
+- modelchecking: <code>modelchecking/games/Hesselinkdatasize=3_nodeadlock.gm</code>
+- modelchecking: <code>modelchecking/games/Hesselinkdatasize=3_property2.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=2_windowsize=4_infinitely_often_enabled_then_infinitely_often_taken.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=2_windowsize=4_infinitely_often_lost.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=2_windowsize=4_infinitely_often_receive_for_all_d.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=2_windowsize=4_invariantly_infinitely_many_reachable_taus.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=2_windowsize=4_no_duplication_of_messages.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=2_windowsize=4_read_then_eventually_send.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=2_windowsize=4_read_then_eventually_send_if_fair.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=4_windowsize=3_infinitely_often_read_write.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=4_windowsize=3_infinitely_often_receive_d1.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=4_windowsize=3_invariantly_infinitely_many_reachable_taus.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=4_windowsize=3_no_generation_of_messages.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=4_windowsize=3_nodeadlock.gm</code>
+- modelchecking: <code>modelchecking/games/SWPdatasize=4_windowsize=3_read_then_eventually_send_if_fair.gm</code>
+- pgsolver: <code>pgsolver/games/cliquegame(10000).gm</code>
+
 6 games are invalid PGSolver input. Each ends with a stray `timeout: WARNING: Wait(N) failed: No child processes` line leaked from the generator:
 
 - `mlsolver/games/LTMucalcBinaryCountern=2.gm`
@@ -27,9 +81,7 @@ The default budget is 30 seconds per game and backend, including solver output p
 
 `FLCTLStarLimitClosure n=1` (plain and compact) has a likely error in the reference data. Every complete backend and upstream [Oink](https://github.com/trolando/oink) (`--zlk`) agree that Even wins start vertex 0, with identical Even / Odd winner counts: 8,276 / 1,309 for the compact game and 148,284 / 26,383 for the plain game. `data.yaml` records pbespgsolve's answer as false for all reductions.
 
-114 pgsolver games (cliquegame, modelcheckerladder, recursiveladder, steadygame) exceed the recursion depth limit of 1024 in `zielonka`, `zielonka-sym`, `lifting`, `lifting-sym` and `lifting-adaptive`, including `+iter`. They have between 1,502 and 150,002 distinct priorities. With `+pre`, compression gets 102 games past the guard. The remaining 5 modelcheckerladder and 7 recursiveladder games stay refused because alternating parities leave nothing to merge.
-
-16 of the largest games (384 backend runs) fail before parsing: the tools read the whole file into memory and report `failed to allocate the input buffer` (out of memory).
+115 pgsolver games (cliquegame, modelcheckerladder, recursiveladder, steadygame) exceed the recursion depth limit of 1024 in `zielonka`, `zielonka-sym`, `lifting`, `lifting-sym` and `lifting-adaptive`, including `+iter`. They have between 1,502 and 150,002 distinct priorities. With `+pre`, compression gets 103 games past the guard. The remaining 5 modelcheckerladder and 7 recursiveladder games stay refused because alternating parities leave nothing to merge.
 
 ## Columns and metrics
 
@@ -44,11 +96,12 @@ The default budget is 30 seconds per game and backend, including solver output p
 | parameters_even, parameters_odd | Final search bounds: lifting uses `H` (host height), `K` (Strahler bound), `t` (size allowance); `pm-strahler` uses `k` (Strahler bound), `t` (size allowance), `depth` (number of measure levels); `pm-succinct` uses `bits` (bit budget per measure) and `depth`. Zielonka methods have no search parameters. |
 | seconds | Wall seconds for a backend, including launch, solver execution and metric parsing. Downloading and shared game-metadata parsing are excluded. |
 | peak_rss_mib | Maximum individual child peak RSS, measured with os.wait4 for the solver and metric parser; MiB is 2^20 bytes. It is not a cumulative RUSAGE_CHILDREN reading. |
-| detail | Short error, signal or unavailable-metadata explanation. |
+| detail | Short error, signal or unavailable-metadata explanation. Older non-complete +pre rows with only preprocessing statistics show (error text not recorded); the CSV is unchanged. |
 | start_winner | even or odd for the declared start vertex (default 0), including shaved winners; unresolved if uncertified or the vertex is absent. Blank in older pilot rows. |
 | reference_solution, reference_agrees | Original reference Boolean and true/false agreement with a certified start winner; blank means unchecked. |
 | winner_disagrees | true marks complete rows when complete backends disagree on winning counts or known start winners; false means no disagreement found; blank means incomplete. |
 | timeout_seconds, memory_gib, jobs, max_host_leaves, machine | Recorded execution limits and machine for each row; memory_gib is in 2^30 bytes. |
+| solver_build | First line of pg2adot --version, with Meson build type and optimization when available. Empty for older rows until explicitly backfilled. |
 
 Paired values use Even / Odd (E / O); CSV columns use _even and _odd. A hyphen in the tables or an empty CSV field means unavailable. Tree metrics cover the residual decomposition or occupied progress-measure tree, including its extra root. Empty trees have zero metrics. Connector boxes, shaved regions and unresolved vertices do not count. Parameters and trees describe the final round; winning counts include all rounds.
 
@@ -115,18 +168,18 @@ Counts are backend runs. Archive-listing failures have no backend and do not cou
 | mlsolver | zielonka+pre | 192 | 189 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 0 |
 | mlsolver | zielonka-sym | 192 | 187 | 0 | 0 | 2 | 0 | 0 | 0 | 3 | 0 |
 | mlsolver | zielonka-sym+pre | 192 | 189 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 0 |
-| pgsolver | lifting | 316 | 13 | 0 | 0 | 38 | 148 | 0 | 114 | 3 | 0 |
-| pgsolver | lifting+pre | 316 | 273 | 0 | 0 | 6 | 22 | 0 | 12 | 3 | 0 |
-| pgsolver | lifting+iter | 316 | 13 | 0 | 0 | 38 | 148 | 0 | 114 | 3 | 0 |
-| pgsolver | lifting+pre+iter | 316 | 273 | 0 | 0 | 6 | 22 | 0 | 12 | 3 | 0 |
-| pgsolver | lifting-adaptive | 316 | 176 | 0 | 0 | 22 | 1 | 0 | 114 | 3 | 0 |
-| pgsolver | lifting-adaptive+pre | 316 | 281 | 0 | 0 | 19 | 1 | 0 | 12 | 3 | 0 |
-| pgsolver | lifting-adaptive+iter | 316 | 176 | 0 | 0 | 22 | 1 | 0 | 114 | 3 | 0 |
-| pgsolver | lifting-adaptive+pre+iter | 316 | 281 | 0 | 0 | 19 | 1 | 0 | 12 | 3 | 0 |
-| pgsolver | lifting-sym | 316 | 41 | 0 | 0 | 10 | 148 | 0 | 114 | 3 | 0 |
-| pgsolver | lifting-sym+pre | 316 | 274 | 0 | 0 | 5 | 22 | 0 | 12 | 3 | 0 |
-| pgsolver | lifting-sym+iter | 316 | 41 | 0 | 0 | 10 | 148 | 0 | 114 | 3 | 0 |
-| pgsolver | lifting-sym+pre+iter | 316 | 274 | 0 | 0 | 5 | 22 | 0 | 12 | 3 | 0 |
+| pgsolver | lifting | 316 | 13 | 0 | 0 | 38 | 147 | 0 | 115 | 3 | 0 |
+| pgsolver | lifting+pre | 316 | 274 | 0 | 0 | 6 | 21 | 0 | 12 | 3 | 0 |
+| pgsolver | lifting+iter | 316 | 13 | 0 | 0 | 38 | 147 | 0 | 115 | 3 | 0 |
+| pgsolver | lifting+pre+iter | 316 | 274 | 0 | 0 | 6 | 21 | 0 | 12 | 3 | 0 |
+| pgsolver | lifting-adaptive | 316 | 176 | 0 | 0 | 22 | 0 | 0 | 115 | 3 | 0 |
+| pgsolver | lifting-adaptive+pre | 316 | 282 | 0 | 0 | 19 | 0 | 0 | 12 | 3 | 0 |
+| pgsolver | lifting-adaptive+iter | 316 | 176 | 0 | 0 | 22 | 0 | 0 | 115 | 3 | 0 |
+| pgsolver | lifting-adaptive+pre+iter | 316 | 282 | 0 | 0 | 19 | 0 | 0 | 12 | 3 | 0 |
+| pgsolver | lifting-sym | 316 | 41 | 0 | 0 | 10 | 147 | 0 | 115 | 3 | 0 |
+| pgsolver | lifting-sym+pre | 316 | 275 | 0 | 0 | 5 | 21 | 0 | 12 | 3 | 0 |
+| pgsolver | lifting-sym+iter | 316 | 41 | 0 | 0 | 10 | 147 | 0 | 115 | 3 | 0 |
+| pgsolver | lifting-sym+pre+iter | 316 | 275 | 0 | 0 | 5 | 21 | 0 | 12 | 3 | 0 |
 | pgsolver | pm-strahler | 316 | 279 | 0 | 0 | 30 | 4 | 0 | 0 | 3 | 0 |
 | pgsolver | pm-strahler+pre | 316 | 283 | 0 | 0 | 26 | 4 | 0 | 0 | 3 | 0 |
 | pgsolver | pm-strahler+iter | 316 | 296 | 0 | 0 | 13 | 4 | 0 | 0 | 3 | 0 |
@@ -135,10 +188,10 @@ Counts are backend runs. Archive-listing failures have no backend and do not cou
 | pgsolver | pm-succinct+pre | 316 | 285 | 0 | 0 | 24 | 4 | 0 | 0 | 3 | 0 |
 | pgsolver | pm-succinct+iter | 316 | 298 | 0 | 0 | 11 | 4 | 0 | 0 | 3 | 0 |
 | pgsolver | pm-succinct+pre+iter | 316 | 300 | 0 | 0 | 10 | 3 | 0 | 0 | 3 | 0 |
-| pgsolver | zielonka | 316 | 183 | 0 | 0 | 15 | 1 | 0 | 114 | 3 | 0 |
-| pgsolver | zielonka+pre | 316 | 285 | 0 | 0 | 15 | 1 | 0 | 12 | 3 | 0 |
-| pgsolver | zielonka-sym | 316 | 181 | 0 | 0 | 17 | 1 | 0 | 114 | 3 | 0 |
-| pgsolver | zielonka-sym+pre | 316 | 283 | 0 | 0 | 17 | 1 | 0 | 12 | 3 | 0 |
+| pgsolver | zielonka | 316 | 183 | 0 | 0 | 15 | 0 | 0 | 115 | 3 | 0 |
+| pgsolver | zielonka+pre | 316 | 286 | 0 | 0 | 15 | 0 | 0 | 12 | 3 | 0 |
+| pgsolver | zielonka-sym | 316 | 181 | 0 | 0 | 17 | 0 | 0 | 115 | 3 | 0 |
+| pgsolver | zielonka-sym+pre | 316 | 284 | 0 | 0 | 17 | 0 | 0 | 12 | 3 | 0 |
 | equivchecking-hesselink | lifting | 10 | 4 | 0 | 0 | 0 | 6 | 0 | 0 | 0 | 0 |
 | equivchecking-hesselink | lifting+pre | 10 | 4 | 0 | 0 | 0 | 6 | 0 | 0 | 0 | 0 |
 | equivchecking-hesselink | lifting+iter | 10 | 4 | 0 | 0 | 0 | 6 | 0 | 0 | 0 | 0 |
@@ -163,54 +216,54 @@ Counts are backend runs. Archive-listing failures have no backend and do not cou
 | equivchecking-hesselink | zielonka+pre | 10 | 4 | 0 | 0 | 0 | 6 | 0 | 0 | 0 | 0 |
 | equivchecking-hesselink | zielonka-sym | 10 | 4 | 0 | 0 | 0 | 6 | 0 | 0 | 0 | 0 |
 | equivchecking-hesselink | zielonka-sym+pre | 10 | 4 | 0 | 0 | 0 | 6 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting | 313 | 197 | 0 | 0 | 95 | 21 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting+pre | 313 | 258 | 0 | 0 | 39 | 16 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting+iter | 313 | 197 | 0 | 0 | 95 | 21 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting+pre+iter | 313 | 258 | 0 | 0 | 43 | 12 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting-adaptive | 313 | 294 | 0 | 0 | 7 | 12 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting-adaptive+pre | 313 | 297 | 0 | 0 | 4 | 12 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting-adaptive+iter | 313 | 294 | 0 | 0 | 3 | 16 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting-adaptive+pre+iter | 313 | 297 | 0 | 0 | 0 | 16 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting-sym | 313 | 217 | 0 | 0 | 75 | 21 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting-sym+pre | 313 | 267 | 0 | 0 | 32 | 14 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting-sym+iter | 313 | 219 | 0 | 0 | 75 | 19 | 0 | 0 | 0 | 0 |
-| modelchecking | lifting-sym+pre+iter | 313 | 270 | 0 | 0 | 29 | 14 | 0 | 0 | 0 | 0 |
-| modelchecking | pm-strahler | 313 | 277 | 0 | 0 | 21 | 15 | 0 | 0 | 0 | 0 |
-| modelchecking | pm-strahler+pre | 313 | 293 | 0 | 0 | 5 | 15 | 0 | 0 | 0 | 0 |
-| modelchecking | pm-strahler+iter | 313 | 295 | 0 | 0 | 3 | 15 | 0 | 0 | 0 | 0 |
-| modelchecking | pm-strahler+pre+iter | 313 | 296 | 0 | 0 | 2 | 15 | 0 | 0 | 0 | 0 |
-| modelchecking | pm-succinct | 313 | 285 | 0 | 0 | 12 | 16 | 0 | 0 | 0 | 0 |
-| modelchecking | pm-succinct+pre | 313 | 296 | 0 | 0 | 1 | 16 | 0 | 0 | 0 | 0 |
-| modelchecking | pm-succinct+iter | 313 | 297 | 0 | 0 | 1 | 15 | 0 | 0 | 0 | 0 |
-| modelchecking | pm-succinct+pre+iter | 313 | 297 | 0 | 0 | 0 | 16 | 0 | 0 | 0 | 0 |
-| modelchecking | zielonka | 313 | 297 | 0 | 0 | 0 | 16 | 0 | 0 | 0 | 0 |
-| modelchecking | zielonka+pre | 313 | 297 | 0 | 0 | 1 | 15 | 0 | 0 | 0 | 0 |
-| modelchecking | zielonka-sym | 313 | 297 | 0 | 0 | 1 | 15 | 0 | 0 | 0 | 0 |
-| modelchecking | zielonka-sym+pre | 313 | 297 | 0 | 0 | 1 | 15 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting | 313 | 200 | 0 | 0 | 97 | 16 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting+pre | 313 | 264 | 0 | 0 | 40 | 9 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting+iter | 313 | 200 | 0 | 0 | 97 | 16 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting+pre+iter | 313 | 263 | 0 | 0 | 41 | 9 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting-adaptive | 313 | 299 | 0 | 0 | 7 | 7 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting-adaptive+pre | 313 | 302 | 0 | 0 | 3 | 8 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting-adaptive+iter | 313 | 299 | 0 | 0 | 7 | 7 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting-adaptive+pre+iter | 313 | 305 | 0 | 0 | 0 | 8 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting-sym | 313 | 220 | 0 | 0 | 77 | 16 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting-sym+pre | 313 | 273 | 0 | 0 | 31 | 9 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting-sym+iter | 313 | 221 | 0 | 0 | 76 | 16 | 0 | 0 | 0 | 0 |
+| modelchecking | lifting-sym+pre+iter | 313 | 276 | 0 | 0 | 28 | 9 | 0 | 0 | 0 | 0 |
+| modelchecking | pm-strahler | 313 | 279 | 0 | 0 | 23 | 11 | 0 | 0 | 0 | 0 |
+| modelchecking | pm-strahler+pre | 313 | 296 | 0 | 0 | 6 | 11 | 0 | 0 | 0 | 0 |
+| modelchecking | pm-strahler+iter | 313 | 299 | 0 | 0 | 3 | 11 | 0 | 0 | 0 | 0 |
+| modelchecking | pm-strahler+pre+iter | 313 | 300 | 0 | 0 | 2 | 11 | 0 | 0 | 0 | 0 |
+| modelchecking | pm-succinct | 313 | 287 | 0 | 0 | 15 | 11 | 0 | 0 | 0 | 0 |
+| modelchecking | pm-succinct+pre | 313 | 299 | 0 | 0 | 3 | 11 | 0 | 0 | 0 | 0 |
+| modelchecking | pm-succinct+iter | 313 | 301 | 0 | 0 | 1 | 11 | 0 | 0 | 0 | 0 |
+| modelchecking | pm-succinct+pre+iter | 313 | 301 | 0 | 0 | 1 | 11 | 0 | 0 | 0 | 0 |
+| modelchecking | zielonka | 313 | 305 | 0 | 0 | 1 | 7 | 0 | 0 | 0 | 0 |
+| modelchecking | zielonka+pre | 313 | 304 | 0 | 0 | 1 | 8 | 0 | 0 | 0 | 0 |
+| modelchecking | zielonka-sym | 313 | 305 | 0 | 0 | 1 | 7 | 0 | 0 | 0 | 0 |
+| modelchecking | zielonka-sym+pre | 313 | 305 | 0 | 0 | 0 | 8 | 0 | 0 | 0 | 0 |
 | equivchecking | lifting | 206 | 79 | 0 | 0 | 104 | 23 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting+pre | 206 | 93 | 0 | 0 | 90 | 23 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting+pre | 206 | 94 | 0 | 0 | 90 | 22 | 0 | 0 | 0 | 0 |
 | equivchecking | lifting+iter | 206 | 79 | 0 | 0 | 104 | 23 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting+pre+iter | 206 | 93 | 0 | 0 | 96 | 17 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting-adaptive | 206 | 177 | 0 | 0 | 12 | 17 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting-adaptive+pre | 206 | 180 | 0 | 0 | 8 | 18 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting-adaptive+iter | 206 | 183 | 0 | 0 | 3 | 20 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting-adaptive+pre+iter | 206 | 183 | 0 | 0 | 3 | 20 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting-sym | 206 | 120 | 0 | 0 | 66 | 20 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting-sym+pre | 206 | 133 | 0 | 0 | 55 | 18 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting-sym+iter | 206 | 121 | 0 | 0 | 66 | 19 | 0 | 0 | 0 | 0 |
-| equivchecking | lifting-sym+pre+iter | 206 | 139 | 0 | 0 | 48 | 19 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting+pre+iter | 206 | 94 | 0 | 0 | 90 | 22 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting-adaptive | 206 | 177 | 0 | 0 | 14 | 15 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting-adaptive+pre | 206 | 181 | 0 | 0 | 10 | 15 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting-adaptive+iter | 206 | 183 | 0 | 0 | 8 | 15 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting-adaptive+pre+iter | 206 | 184 | 0 | 0 | 7 | 15 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting-sym | 206 | 120 | 0 | 0 | 63 | 23 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting-sym+pre | 206 | 134 | 0 | 0 | 50 | 22 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting-sym+iter | 206 | 121 | 0 | 0 | 62 | 23 | 0 | 0 | 0 | 0 |
+| equivchecking | lifting-sym+pre+iter | 206 | 140 | 0 | 0 | 44 | 22 | 0 | 0 | 0 | 0 |
 | equivchecking | pm-strahler | 206 | 174 | 0 | 0 | 11 | 21 | 0 | 0 | 0 | 0 |
-| equivchecking | pm-strahler+pre | 206 | 176 | 0 | 0 | 9 | 21 | 0 | 0 | 0 | 0 |
-| equivchecking | pm-strahler+iter | 206 | 180 | 0 | 0 | 5 | 21 | 0 | 0 | 0 | 0 |
-| equivchecking | pm-strahler+pre+iter | 206 | 180 | 0 | 0 | 5 | 21 | 0 | 0 | 0 | 0 |
-| equivchecking | pm-succinct | 206 | 175 | 0 | 0 | 10 | 21 | 0 | 0 | 0 | 0 |
-| equivchecking | pm-succinct+pre | 206 | 179 | 0 | 0 | 5 | 22 | 0 | 0 | 0 | 0 |
-| equivchecking | pm-succinct+iter | 206 | 180 | 0 | 0 | 5 | 21 | 0 | 0 | 0 | 0 |
-| equivchecking | pm-succinct+pre+iter | 206 | 180 | 0 | 0 | 3 | 23 | 0 | 0 | 0 | 0 |
-| equivchecking | zielonka | 206 | 183 | 0 | 0 | 0 | 23 | 0 | 0 | 0 | 0 |
-| equivchecking | zielonka+pre | 206 | 183 | 0 | 0 | 4 | 19 | 0 | 0 | 0 | 0 |
-| equivchecking | zielonka-sym | 206 | 183 | 0 | 0 | 4 | 19 | 0 | 0 | 0 | 0 |
-| equivchecking | zielonka-sym+pre | 206 | 183 | 0 | 0 | 4 | 19 | 0 | 0 | 0 | 0 |
+| equivchecking | pm-strahler+pre | 206 | 177 | 0 | 0 | 8 | 21 | 0 | 0 | 0 | 0 |
+| equivchecking | pm-strahler+iter | 206 | 181 | 0 | 0 | 4 | 21 | 0 | 0 | 0 | 0 |
+| equivchecking | pm-strahler+pre+iter | 206 | 181 | 0 | 0 | 5 | 20 | 0 | 0 | 0 | 0 |
+| equivchecking | pm-succinct | 206 | 175 | 0 | 0 | 13 | 18 | 0 | 0 | 0 | 0 |
+| equivchecking | pm-succinct+pre | 206 | 180 | 0 | 0 | 8 | 18 | 0 | 0 | 0 | 0 |
+| equivchecking | pm-succinct+iter | 206 | 181 | 0 | 0 | 6 | 19 | 0 | 0 | 0 | 0 |
+| equivchecking | pm-succinct+pre+iter | 206 | 181 | 0 | 0 | 7 | 18 | 0 | 0 | 0 | 0 |
+| equivchecking | zielonka | 206 | 189 | 0 | 0 | 2 | 15 | 0 | 0 | 0 | 0 |
+| equivchecking | zielonka+pre | 206 | 190 | 0 | 0 | 1 | 15 | 0 | 0 | 0 | 0 |
+| equivchecking | zielonka-sym | 206 | 186 | 0 | 0 | 5 | 15 | 0 | 0 | 0 | 0 |
+| equivchecking | zielonka-sym+pre | 206 | 186 | 0 | 0 | 5 | 15 | 0 | 0 | 0 | 0 |
 
 Tree statistics use complete runs only, including zero-sized trees. Each cell is median / maximum; E and O are separate columns.
 
@@ -241,17 +294,17 @@ Tree statistics use complete runs only, including zero-sized trees. Each cell is
 | mlsolver | zielonka-sym | 187 | 3 / 113 | 0 / 10 | 1 / 47 | 0 / 1 | 2 / 14 | 0 / 10 | 1 / 28 | 0 / 1 | 1 / 4 | 0 / 1 |
 | mlsolver | zielonka-sym+pre | 189 | 2 / 244 | 0 / 6 | 1 / 105 | 0 / 1 | 2 / 9 | 0 / 6 | 1 / 57 | 0 / 1 | 1 / 4 | 0 / 1 |
 | pgsolver | lifting | 13 | 2 / 3 | 1 / 2 | 1 / 2 | 1 / 1 | 2 / 2 | 1 / 2 | 1 / 2 | 1 / 1 | 1 / 2 | 1 / 1 |
-| pgsolver | lifting+pre | 273 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
+| pgsolver | lifting+pre | 274 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
 | pgsolver | lifting+iter | 13 | 2 / 3 | 1 / 2 | 1 / 2 | 1 / 1 | 2 / 2 | 1 / 2 | 1 / 2 | 1 / 1 | 1 / 2 | 1 / 1 |
-| pgsolver | lifting+pre+iter | 273 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
+| pgsolver | lifting+pre+iter | 274 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
 | pgsolver | lifting-adaptive | 176 | 1 / 6 | 2 / 6 | 1 / 2 | 1 / 2 | 1 / 6 | 2 / 6 | 1 / 2 | 1 / 2 | 1 / 2 | 1 / 2 |
-| pgsolver | lifting-adaptive+pre | 281 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
+| pgsolver | lifting-adaptive+pre | 282 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
 | pgsolver | lifting-adaptive+iter | 176 | 1 / 6 | 2 / 6 | 1 / 1 | 1 / 1 | 1 / 6 | 2 / 6 | 1 / 1 | 1 / 1 | 1 / 1 | 1 / 1 |
-| pgsolver | lifting-adaptive+pre+iter | 281 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
+| pgsolver | lifting-adaptive+pre+iter | 282 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
 | pgsolver | lifting-sym | 41 | 1 / 4 | 2 / 6 | 1 / 2 | 1 / 1 | 1 / 4 | 2 / 6 | 1 / 2 | 1 / 1 | 1 / 2 | 1 / 1 |
-| pgsolver | lifting-sym+pre | 274 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
+| pgsolver | lifting-sym+pre | 275 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
 | pgsolver | lifting-sym+iter | 41 | 1 / 4 | 2 / 6 | 1 / 2 | 1 / 1 | 1 / 4 | 2 / 6 | 1 / 2 | 1 / 1 | 1 / 2 | 1 / 1 |
-| pgsolver | lifting-sym+pre+iter | 274 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
+| pgsolver | lifting-sym+pre+iter | 275 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | 0 / 1 |
 | pgsolver | pm-strahler | 279 | 39 / 876501 | 47 / 125000 | 4 / 1001 | 5 / 301 | 6 / 25001 | 7 / 25001 | 4 / 1001 | 5 / 301 | 2 / 2 | 2 / 3 |
 | pgsolver | pm-strahler+pre | 283 | 0 / 876501 | 0 / 26454 | 0 / 1001 | 0 / 301 | 0 / 1001 | 0 / 152 | 0 / 1001 | 0 / 301 | 0 / 2 | 0 / 3 |
 | pgsolver | pm-strahler+iter | 296 | 10.5 / 876501 | 7 / 25125 | 1 / 1001 | 1 / 289 | 6 / 25001 | 7 / 25001 | 1 / 1001 | 1 / 289 | 1 / 2 | 1 / 3 |
@@ -261,9 +314,9 @@ Tree statistics use complete runs only, including zero-sized trees. Each cell is
 | pgsolver | pm-succinct+iter | 298 | 32 / 751501 | 40 / 124995 | 5 / 1001 | 5 / 12 | 6 / 25001 | 7 / 25001 | 5 / 1001 | 5 / 12 | 2 / 2 | 2 / 3 |
 | pgsolver | pm-succinct+pre+iter | 300 | 0 / 751501 | 0 / 777 | 0 / 1001 | 0 / 12 | 0 / 1001 | 0 / 752 | 0 / 1001 | 0 / 12 | 0 / 2 | 0 / 3 |
 | pgsolver | zielonka | 183 | 1 / 5001 | 2 / 101 | 1 / 4951 | 1 / 2 | 1 / 101 | 2 / 101 | 1 / 100 | 1 / 2 | 1 / 2 | 1 / 2 |
-| pgsolver | zielonka+pre | 285 | 0 / 4951 | 0 / 101 | 0 / 4901 | 0 / 1 | 0 / 101 | 0 / 101 | 0 / 99 | 0 / 1 | 0 / 2 | 0 / 1 |
+| pgsolver | zielonka+pre | 286 | 0 / 4951 | 0 / 101 | 0 / 4901 | 0 / 1 | 0 / 101 | 0 / 101 | 0 / 99 | 0 / 1 | 0 / 2 | 0 / 1 |
 | pgsolver | zielonka-sym | 181 | 1 / 2501 | 2 / 51 | 1 / 2451 | 1 / 2 | 1 / 51 | 2 / 51 | 1 / 50 | 1 / 2 | 1 / 2 | 1 / 2 |
-| pgsolver | zielonka-sym+pre | 283 | 0 / 2451 | 0 / 51 | 0 / 2401 | 0 / 1 | 0 / 51 | 0 / 51 | 0 / 49 | 0 / 1 | 0 / 2 | 0 / 1 |
+| pgsolver | zielonka-sym+pre | 284 | 0 / 2451 | 0 / 51 | 0 / 2401 | 0 / 1 | 0 / 51 | 0 / 51 | 0 / 49 | 0 / 1 | 0 / 2 | 0 / 1 |
 | equivchecking-hesselink | lifting | 4 | 0 / 0 | 2 / 2 | 0 / 0 | 1 / 1 | 0 / 0 | 2 / 2 | 0 / 0 | 1 / 1 | 0 / 0 | 1 / 1 |
 | equivchecking-hesselink | lifting+pre | 4 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
 | equivchecking-hesselink | lifting+iter | 4 | 0 / 0 | 2 / 2 | 0 / 0 | 1 / 1 | 0 / 0 | 2 / 2 | 0 / 0 | 1 / 1 | 0 / 0 | 1 / 1 |
@@ -288,54 +341,54 @@ Tree statistics use complete runs only, including zero-sized trees. Each cell is
 | equivchecking-hesselink | zielonka+pre | 4 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
 | equivchecking-hesselink | zielonka-sym | 4 | 0 / 0 | 2 / 2 | 0 / 0 | 1 / 1 | 0 / 0 | 2 / 2 | 0 / 0 | 1 / 1 | 0 / 0 | 1 / 1 |
 | equivchecking-hesselink | zielonka-sym+pre | 4 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
-| modelchecking | lifting | 197 | 1 / 4 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 1 |
-| modelchecking | lifting+pre | 258 | 0 / 4 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 1 |
-| modelchecking | lifting+iter | 197 | 1 / 4 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 1 |
-| modelchecking | lifting+pre+iter | 258 | 0 / 4 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 1 |
-| modelchecking | lifting-adaptive | 294 | 1 / 8 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 1 |
-| modelchecking | lifting-adaptive+pre | 297 | 0 / 8 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 1 |
-| modelchecking | lifting-adaptive+iter | 294 | 1 / 8 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 1 |
-| modelchecking | lifting-adaptive+pre+iter | 297 | 0 / 8 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 1 |
-| modelchecking | lifting-sym | 217 | 1 / 4 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 1 |
-| modelchecking | lifting-sym+pre | 267 | 0 / 4 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 1 |
-| modelchecking | lifting-sym+iter | 219 | 1 / 4 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 1 |
-| modelchecking | lifting-sym+pre+iter | 270 | 0 / 4 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 1 |
-| modelchecking | pm-strahler | 277 | 1 / 515 | 0 / 190 | 1 / 514 | 0 / 68 | 1 / 3 | 0 / 4 | 1 / 514 | 0 / 68 | 1 / 2 | 0 / 2 |
-| modelchecking | pm-strahler+pre | 293 | 0 / 14 | 0 / 55 | 0 / 13 | 0 / 19 | 0 / 3 | 0 / 4 | 0 / 13 | 0 / 19 | 0 / 2 | 0 / 2 |
-| modelchecking | pm-strahler+iter | 295 | 2 / 33 | 0 / 25 | 1 / 19 | 0 / 19 | 2 / 3 | 0 / 4 | 1 / 19 | 0 / 19 | 1 / 2 | 0 / 2 |
-| modelchecking | pm-strahler+pre+iter | 296 | 0 / 14 | 0 / 25 | 0 / 13 | 0 / 19 | 0 / 3 | 0 / 4 | 0 / 13 | 0 / 19 | 0 / 2 | 0 / 2 |
-| modelchecking | pm-succinct | 285 | 1 / 515 | 0 / 190 | 1 / 514 | 0 / 68 | 1 / 3 | 0 / 4 | 1 / 514 | 0 / 68 | 1 / 2 | 0 / 3 |
-| modelchecking | pm-succinct+pre | 296 | 0 / 14 | 0 / 55 | 0 / 13 | 0 / 18 | 0 / 3 | 0 / 4 | 0 / 13 | 0 / 18 | 0 / 2 | 0 / 3 |
-| modelchecking | pm-succinct+iter | 297 | 2 / 15 | 0 / 23 | 1 / 13 | 0 / 17 | 2 / 3 | 0 / 4 | 1 / 13 | 0 / 17 | 1 / 2 | 0 / 2 |
-| modelchecking | pm-succinct+pre+iter | 297 | 0 / 14 | 0 / 23 | 0 / 13 | 0 / 17 | 0 / 3 | 0 / 4 | 0 / 13 | 0 / 17 | 0 / 2 | 0 / 2 |
-| modelchecking | zielonka | 297 | 1 / 8 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 1 |
-| modelchecking | zielonka+pre | 297 | 0 / 8 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 1 |
-| modelchecking | zielonka-sym | 297 | 1 / 8 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 1 |
-| modelchecking | zielonka-sym+pre | 297 | 0 / 8 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 1 |
+| modelchecking | lifting | 200 | 1 / 4 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 1 |
+| modelchecking | lifting+pre | 264 | 0 / 4 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 1 |
+| modelchecking | lifting+iter | 200 | 1 / 4 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 1 |
+| modelchecking | lifting+pre+iter | 263 | 0 / 4 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 1 |
+| modelchecking | lifting-adaptive | 299 | 1 / 8 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 1 |
+| modelchecking | lifting-adaptive+pre | 302 | 0 / 8 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 1 |
+| modelchecking | lifting-adaptive+iter | 299 | 1 / 8 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 1 |
+| modelchecking | lifting-adaptive+pre+iter | 305 | 0 / 8 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 1 |
+| modelchecking | lifting-sym | 220 | 1 / 4 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 1 |
+| modelchecking | lifting-sym+pre | 273 | 0 / 4 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 1 |
+| modelchecking | lifting-sym+iter | 221 | 1 / 4 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 3 | 0 / 1 | 1 / 2 | 0 / 1 |
+| modelchecking | lifting-sym+pre+iter | 276 | 0 / 4 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 3 | 0 / 1 | 0 / 2 | 0 / 1 |
+| modelchecking | pm-strahler | 279 | 1 / 515 | 0 / 190 | 1 / 514 | 0 / 68 | 1 / 3 | 0 / 4 | 1 / 514 | 0 / 68 | 1 / 2 | 0 / 2 |
+| modelchecking | pm-strahler+pre | 296 | 0 / 14 | 0 / 55 | 0 / 13 | 0 / 19 | 0 / 3 | 0 / 4 | 0 / 13 | 0 / 19 | 0 / 2 | 0 / 2 |
+| modelchecking | pm-strahler+iter | 299 | 2 / 33 | 0 / 25 | 1 / 19 | 0 / 19 | 2 / 3 | 0 / 4 | 1 / 19 | 0 / 19 | 1 / 2 | 0 / 2 |
+| modelchecking | pm-strahler+pre+iter | 300 | 0 / 14 | 0 / 25 | 0 / 13 | 0 / 19 | 0 / 3 | 0 / 4 | 0 / 13 | 0 / 19 | 0 / 2 | 0 / 2 |
+| modelchecking | pm-succinct | 287 | 1 / 515 | 0 / 190 | 1 / 514 | 0 / 68 | 1 / 3 | 0 / 4 | 1 / 514 | 0 / 68 | 1 / 2 | 0 / 3 |
+| modelchecking | pm-succinct+pre | 299 | 0 / 14 | 0 / 55 | 0 / 13 | 0 / 18 | 0 / 3 | 0 / 4 | 0 / 13 | 0 / 18 | 0 / 2 | 0 / 3 |
+| modelchecking | pm-succinct+iter | 301 | 2 / 15 | 0 / 23 | 1 / 13 | 0 / 17 | 2 / 3 | 0 / 4 | 1 / 13 | 0 / 17 | 1 / 2 | 0 / 2 |
+| modelchecking | pm-succinct+pre+iter | 301 | 0 / 14 | 0 / 23 | 0 / 13 | 0 / 17 | 0 / 3 | 0 / 4 | 0 / 13 | 0 / 17 | 0 / 2 | 0 / 2 |
+| modelchecking | zielonka | 305 | 1 / 8 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 1 |
+| modelchecking | zielonka+pre | 304 | 0 / 8 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 1 |
+| modelchecking | zielonka-sym | 305 | 1 / 8 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 3 | 1 / 7 | 0 / 1 | 1 / 2 | 0 / 1 |
+| modelchecking | zielonka-sym+pre | 305 | 0 / 8 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 2 | 0 / 7 | 0 / 1 | 0 / 2 | 0 / 1 |
 | equivchecking | lifting | 79 | 0 / 1 | 2 / 3 | 0 / 1 | 1 / 2 | 0 / 1 | 2 / 2 | 0 / 1 | 1 / 2 | 0 / 1 | 1 / 2 |
-| equivchecking | lifting+pre | 93 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 |
+| equivchecking | lifting+pre | 94 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 |
 | equivchecking | lifting+iter | 79 | 0 / 1 | 2 / 3 | 0 / 1 | 1 / 2 | 0 / 1 | 2 / 2 | 0 / 1 | 1 / 2 | 0 / 1 | 1 / 2 |
-| equivchecking | lifting+pre+iter | 93 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 |
+| equivchecking | lifting+pre+iter | 94 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 | 0 / 1 | 0 / 0 |
 | equivchecking | lifting-adaptive | 177 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
-| equivchecking | lifting-adaptive+pre | 180 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
+| equivchecking | lifting-adaptive+pre | 181 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
 | equivchecking | lifting-adaptive+iter | 183 | 1 / 1 | 0 / 7 | 1 / 1 | 0 / 6 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 6 | 1 / 1 | 0 / 2 |
-| equivchecking | lifting-adaptive+pre+iter | 183 | 1 / 1 | 0 / 8 | 1 / 1 | 0 / 7 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 7 | 1 / 1 | 0 / 2 |
+| equivchecking | lifting-adaptive+pre+iter | 184 | 1 / 1 | 0 / 8 | 1 / 1 | 0 / 7 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 7 | 1 / 1 | 0 / 2 |
 | equivchecking | lifting-sym | 120 | 1 / 1 | 0 / 13 | 1 / 1 | 0 / 12 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 12 | 1 / 1 | 0 / 2 |
-| equivchecking | lifting-sym+pre | 133 | 0 / 1 | 0 / 13 | 0 / 1 | 0 / 12 | 0 / 1 | 0 / 2 | 0 / 1 | 0 / 12 | 0 / 1 | 0 / 2 |
+| equivchecking | lifting-sym+pre | 134 | 0 / 1 | 0 / 13 | 0 / 1 | 0 / 12 | 0 / 1 | 0 / 2 | 0 / 1 | 0 / 12 | 0 / 1 | 0 / 2 |
 | equivchecking | lifting-sym+iter | 121 | 1 / 1 | 0 / 13 | 1 / 1 | 0 / 12 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 12 | 1 / 1 | 0 / 2 |
-| equivchecking | lifting-sym+pre+iter | 139 | 0 / 1 | 0 / 13 | 0 / 1 | 0 / 12 | 0 / 1 | 0 / 2 | 0 / 1 | 0 / 12 | 0 / 1 | 0 / 2 |
+| equivchecking | lifting-sym+pre+iter | 140 | 0 / 1 | 0 / 13 | 0 / 1 | 0 / 12 | 0 / 1 | 0 / 2 | 0 / 1 | 0 / 12 | 0 / 1 | 0 / 2 |
 | equivchecking | pm-strahler | 174 | 10 / 13 | 0 / 55 | 9 / 12 | 0 / 27 | 2 / 2 | 0 / 3 | 9 / 12 | 0 / 27 | 2 / 2 | 0 / 2 |
-| equivchecking | pm-strahler+pre | 176 | 9.5 / 13 | 0 / 53 | 8.5 / 12 | 0 / 26 | 2 / 2 | 0 / 3 | 8.5 / 12 | 0 / 26 | 2 / 2 | 0 / 2 |
-| equivchecking | pm-strahler+iter | 180 | 3 / 13 | 0 / 29 | 2 / 12 | 0 / 14 | 2 / 2 | 0 / 3 | 2 / 12 | 0 / 14 | 2 / 2 | 0 / 2 |
-| equivchecking | pm-strahler+pre+iter | 180 | 3 / 13 | 0 / 29 | 2 / 12 | 0 / 14 | 2 / 2 | 0 / 3 | 2 / 12 | 0 / 14 | 2 / 2 | 0 / 2 |
+| equivchecking | pm-strahler+pre | 177 | 9 / 13 | 0 / 53 | 8 / 12 | 0 / 26 | 2 / 2 | 0 / 3 | 8 / 12 | 0 / 26 | 2 / 2 | 0 / 2 |
+| equivchecking | pm-strahler+iter | 181 | 3 / 13 | 0 / 29 | 2 / 12 | 0 / 14 | 2 / 2 | 0 / 3 | 2 / 12 | 0 / 14 | 2 / 2 | 0 / 2 |
+| equivchecking | pm-strahler+pre+iter | 181 | 3 / 13 | 0 / 29 | 2 / 12 | 0 / 14 | 2 / 2 | 0 / 3 | 2 / 12 | 0 / 14 | 2 / 2 | 0 / 2 |
 | equivchecking | pm-succinct | 175 | 10 / 13 | 0 / 55 | 9 / 12 | 0 / 27 | 2 / 2 | 0 / 3 | 9 / 12 | 0 / 27 | 2 / 2 | 0 / 2 |
-| equivchecking | pm-succinct+pre | 179 | 10 / 13 | 0 / 53 | 9 / 12 | 0 / 26 | 2 / 2 | 0 / 3 | 9 / 12 | 0 / 26 | 2 / 2 | 0 / 2 |
-| equivchecking | pm-succinct+iter | 180 | 3 / 13 | 0 / 7 | 2 / 12 | 0 / 3 | 2 / 2 | 0 / 3 | 2 / 12 | 0 / 3 | 2 / 2 | 0 / 2 |
-| equivchecking | pm-succinct+pre+iter | 180 | 3 / 13 | 0 / 7 | 2 / 12 | 0 / 3 | 2 / 2 | 0 / 3 | 2 / 12 | 0 / 3 | 2 / 2 | 0 / 2 |
-| equivchecking | zielonka | 183 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
-| equivchecking | zielonka+pre | 183 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
-| equivchecking | zielonka-sym | 183 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
-| equivchecking | zielonka-sym+pre | 183 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
+| equivchecking | pm-succinct+pre | 180 | 10 / 13 | 0 / 53 | 9 / 12 | 0 / 26 | 2 / 2 | 0 / 3 | 9 / 12 | 0 / 26 | 2 / 2 | 0 / 2 |
+| equivchecking | pm-succinct+iter | 181 | 3 / 13 | 0 / 7 | 2 / 12 | 0 / 3 | 2 / 2 | 0 / 3 | 2 / 12 | 0 / 3 | 2 / 2 | 0 / 2 |
+| equivchecking | pm-succinct+pre+iter | 181 | 3 / 13 | 0 / 7 | 2 / 12 | 0 / 3 | 2 / 2 | 0 / 3 | 2 / 12 | 0 / 3 | 2 / 2 | 0 / 2 |
+| equivchecking | zielonka | 189 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
+| equivchecking | zielonka+pre | 190 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
+| equivchecking | zielonka-sym | 186 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
+| equivchecking | zielonka-sym+pre | 186 | 1 / 1 | 0 / 15 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 | 1 / 1 | 0 / 14 | 1 / 1 | 0 / 2 |
 
 ## Inventory
 

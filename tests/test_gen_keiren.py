@@ -6,6 +6,7 @@ import bz2
 from contextlib import contextmanager, redirect_stderr
 import csv
 import io
+import json
 import os
 from pathlib import Path
 import re
@@ -27,6 +28,26 @@ BUILD_DIR = (Path(sys.argv.pop(1)).resolve()
              if len(sys.argv) > 1 and not sys.argv[1].startswith("-")
              else ROOT / "build")
 GAME = b"parity 1;\n0 0 0 0;\n1 1 1 1;\n"
+
+
+def build_uses_sanitizer(build_dir):
+    try:
+        result = subprocess.run(["meson", "introspect", "--buildoptions", build_dir],
+                                check=True, capture_output=True, text=True, timeout=10)
+        value = next(option["value"] for option in json.loads(result.stdout)
+                     if option["name"] == "b_sanitize")
+        return bool(value) and value != "none"
+    except (OSError, subprocess.SubprocessError, ValueError, StopIteration):
+        for name in ("pg2adot", "pg2pmdot"):
+            try:
+                if b"__asan_" in (build_dir / name).read_bytes():
+                    return True
+            except OSError:
+                pass
+        return False
+
+
+SANITIZED_BUILD = build_uses_sanitizer(BUILD_DIR)
 
 
 class LocalResponse(io.BytesIO):
@@ -208,7 +229,11 @@ class KeirenTests(unittest.TestCase):
                 self.assertEqual(outcome, expected)
                 self.assertIn(detail, message)
                 self.assertGreater(result.peak_rss_mib, 0)
-        big, _ = self.process("x=bytearray(80*1024*1024)")
+        # A forked child can inherit the test process's RSS peak before exec.
+        baseline, _ = self.process("pass")
+        allocation = int(baseline.peak_rss_mib) + 80
+        big, _ = self.process(f"x=bytearray({allocation}*1024*1024)",
+                              memory=(allocation + 128) * 1024 ** 2)
         small, _ = self.process("pass")
         self.assertGreater(big.peak_rss_mib, small.peak_rss_mib + 40)
         memory = 256 * 1024 ** 2
@@ -253,10 +278,29 @@ class KeirenTests(unittest.TestCase):
                 self.assertIn(diagnostic.splitlines()[0], detail)
                 self.assertNotIn("preprocess", detail)
 
-    @unittest.skipIf(sys.platform == "darwin" or os.environ.get("ASAN_OPTIONS"),
-                     "requires a small enforced address-space cap without ASan")
+    def test_sanitizer_detection_uses_build_options_then_binary_symbols(self):
+        for value in ("none", [], "address,undefined", ["address", "undefined"], "undefined"):
+            result = subprocess.CompletedProcess([], 0, json.dumps([
+                dict(name="b_sanitize", value=value)]))
+            with (self.subTest(value=value), patch.dict(os.environ, ASAN_OPTIONS="halt_on_error=1"),
+                  patch.object(subprocess, "run", return_value=result)):
+                self.assertEqual(build_uses_sanitizer(self.work), bool(value) and value != "none")
+        for error in (FileNotFoundError(), subprocess.CalledProcessError(1, "meson"),
+                      ValueError("invalid JSON")):
+            with patch.object(subprocess, "run", side_effect=error):
+                for binary in ("pg2adot", "pg2pmdot"):
+                    path = self.work / binary
+                    path.write_bytes(b"plain binary")
+                    self.assertFalse(build_uses_sanitizer(self.work))
+                    path.write_bytes(b"binary __asan_init symbol")
+                    self.assertTrue(build_uses_sanitizer(self.work))
+                    path.unlink()
+                self.assertFalse(build_uses_sanitizer(self.work))
+
+    @unittest.skipIf(sys.platform == "darwin" or SANITIZED_BUILD,
+                     "requires a small enforced address-space cap without sanitizers")
     @unittest.skipUnless(all((BUILD_DIR / name).is_file() for name in ("pg2adot", "pg2pmdot")), "build the solvers")
-    def test_input_buffer_memory_failure(self):
+    def test_padded_input_under_memory_cap(self):
         game = b"parity 0;\n0 0 0 0;\n"
         self.game.write_bytes(game + b" " * (8_388_606 - len(game)))
         memory = 12 * 1024 ** 2
@@ -265,9 +309,28 @@ class KeirenTests(unittest.TestCase):
                 result = keiren.execute([BUILD_DIR / binary, "--stats"], self.game,
                     self.work / "out", self.work / "err", time.monotonic() + 5, memory)
                 diagnostic = (self.work / "err").read_text()
+                self.assertEqual(result.code, 0, diagnostic)
+                self.assertIn("result=complete", diagnostic)
+                self.assertIn("start: vertex=0 winner=even", diagnostic)
+                self.assertEqual(keiren.classify(result, diagnostic, memory)[0], "complete")
+
+    @unittest.skipIf(sys.platform == "darwin" or SANITIZED_BUILD,
+                     "requires a small enforced address-space cap without sanitizers")
+    @unittest.skipUnless(all((BUILD_DIR / name).is_file() for name in ("pg2adot", "pg2pmdot")), "build the solvers")
+    def test_graph_allocation_memory_failure(self):
+        with self.game.open("w") as stream:
+            stream.write("parity 99999;\n")
+            stream.writelines(f"{vertex} 0 0 {vertex};\n" for vertex in range(100_000))
+        memory = 12 * 1024 ** 2
+        for binary in ("pg2adot", "pg2pmdot"):
+            with self.subTest(binary=binary):
+                result = keiren.execute([BUILD_DIR / binary, "--stats"], self.game,
+                    self.work / "out", self.work / "err", time.monotonic() + 5, memory)
+                diagnostic = (self.work / "err").read_text()
                 self.assertGreater(result.code, 0, diagnostic)
-                self.assertIn("failed to allocate the input buffer", diagnostic)
                 self.assertEqual(keiren.classify(result, diagnostic, memory)[0], "out of memory")
+                self.assertNotIn("result=complete", diagnostic)
+                self.assertNotRegex(diagnostic, r"winner=(even|odd)")
 
     @unittest.skipUnless((BUILD_DIR / "pg2adot").is_file(), "build the solver")
     def test_default_host_limit(self):
@@ -282,8 +345,8 @@ class KeirenTests(unittest.TestCase):
                 f"--max-host-leaves={value}"], input=GAME, capture_output=True)
             self.assertEqual(result.returncode, status, result.stderr)
 
-    @unittest.skipIf(sys.platform == "darwin" or os.environ.get("ASAN_OPTIONS"),
-                     "requires a small enforced address-space cap without ASan")
+    @unittest.skipIf(sys.platform == "darwin" or SANITIZED_BUILD,
+                     "requires a small enforced address-space cap without sanitizers")
     @unittest.skipUnless((BUILD_DIR / "pg2adot").is_file(), "build the solver")
     def test_saturated_host_uses_memory_budget(self):
         self.game.write_text("parity 1024;\n" + "".join(
@@ -359,11 +422,80 @@ class KeirenTests(unittest.TestCase):
 
     def args(self, path):
         # ASan reserves terabytes of virtual address space before a solver starts.
-        memory = 256 * 1024 if os.environ.get("ASAN_OPTIONS") else 2
+        memory = 256 * 1024 if SANITIZED_BUILD else 2
         return argparse.Namespace(results=path, work_dir=self.work / "scratch", archives=["mlsolver"],
             backends=[keiren.decomp.BACKENDS[-2]], build_dir=BUILD_DIR, timeout=30, metadata_timeout=600,
             memory=memory, jobs=3, max_host_leaves=keiren.MAX_HOST_LEAVES, max_games=1,
-            retry=[], refresh_metadata=False)
+            games=re.compile(""), retry=[], refresh_metadata=False, backfill_build=None)
+
+    def test_games_filter_uses_search_on_saved_member_path(self):
+        archive_path = self.local_zip()
+        @contextmanager
+        def archive(_):
+            with zipfile.ZipFile(archive_path) as stream:
+                yield stream
+        args = self.args(self.work / "results.csv")
+        for pattern, expected in ((r"games/b\.gm$", ["mlsolver/games/b.gm"]),
+                                  (r"^mlsolver/games/b\.gm$", ["mlsolver/games/b.gm"]),
+                                  (r"^b\.gm$", []), (r"\.bz2$", [])):
+            args.games = re.compile(pattern)
+            keiren.save_results(args.results, [])
+            with (self.subTest(pattern=pattern), patch.object(keiren, "remote_zip", archive),
+                  patch.object(keiren, "download_metadata", side_effect=OSError("offline")),
+                  patch.object(keiren, "measure_game", return_value=[
+                      dict(backend=args.backends[0].name, outcome="complete")]) as measure,
+                  redirect_stderr(io.StringIO())):
+                self.assertEqual(keiren.run(args), 0)
+                self.assertEqual([call.args[1].filename.removesuffix(".bz2")
+                                  for call in measure.call_args_list], expected)
+                self.assertEqual([row["game"] for row in keiren.load_results(args.results)], expected)
+
+    def test_games_filter_intersects_retry_outcomes(self):
+        archive_path = self.local_zip()
+        @contextmanager
+        def archive(_):
+            with zipfile.ZipFile(archive_path) as stream:
+                yield stream
+        args = self.args(self.work / "results.csv")
+        args.retry = ["error"]
+        args.max_games = None
+        original = [dict(archive="mlsolver", game=f"mlsolver/games/{game}.gm",
+                         backend=args.backends[0].name, outcome=outcome, detail="old")
+                    for game, outcome in (("a", "error"), ("b", "complete"))]
+        for pattern, expected in ((r"games/b\.gm$", []), (r"games/[ab]\.gm$", ["mlsolver/games/a.gm"])):
+            args.games = re.compile(pattern)
+            keiren.save_results(args.results, original)
+            old = keiren.load_results(args.results)
+            with (self.subTest(pattern=pattern), patch.object(keiren, "remote_zip", archive),
+                  patch.object(keiren, "download_metadata", side_effect=OSError("offline")),
+                  patch.object(keiren, "measure_game", return_value=[
+                      dict(backend=args.backends[0].name, outcome="complete", detail="new")]) as measure,
+                  redirect_stderr(io.StringIO())):
+                self.assertEqual(keiren.run(args), 0)
+            self.assertEqual([call.args[1].filename.removesuffix(".bz2")
+                              for call in measure.call_args_list], expected)
+            saved = keiren.load_results(args.results)
+            self.assertEqual([row for row in saved if row["game"] not in expected],
+                             [row for row in old if row["game"] not in expected])
+            self.assertEqual([row["detail"] for row in saved if row["game"] in expected], ["new"] * len(expected))
+
+    def test_games_filter_argument_validation(self):
+        for value in ("", r"games/a\.gm$", "["):
+            with (self.subTest(value=value), patch.object(sys, "argv", [keiren.SCRIPT, "run",
+                      "--games=" + value, "--results", str(self.work / "results.csv"),
+                      "--work-dir", str(self.work / "scratch")]),
+                  patch.object(keiren.decomp, "validate_run_arguments", return_value=BUILD_DIR),
+                  patch.object(keiren, "run", return_value=0) as run,
+                  redirect_stderr(io.StringIO()) as stderr):
+                if value == "[":
+                    with self.assertRaises(SystemExit) as error:
+                        keiren.main()
+                    self.assertEqual(error.exception.code, 2)
+                    self.assertIn("invalid --games regex: unterminated character set", stderr.getvalue())
+                    run.assert_not_called()
+                else:
+                    self.assertEqual(keiren.main(), 0)
+                    self.assertEqual(run.call_args.args[0].games.pattern, value)
 
     @unittest.skipUnless((BUILD_DIR / "pg2adot").is_file(), "build the solver")
     def test_real_run_resume_and_deleted_games(self):
@@ -375,10 +507,15 @@ class KeirenTests(unittest.TestCase):
         metadata = self.work / "metadata.yaml"
         metadata.write_text("- case: fixture\n  instances:\n  - compact: 'False'\n    files:\n      orig: cases/mlsolver/data/a.yaml\n    solutions:\n      orig:\n        pbespgsolve: 'true'\n")
         args = self.args(self.work / "results.csv")
-        with patch.object(keiren, "remote_zip", archive), patch.object(keiren, "download_metadata", return_value=metadata), redirect_stderr(io.StringIO()):
+        with (patch.object(keiren, "remote_zip", archive),
+              patch.object(keiren, "download_metadata", return_value=metadata),
+              patch.object(keiren, "solver_build", wraps=keiren.solver_build) as build,
+              redirect_stderr(io.StringIO())):
             self.assertEqual(keiren.run(args), 0)
+            build.assert_called_once_with(BUILD_DIR)
             rows = keiren.load_results(args.results)
             self.assertEqual(len(rows), 1)
+            self.assertRegex(rows[0]["solver_build"], r"^pg2adot 0\.2.*?, \w+ -O\w+$")
             self.assertEqual(rows[0]["outcome"], "complete")
             self.assertEqual((rows[0]["won_even"], rows[0]["won_odd"]), ("1", "1"))
             self.assertEqual(rows[0]["reference_solution"], "true")
@@ -534,6 +671,35 @@ class KeirenTests(unittest.TestCase):
                 self.assertEqual(keiren.run(args), 0)
                 remote.assert_not_called()
         self.assertFalse(list(args.work_dir.rglob("input.gm")))
+
+    def test_games_filter_restricts_metadata_refresh(self):
+        archive_path = self.local_zip()
+        @contextmanager
+        def archive(_):
+            with zipfile.ZipFile(archive_path) as stream:
+                yield stream
+        args = self.args(self.work / "results.csv")
+        args.refresh_metadata = True
+        args.games = re.compile(r"games/b\.gm$")
+        keiren.save_results(args.results, [dict(archive="mlsolver", game=f"mlsolver/games/{game}.gm",
+            backend=args.backends[0].name, outcome="error", detail="solver failed") for game in ("a", "b")])
+        expected = keiren.load_results(args.results)
+        expected[1].update(zip(keiren.GAME_FIELDS, ("2", "2", "2", "1")))
+        with (patch.object(keiren, "remote_zip", archive),
+              patch.object(keiren, "download_metadata") as references,
+              patch.object(keiren, "extract_game", wraps=keiren.extract_game) as extract,
+              patch.object(keiren, "capped_json", return_value=([2, 2, 2, 1], "complete", "", 1)),
+              patch.object(keiren, "run_one") as backend,
+              redirect_stderr(io.StringIO())):
+            self.assertEqual(keiren.run(args), 0)
+            self.assertEqual(keiren.load_results(args.results), expected)
+            extract.assert_called_once()
+            self.assertEqual(extract.call_args.args[1].filename, "mlsolver/games/b.gm.bz2")
+            references.assert_not_called()
+            backend.assert_not_called()
+            with patch.object(keiren, "remote_zip") as remote:
+                self.assertEqual(keiren.run(args), 0)
+                remote.assert_not_called()
 
     def test_refresh_metadata_publishes_one_game_before_interruption(self):
         archive_path = self.local_zip()
@@ -723,6 +889,59 @@ class KeirenTests(unittest.TestCase):
             "modelchecking/games/deadlock.gm": "true",
             "modelchecking/games/liveness.gm": "false"})
 
+    def test_solver_build_records_first_version_line_and_optional_meson_options(self):
+        version = subprocess.CompletedProcess([], 0, "pg2adot 0.2 (git example)\nignored\n")
+        options = subprocess.CompletedProcess([], 0, json.dumps([
+            dict(name="buildtype", value="release"), dict(name="optimization", value="3")]))
+        with patch.object(keiren.subprocess, "run", side_effect=[version, options]) as run:
+            self.assertEqual(keiren.solver_build(BUILD_DIR), "pg2adot 0.2 (git example), release -O3")
+            self.assertEqual([call.args[0] for call in run.call_args_list], [
+                [BUILD_DIR / "pg2adot", "--version"],
+                ["meson", "introspect", "--buildoptions", BUILD_DIR]])
+        for unavailable in (FileNotFoundError(), subprocess.CalledProcessError(1, "meson"),
+                            subprocess.CompletedProcess([], 0, "not JSON"),
+                            subprocess.CompletedProcess([], 0, "[]")):
+            with (self.subTest(unavailable=unavailable),
+                  patch.object(keiren.subprocess, "run", side_effect=[version, unavailable])):
+                self.assertEqual(keiren.solver_build(BUILD_DIR), "pg2adot 0.2 (git example)")
+
+    def test_backfill_build_loads_old_csv_and_only_fills_empty_cells_atomically(self):
+        results = self.work / "results.csv"
+        for has_build in (False, True):
+            fields = keiren.FIELDS if has_build else keiren.FIELDS[:-1]
+            with results.open("w", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=fields)
+                writer.writeheader()
+                for game in ("a", "b"):
+                    row = dict(archive="mlsolver", game=f"games/{game}.gm", backend="zielonka",
+                               outcome="complete", detail="preserved")
+                    if has_build:
+                        row["solver_build"] = "recorded build" if game == "a" else ""
+                    writer.writerow(row)
+            expected = keiren.load_results(results)
+            if not has_build:
+                self.assertEqual([row["solver_build"] for row in expected], ["", ""])
+            original = results.read_bytes()
+            for row in expected:
+                if not row["solver_build"]:
+                    row["solver_build"] = "earlier build"
+            with (self.subTest(has_build=has_build),
+                  patch.object(sys, "argv", [keiren.SCRIPT, "run", "--backfill-build=earlier build",
+                      "--results", str(results), "--build-dir", str(self.work / "missing")]),
+                  patch.object(keiren.subprocess, "run", side_effect=AssertionError("process")),
+                  patch.object(keiren, "remote_zip", side_effect=AssertionError("download")),
+                  patch.object(keiren, "download_metadata", side_effect=AssertionError("metadata")),
+                  patch.object(keiren.time, "sleep")):
+                with patch.object(keiren.os, "fsync", side_effect=OSError("disk full")):
+                    with self.assertRaisesRegex(RuntimeError, "previous results preserved"):
+                        keiren.main()
+                self.assertEqual(results.read_bytes(), original)
+                self.assertEqual(keiren.main(), 0)
+                self.assertEqual(keiren.load_results(results), expected)
+                self.assertEqual(keiren.main(), 0)
+                self.assertEqual(keiren.load_results(results), expected)
+                self.assertFalse(list(self.work.glob(".results-*")))
+
     def test_reference_agreement_and_start_cross_check(self):
         for reference in ("true", "false", ""):
             for winner in ("even", "odd", "unresolved", ""):
@@ -758,6 +977,32 @@ class KeirenTests(unittest.TestCase):
         self.assertNotIn("REFERENCE MISMATCH", output.read_text())
         self.assertEqual(results.read_bytes(), original)
 
+    def test_render_marks_stale_preprocessing_details_without_editing_csv(self):
+        stale = "preprocess: residual=3001 shaved_even=0"
+        diagnostic = "exit 4: Solver failed: priority depth exceeds the safe recursion depth"
+        rows = [dict(archive="mlsolver", game="mlsolver/games/a.gm",
+                     backend=backend, outcome=outcome, detail=detail)
+                for backend, outcome, detail in (
+                    ("zielonka+pre", "error", stale),
+                    ("lifting+pre+iter", "out of memory", stale),
+                    ("zielonka-sym+pre", "error", "exit 4: " + stale),
+                    ("pm-strahler+pre", "complete", stale),
+                    ("zielonka", "error", stale),
+                    ("lifting+pre", "error", diagnostic),
+                    ("lifting-sym+pre", "partial", ""))]
+        results = self.work / "results.csv"
+        keiren.save_results(results, rows)
+        original = results.read_bytes()
+        output = self.work / "KEIREN.md"
+        keiren.render(results, output)
+        report = output.read_text()
+        inventory = report.split("## Inventory\n\n", 1)[1]
+        self.assertEqual(inventory.count("| (error text not recorded) |"), 3)
+        self.assertEqual(inventory.count(stale), 2)
+        self.assertIn(diagnostic, inventory)
+        self.assertEqual(report.count("Older non-complete +pre rows with only preprocessing statistics"), 1)
+        self.assertEqual(results.read_bytes(), original)
+
     def test_dataset_notes_count_games_and_preprocessing_from_rows(self):
         rows = []
         for n, priorities in ((1, "1502"), (2, "3002"), (3, "5000")):
@@ -787,6 +1032,23 @@ class KeirenTests(unittest.TestCase):
             self.assertIn(expected, notes)
         self.assertEqual(keiren.dataset_notes([]), "")
         self.assertEqual(rows[1]["detail"], "exit 4: preprocess: residual=3001")
+
+    def test_build_notes_count_rows_games_and_name_minority_build_games(self):
+        rows = [dict(archive="pgsolver", game=f"games/{game}.gm", backend=backend,
+                     outcome="complete", solver_build=build)
+                for build, games in (("old release -O3", "abc"), ("stream release -O3", "cd"))
+                for game in games for backend in ("zielonka", "lifting")]
+        rows.append(dict(archive="mlsolver", game="(archive listing)", backend="",
+                         outcome="download failed", solver_build=""))
+        notes = keiren.dataset_notes(rows)
+        for expected in ("| old release -O3 | 6 | 3 |", "| stream release -O3 | 4 | 2 |",
+                         "| (unrecorded) | 1 | 0 |", "non-majority build", "parser allocation failure",
+                         "- pgsolver: <code>games/c.gm</code>", "- pgsolver: <code>games/d.gm</code>"):
+            self.assertIn(expected, notes)
+        self.assertNotIn("<code>games/a.gm</code>", notes)
+        self.assertNotIn("<code>games/b.gm</code>", notes)
+        self.assertNotIn("non-majority build", keiren.dataset_notes(rows[:6]))
+        self.assertNotIn("non-majority build", keiren.dataset_notes(rows[:4] + rows[6:10]))
 
     def test_render_all_metrics_checks_and_pagination(self):
         rows = []

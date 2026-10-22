@@ -9,42 +9,6 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 ## Inventory
 
 <details>
-<summary>mlsolver/games/Petrin=4.gm · - vertices / - edges · 24 invalid input</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| - | - | - | - |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting+pre | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting+pre+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting-adaptive | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting-adaptive+pre | invalid input | - / - | - / - | - / - | - / - | - / - | 0.127 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting-adaptive+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting-adaptive+pre+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting-sym | invalid input | - / - | - / - | - / - | - / - | - / - | 0.124 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting-sym+pre | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting-sym+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| lifting-sym+pre+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| pm-strahler | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| pm-strahler+pre | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| pm-strahler+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| pm-strahler+pre+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| pm-succinct | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| pm-succinct+pre | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| pm-succinct+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| pm-succinct+pre+iter | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| zielonka | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| zielonka+pre | invalid input | - / - | - / - | - / - | - / - | - / - | 0.126 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| zielonka-sym | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-| zielonka-sym+pre | invalid input | - / - | - / - | - / - | - / - | - / - | 0.125 | 58.574 | - | true | - | - | exit 3: 497:1: unexpected keyword |
-
-</details>
-
-<details>
 <summary>mlsolver/games/Petrin=4_compact.gm · 71 vertices / 95 edges · 24 complete</summary>
 
 | Vertices | Edges | Distinct priorities | Maximum priority |
@@ -2809,6 +2773,69 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | pm-succinct+pre | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
 | pm-succinct+iter | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
 | pm-succinct+pre+iter | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
+| zielonka | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| zielonka+pre | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| zielonka-sym | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| zielonka-sym+pre | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+
+</details>
+
+<details>
+<summary>mlsolver/games/StarNesterk=3_n=2_compact.gm · 15 vertices / 35 edges · 24 complete</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 15 | 35 | 2 | 1 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=2, t=3 / H=1, K=1, t=3 | 0.407 | 58.574 | even | true | true | false | - |
+| lifting+pre | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=2, t=3 / H=1, K=1, t=3 | 0.407 | 58.574 | even | true | true | false | - |
+| lifting+iter | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=2, t=3 / H=1, K=1, t=3 | 0.407 | 58.574 | even | true | true | false | - |
+| lifting+pre+iter | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=2, t=3 / H=1, K=1, t=3 | 0.406 | 58.574 | even | true | true | false | - |
+| lifting-adaptive | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=1, t=0 / H=1, K=1, t=0 | 0.407 | 58.574 | even | true | true | false | - |
+| lifting-adaptive+pre | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=1, t=0 / H=1, K=1, t=0 | 0.406 | 58.574 | even | true | true | false | - |
+| lifting-adaptive+iter | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=1, t=0 / H=1, K=1, t=0 | 0.406 | 58.574 | even | true | true | false | - |
+| lifting-adaptive+pre+iter | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=1, t=0 / H=1, K=1, t=0 | 0.406 | 58.574 | even | true | true | false | - |
+| lifting-sym | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=2, t=3 / H=1, K=1, t=3 | 0.405 | 58.574 | even | true | true | false | - |
+| lifting-sym+pre | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=2, t=3 / H=1, K=1, t=3 | 0.407 | 58.574 | even | true | true | false | - |
+| lifting-sym+iter | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=2, t=3 / H=1, K=1, t=3 | 0.406 | 58.574 | even | true | true | false | - |
+| lifting-sym+pre+iter | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=2, t=3 / H=1, K=1, t=3 | 0.406 | 58.574 | even | true | true | false | - |
+| pm-strahler | complete | 15 / 0 | 3 / 0 | 2 / 0 | 2 / 0 | k=2, t=1, depth=1 / k=2, t=1, depth=1 | 0.405 | 58.574 | even | true | true | false | - |
+| pm-strahler+pre | complete | 15 / 0 | 3 / 0 | 2 / 0 | 2 / 0 | k=2, t=1, depth=1 / k=2, t=1, depth=1 | 0.406 | 58.574 | even | true | true | false | - |
+| pm-strahler+iter | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | k=1, t=1, depth=1 / k=1, t=1, depth=1 | 0.405 | 58.574 | even | true | true | false | - |
+| pm-strahler+pre+iter | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | k=1, t=1, depth=1 / k=1, t=1, depth=1 | 0.406 | 58.574 | even | true | true | false | - |
+| pm-succinct | complete | 15 / 0 | 3 / 0 | 2 / 0 | 2 / 0 | bits=1, depth=1 / bits=1, depth=1 | 0.406 | 58.574 | even | true | true | false | - |
+| pm-succinct+pre | complete | 15 / 0 | 3 / 0 | 2 / 0 | 2 / 0 | bits=1, depth=1 / bits=1, depth=1 | 0.406 | 58.574 | even | true | true | false | - |
+| pm-succinct+iter | complete | 15 / 0 | 3 / 0 | 2 / 0 | 2 / 0 | bits=1, depth=1 / bits=1, depth=1 | 0.407 | 58.574 | even | true | true | false | - |
+| pm-succinct+pre+iter | complete | 15 / 0 | 3 / 0 | 2 / 0 | 2 / 0 | bits=1, depth=1 / bits=1, depth=1 | 0.406 | 58.574 | even | true | true | false | - |
+| zielonka | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | — / — | 0.406 | 58.574 | even | true | true | false | - |
+| zielonka+pre | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | — / — | 0.405 | 58.574 | even | true | true | false | - |
+| zielonka-sym | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | — / — | 0.405 | 58.574 | even | true | true | false | - |
+| zielonka-sym+pre | complete | 15 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | — / — | 0.405 | 58.574 | even | true | true | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting+pre | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting+pre+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting-adaptive | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting-sym | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting-sym+pre | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting-sym+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting-sym+pre+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| pm-strahler | 1 / 0 | 2 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
+| pm-strahler+pre | 1 / 0 | 2 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
+| pm-strahler+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| pm-strahler+pre+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| pm-succinct | 1 / 0 | 2 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
+| pm-succinct+pre | 1 / 0 | 2 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
+| pm-succinct+iter | 1 / 0 | 2 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
+| pm-succinct+pre+iter | 1 / 0 | 2 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
 | zielonka | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
 | zielonka+pre | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
 | zielonka-sym | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |

@@ -9,321 +9,6 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 ## Inventory
 
 <details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=1_infinitely_often_read_write.gm · 2977 vertices / 6497 edges · 24 complete</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 2977 | 6497 | 3 | 2 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=11 / H=2, K=2, t=11 | 8.585 | 88.344 | even | true | true | false | - |
-| lifting+pre | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=11 / H=2, K=2, t=11 | 8.555 | 88.344 | even | true | true | false | - |
-| lifting+iter | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=11 / H=2, K=2, t=11 | 8.490 | 88.344 | even | true | true | false | - |
-| lifting+pre+iter | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=11 / H=2, K=2, t=11 | 8.494 | 88.344 | even | true | true | false | - |
-| lifting-adaptive | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=1 / H=2, K=2, t=1 | 0.404 | 88.344 | even | true | true | false | - |
-| lifting-adaptive+pre | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=1 / H=2, K=2, t=1 | 0.411 | 88.344 | even | true | true | false | - |
-| lifting-adaptive+iter | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=1 / H=2, K=2, t=1 | 0.403 | 88.344 | even | true | true | false | - |
-| lifting-adaptive+pre+iter | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=1 / H=2, K=2, t=1 | 0.402 | 88.344 | even | true | true | false | - |
-| lifting-sym | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=11 / H=2, K=2, t=11 | 3.093 | 88.344 | even | true | true | false | - |
-| lifting-sym+pre | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=11 / H=2, K=2, t=11 | 3.108 | 88.344 | even | true | true | false | - |
-| lifting-sym+iter | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=11 / H=2, K=2, t=11 | 3.100 | 88.344 | even | true | true | false | - |
-| lifting-sym+pre+iter | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | H=2, K=2, t=11 / H=2, K=2, t=11 | 3.092 | 88.344 | even | true | true | false | - |
-| pm-strahler | complete | 2977 / 0 | 5 / 0 | 4 / 0 | 2 / 0 | k=2, t=2, depth=1 / k=2, t=2, depth=2 | 0.403 | 88.344 | even | true | true | false | - |
-| pm-strahler+pre | complete | 2977 / 0 | 5 / 0 | 4 / 0 | 2 / 0 | k=2, t=2, depth=1 / k=2, t=2, depth=2 | 0.402 | 88.344 | even | true | true | false | - |
-| pm-strahler+iter | complete | 2977 / 0 | 5 / 0 | 4 / 0 | 2 / 0 | k=2, t=2, depth=1 / k=2, t=2, depth=2 | 0.406 | 88.344 | even | true | true | false | - |
-| pm-strahler+pre+iter | complete | 2977 / 0 | 5 / 0 | 4 / 0 | 2 / 0 | k=2, t=2, depth=1 / k=2, t=2, depth=2 | 0.394 | 88.344 | even | true | true | false | - |
-| pm-succinct | complete | 2977 / 0 | 5 / 0 | 4 / 0 | 2 / 0 | bits=2, depth=1 / bits=2, depth=2 | 0.403 | 88.344 | even | true | true | false | - |
-| pm-succinct+pre | complete | 2977 / 0 | 5 / 0 | 4 / 0 | 2 / 0 | bits=2, depth=1 / bits=2, depth=2 | 0.395 | 88.344 | even | true | true | false | - |
-| pm-succinct+iter | complete | 2977 / 0 | 5 / 0 | 4 / 0 | 2 / 0 | bits=2, depth=1 / bits=2, depth=2 | 0.403 | 88.344 | even | true | true | false | - |
-| pm-succinct+pre+iter | complete | 2977 / 0 | 5 / 0 | 4 / 0 | 2 / 0 | bits=2, depth=1 / bits=2, depth=2 | 0.405 | 88.344 | even | true | true | false | - |
-| zielonka | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | — / — | 0.402 | 88.344 | even | true | true | false | - |
-| zielonka+pre | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | — / — | 0.402 | 88.344 | even | true | true | false | - |
-| zielonka-sym | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | — / — | 0.402 | 88.344 | even | true | true | false | - |
-| zielonka-sym+pre | complete | 2977 / 0 | 4 / 0 | 3 / 0 | 2 / 0 | — / — | 0.392 | 88.344 | even | true | true | false | - |
-
-| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting+pre | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting+iter | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting+pre+iter | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting-adaptive | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting-adaptive+pre | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting-adaptive+iter | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting-adaptive+pre+iter | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting-sym | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting-sym+pre | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting-sym+iter | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| lifting-sym+pre+iter | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-strahler | 1 / 0 | 4 / 0 | 4 / 0 | 4.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-strahler+pre | 1 / 0 | 4 / 0 | 4 / 0 | 4.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-strahler+iter | 1 / 0 | 4 / 0 | 4 / 0 | 4.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-strahler+pre+iter | 1 / 0 | 4 / 0 | 4 / 0 | 4.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct | 1 / 0 | 4 / 0 | 4 / 0 | 4.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct+pre | 1 / 0 | 4 / 0 | 4 / 0 | 4.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct+iter | 1 / 0 | 4 / 0 | 4 / 0 | 4.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct+pre+iter | 1 / 0 | 4 / 0 | 4 / 0 | 4.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| zielonka | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| zielonka+pre | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| zielonka-sym | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| zielonka-sym+pre | 1 / 0 | 3 / 0 | 3 / 0 | 3.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-
-</details>
-
-<details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=1_infinitely_often_receive_d1.gm · 1490 vertices / 5010 edges · 24 complete</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 1490 | 5010 | 2 | 2 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | complete | 1490 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=2, t=10 / H=2, K=2, t=10 | 3.197 | 88.344 | even | true | true | false | - |
-| lifting+pre | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.372 | 88.344 | even | true | true | false | - |
-| lifting+iter | complete | 1490 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=2, t=10 / H=2, K=2, t=10 | 3.197 | 88.344 | even | true | true | false | - |
-| lifting+pre+iter | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.373 | 88.344 | even | true | true | false | - |
-| lifting-adaptive | complete | 1490 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.369 | 88.344 | even | true | true | false | - |
-| lifting-adaptive+pre | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.369 | 88.344 | even | true | true | false | - |
-| lifting-adaptive+iter | complete | 1490 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.369 | 88.344 | even | true | true | false | - |
-| lifting-adaptive+pre+iter | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.369 | 88.344 | even | true | true | false | - |
-| lifting-sym | complete | 1490 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=2, t=10 / H=2, K=2, t=10 | 0.390 | 88.344 | even | true | true | false | - |
-| lifting-sym+pre | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.380 | 88.344 | even | true | true | false | - |
-| lifting-sym+iter | complete | 1490 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=2, t=10 / H=2, K=2, t=10 | 0.413 | 88.344 | even | true | true | false | - |
-| lifting-sym+pre+iter | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.404 | 88.344 | even | true | true | false | - |
-| pm-strahler | complete | 1490 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | k=2, t=3, depth=1 / k=2, t=3, depth=2 | 0.425 | 88.344 | even | true | true | false | - |
-| pm-strahler+pre | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 0.392 | 88.344 | even | true | true | false | - |
-| pm-strahler+iter | complete | 1490 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | k=2, t=3, depth=1 / k=2, t=3, depth=2 | 0.424 | 88.344 | even | true | true | false | - |
-| pm-strahler+pre+iter | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 0.393 | 88.344 | even | true | true | false | - |
-| pm-succinct | complete | 1490 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | bits=3, depth=1 / bits=3, depth=2 | 0.413 | 88.344 | even | true | true | false | - |
-| pm-succinct+pre | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=1 / bits=0, depth=2 | 0.394 | 88.344 | even | true | true | false | - |
-| pm-succinct+iter | complete | 1490 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | bits=3, depth=1 / bits=3, depth=2 | 0.403 | 88.344 | even | true | true | false | - |
-| pm-succinct+pre+iter | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=1 / bits=0, depth=2 | 0.393 | 88.344 | even | true | true | false | - |
-| zielonka | complete | 1490 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 0.404 | 88.344 | even | true | true | false | - |
-| zielonka+pre | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.393 | 88.344 | even | true | true | false | - |
-| zielonka-sym | complete | 1490 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 0.393 | 88.344 | even | true | true | false | - |
-| zielonka-sym+pre | complete | 1490 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.370 | 88.344 | even | true | true | false | - |
-
-| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-adaptive | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-adaptive+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-sym+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-strahler | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-strahler+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-strahler+iter | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-strahler+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-succinct | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-succinct+iter | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| zielonka | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| zielonka-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-
-</details>
-
-<details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=1_infinitely_often_receive_for_all_d.gm · 5958 vertices / 20041 edges · 20 complete · 4 timeout</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 5958 | 20041 | 2 | 2 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | timeout | - / - | - / - | - / - | - / - | - / - | 30.003 | 88.344 | - | true | - | - | deadline exceeded |
-| lifting+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.001 | 88.344 | - | true | - | - | deadline exceeded |
-| lifting+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.002 | 88.344 | - | true | - | - | deadline exceeded |
-| lifting+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.001 | 88.344 | - | true | - | - | deadline exceeded |
-| lifting-adaptive | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.412 | 88.344 | even | true | true | false | - |
-| lifting-adaptive+pre | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.411 | 88.344 | even | true | true | false | - |
-| lifting-adaptive+iter | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.412 | 88.344 | even | true | true | false | - |
-| lifting-adaptive+pre+iter | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.412 | 88.344 | even | true | true | false | - |
-| lifting-sym | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=2, t=12 / H=2, K=2, t=12 | 0.699 | 88.344 | even | true | true | false | - |
-| lifting-sym+pre | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=2, t=12 / H=2, K=2, t=12 | 0.699 | 88.344 | even | true | true | false | - |
-| lifting-sym+iter | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=2, t=12 / H=2, K=2, t=12 | 0.698 | 88.344 | even | true | true | false | - |
-| lifting-sym+pre+iter | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=2, t=12 / H=2, K=2, t=12 | 0.696 | 88.344 | even | true | true | false | - |
-| pm-strahler | complete | 5958 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | k=2, t=3, depth=1 / k=2, t=3, depth=2 | 0.476 | 88.344 | even | true | true | false | - |
-| pm-strahler+pre | complete | 5958 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | k=2, t=3, depth=1 / k=2, t=3, depth=2 | 0.475 | 88.344 | even | true | true | false | - |
-| pm-strahler+iter | complete | 5958 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | k=2, t=3, depth=1 / k=2, t=3, depth=2 | 0.455 | 88.344 | even | true | true | false | - |
-| pm-strahler+pre+iter | complete | 5958 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | k=2, t=3, depth=1 / k=2, t=3, depth=2 | 0.444 | 88.344 | even | true | true | false | - |
-| pm-succinct | complete | 5958 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | bits=3, depth=1 / bits=3, depth=2 | 0.433 | 88.344 | even | true | true | false | - |
-| pm-succinct+pre | complete | 5958 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | bits=3, depth=1 / bits=3, depth=2 | 0.444 | 88.344 | even | true | true | false | - |
-| pm-succinct+iter | complete | 5958 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | bits=3, depth=1 / bits=3, depth=2 | 0.423 | 88.344 | even | true | true | false | - |
-| pm-succinct+pre+iter | complete | 5958 / 0 | 12 / 0 | 11 / 0 | 2 / 0 | bits=3, depth=1 / bits=3, depth=2 | 0.423 | 88.344 | even | true | true | false | - |
-| zielonka | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 0.392 | 88.344 | even | true | true | false | - |
-| zielonka+pre | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 0.392 | 88.344 | even | true | true | false | - |
-| zielonka-sym | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 0.392 | 88.344 | even | true | true | false | - |
-| zielonka-sym+pre | complete | 5958 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 0.391 | 88.344 | even | true | true | false | - |
-
-| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
-| lifting-adaptive | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-adaptive+pre | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-adaptive+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-adaptive+pre+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-sym+pre | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-sym+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| lifting-sym+pre+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| pm-strahler | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-strahler+pre | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-strahler+iter | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-strahler+pre+iter | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct+pre | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct+iter | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| pm-succinct+pre+iter | 1 / 0 | 11 / 0 | 11 / 0 | 11.000 / 0.000 | 1 / 0 | 2 / 0 | 2.000 / 0.000 | 2 / 0 |
-| zielonka | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| zielonka+pre | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| zielonka-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-| zielonka-sym+pre | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
-
-</details>
-
-<details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=1_invariantly_infinitely_many_reachable_taus.gm · 4033 vertices / 12417 edges · 24 complete</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 4033 | 12417 | 2 | 2 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=2, t=11 / H=2, K=2, t=11 | 1.843 | 88.344 | odd | false | true | false | - |
-| lifting+pre | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=2, t=11 / H=2, K=2, t=11 | 1.843 | 88.344 | odd | false | true | false | - |
-| lifting+iter | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=2, t=11 / H=2, K=2, t=11 | 1.843 | 88.344 | odd | false | true | false | - |
-| lifting+pre+iter | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=2, t=11 / H=2, K=2, t=11 | 1.850 | 88.344 | odd | false | true | false | - |
-| lifting-adaptive | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.404 | 88.344 | odd | false | true | false | - |
-| lifting-adaptive+pre | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.403 | 88.344 | odd | false | true | false | - |
-| lifting-adaptive+iter | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.404 | 88.344 | odd | false | true | false | - |
-| lifting-adaptive+pre+iter | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.394 | 88.344 | odd | false | true | false | - |
-| lifting-sym | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=2, t=11 / H=2, K=2, t=11 | 0.464 | 88.344 | odd | false | true | false | - |
-| lifting-sym+pre | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=2, t=11 / H=2, K=2, t=11 | 0.465 | 88.344 | odd | false | true | false | - |
-| lifting-sym+iter | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=2, t=11 / H=2, K=2, t=11 | 0.464 | 88.344 | odd | false | true | false | - |
-| lifting-sym+pre+iter | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=2, t=11 / H=2, K=2, t=11 | 0.475 | 88.344 | odd | false | true | false | - |
-| pm-strahler | complete | 0 / 4033 | 0 / 9 | 0 / 4 | 0 / 3 | k=2, t=1, depth=1 / k=2, t=1, depth=2 | 0.403 | 88.344 | odd | false | true | false | - |
-| pm-strahler+pre | complete | 0 / 4033 | 0 / 9 | 0 / 4 | 0 / 3 | k=2, t=1, depth=1 / k=2, t=1, depth=2 | 0.412 | 88.344 | odd | false | true | false | - |
-| pm-strahler+iter | complete | 0 / 4033 | 0 / 3 | 0 / 1 | 0 / 3 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 0.404 | 88.344 | odd | false | true | false | - |
-| pm-strahler+pre+iter | complete | 0 / 4033 | 0 / 3 | 0 / 1 | 0 / 3 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 0.404 | 88.344 | odd | false | true | false | - |
-| pm-succinct | complete | 0 / 4033 | 0 / 9 | 0 / 4 | 0 / 3 | bits=2, depth=1 / bits=2, depth=2 | 0.414 | 88.344 | odd | false | true | false | - |
-| pm-succinct+pre | complete | 0 / 4033 | 0 / 9 | 0 / 4 | 0 / 3 | bits=2, depth=1 / bits=2, depth=2 | 0.412 | 88.344 | odd | false | true | false | - |
-| pm-succinct+iter | complete | 0 / 4033 | 0 / 7 | 0 / 3 | 0 / 3 | bits=1, depth=1 / bits=1, depth=2 | 0.402 | 88.344 | odd | false | true | false | - |
-| pm-succinct+pre+iter | complete | 0 / 4033 | 0 / 7 | 0 / 3 | 0 / 3 | bits=1, depth=1 / bits=1, depth=2 | 0.402 | 88.344 | odd | false | true | false | - |
-| zielonka | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 0.402 | 88.344 | odd | false | true | false | - |
-| zielonka+pre | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 0.402 | 88.344 | odd | false | true | false | - |
-| zielonka-sym | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 0.402 | 88.344 | odd | false | true | false | - |
-| zielonka-sym+pre | complete | 0 / 4033 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 0.392 | 88.344 | odd | false | true | false | - |
-
-| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting+pre | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting+iter | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting+pre+iter | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting-adaptive | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting-adaptive+pre | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting-adaptive+iter | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting-adaptive+pre+iter | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting-sym | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting-sym+pre | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting-sym+iter | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| lifting-sym+pre+iter | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| pm-strahler | 0 / 5 | 0 / 4 | 0 / 4 | 0.000 / 1.600 | 0 / 1 | 0 / 3 | 0.000 / 3.000 | 0 / 2 |
-| pm-strahler+pre | 0 / 5 | 0 / 4 | 0 / 4 | 0.000 / 1.600 | 0 / 1 | 0 / 3 | 0.000 / 3.000 | 0 / 2 |
-| pm-strahler+iter | 0 / 2 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 3 | 0.000 / 3.000 | 0 / 1 |
-| pm-strahler+pre+iter | 0 / 2 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 3 | 0.000 / 3.000 | 0 / 1 |
-| pm-succinct | 0 / 5 | 0 / 4 | 0 / 4 | 0.000 / 1.600 | 0 / 1 | 0 / 3 | 0.000 / 3.000 | 0 / 2 |
-| pm-succinct+pre | 0 / 5 | 0 / 4 | 0 / 4 | 0.000 / 1.600 | 0 / 1 | 0 / 3 | 0.000 / 3.000 | 0 / 2 |
-| pm-succinct+iter | 0 / 4 | 0 / 3 | 0 / 3 | 0.000 / 1.500 | 0 / 1 | 0 / 3 | 0.000 / 3.000 | 0 / 2 |
-| pm-succinct+pre+iter | 0 / 4 | 0 / 3 | 0 / 3 | 0.000 / 1.500 | 0 / 1 | 0 / 3 | 0.000 / 3.000 | 0 / 2 |
-| zielonka | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| zielonka+pre | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| zielonka-sym | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-| zielonka-sym+pre | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
-
-</details>
-
-<details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=1_no_duplication_of_messages.gm · 6866 vertices / 24674 edges · 24 complete</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 6866 | 24674 | 2 | 2 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | complete | 5256 / 1610 | 1 / 2 | 1 / 1 | 1 / 2 | H=2, K=2, t=12 / H=2, K=2, t=12 | 11.350 | 88.344 | odd | false | true | false | - |
-| lifting+pre | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.384 | 88.344 | odd | false | true | false | - |
-| lifting+iter | complete | 5256 / 1610 | 1 / 2 | 1 / 1 | 1 / 2 | H=2, K=2, t=12 / H=2, K=2, t=12 | 11.378 | 88.344 | odd | false | true | false | - |
-| lifting+pre+iter | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.371 | 88.344 | odd | false | true | false | - |
-| lifting-adaptive | complete | 5256 / 1610 | 1 / 2 | 1 / 1 | 1 / 2 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.401 | 88.344 | odd | false | true | false | - |
-| lifting-adaptive+pre | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.370 | 88.344 | odd | false | true | false | - |
-| lifting-adaptive+iter | complete | 5256 / 1610 | 1 / 2 | 1 / 1 | 1 / 2 | H=2, K=1, t=0 / H=2, K=1, t=0 | 0.391 | 88.344 | odd | false | true | false | - |
-| lifting-adaptive+pre+iter | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.370 | 88.344 | odd | false | true | false | - |
-| lifting-sym | complete | 5256 / 1610 | 1 / 2 | 1 / 1 | 1 / 2 | H=2, K=2, t=12 / H=2, K=2, t=12 | 4.116 | 88.344 | odd | false | true | false | - |
-| lifting-sym+pre | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.390 | 88.344 | odd | false | true | false | - |
-| lifting-sym+iter | complete | 5256 / 1610 | 1 / 2 | 1 / 1 | 1 / 2 | H=2, K=2, t=12 / H=2, K=2, t=12 | 4.135 | 88.344 | odd | false | true | false | - |
-| lifting-sym+pre+iter | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.401 | 88.344 | odd | false | true | false | - |
-| pm-strahler | complete | 5256 / 1610 | 2 / 39 | 1 / 19 | 2 / 3 | k=2, t=3, depth=1 / k=2, t=3, depth=2 | 0.617 | 88.344 | odd | false | true | false | - |
-| pm-strahler+pre | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 0.392 | 88.344 | odd | false | true | false | - |
-| pm-strahler+iter | complete | 5256 / 1610 | 2 / 3 | 1 / 1 | 2 / 3 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 0.404 | 88.344 | odd | false | true | false | - |
-| pm-strahler+pre+iter | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 0.392 | 88.344 | odd | false | true | false | - |
-| pm-succinct | complete | 5256 / 1610 | 2 / 39 | 1 / 19 | 2 / 3 | bits=4, depth=1 / bits=4, depth=2 | 0.558 | 88.344 | odd | false | true | false | - |
-| pm-succinct+pre | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=1 / bits=0, depth=2 | 0.403 | 88.344 | odd | false | true | false | - |
-| pm-succinct+iter | complete | 5256 / 1610 | 2 / 7 | 1 / 3 | 2 / 3 | bits=1, depth=1 / bits=1, depth=2 | 0.403 | 88.344 | odd | false | true | false | - |
-| pm-succinct+pre+iter | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=1 / bits=0, depth=2 | 0.402 | 88.344 | odd | false | true | false | - |
-| zielonka | complete | 5256 / 1610 | 1 / 2 | 1 / 1 | 1 / 2 | — / — | 0.404 | 88.344 | odd | false | true | false | - |
-| zielonka+pre | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.402 | 88.344 | odd | false | true | false | - |
-| zielonka-sym | complete | 5256 / 1610 | 1 / 2 | 1 / 1 | 1 / 2 | — / — | 0.394 | 88.344 | odd | false | true | false | - |
-| zielonka-sym+pre | complete | 5256 / 1610 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 0.392 | 88.344 | odd | false | true | false | - |
-
-| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting+iter | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-adaptive | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-adaptive+iter | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-sym | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| lifting-sym+iter | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-strahler | 1 / 20 | 1 / 19 | 1 / 19 | 1.000 / 1.900 | 0 / 1 | 2 / 3 | 2.000 / 3.000 | 1 / 2 |
-| pm-strahler+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-strahler+iter | 1 / 2 | 1 / 1 | 1 / 1 | 1.000 / 1.000 | 0 / 0 | 2 / 3 | 2.000 / 3.000 | 1 / 1 |
-| pm-strahler+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-succinct | 1 / 20 | 1 / 19 | 1 / 19 | 1.000 / 1.900 | 0 / 1 | 2 / 3 | 2.000 / 3.000 | 1 / 2 |
-| pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| pm-succinct+iter | 1 / 4 | 1 / 3 | 1 / 3 | 1.000 / 1.500 | 0 / 1 | 2 / 3 | 2.000 / 3.000 | 1 / 2 |
-| pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| zielonka | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-| zielonka-sym | 0 / 1 | 1 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 1 / 2 | 1.000 / 2.000 | 1 / 1 |
-| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
-
-</details>
-
-<details>
 <summary>modelchecking/games/SWPdatasize=4_windowsize=1_no_generation_of_messages.gm · 3344 vertices / 11922 edges · 24 complete</summary>
 
 | Vertices | Edges | Distinct priorities | Maximum priority |
@@ -1269,222 +954,6 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 </details>
 
 <details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=3_infinitely_often_read_write.gm · 19550209 vertices / 45106177 edges · 24 out of memory</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 19550209 | 45106177 | 3 | 2 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 4.660 | 1508.547 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.670 | 1508.578 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.625 | 1508.484 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 17.381 | 1485.297 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 17.307 | 1486.480 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 17.213 | 1489.164 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.710 | 1508.609 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.616 | 1508.523 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 6.575 | 1508.516 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 8.989 | 1508.535 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.009 | 1508.465 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.010 | 1508.523 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 4.984 | 1508.473 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.974 | 1508.336 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.943 | 1508.363 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.100 | 1508.402 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 5.014 | 1508.340 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.056 | 1508.555 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.155 | 1508.555 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.103 | 1508.422 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 5.863 | 1508.590 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.493 | 1508.539 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 6.309 | 1508.473 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.369 | 1508.609 | - | - | - | - | 6249392:13: failed to allocate the successor list |
-
-</details>
-
-<details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=3_infinitely_often_receive_d1.gm · 8835074 vertices / 34391042 edges · 24 out of memory</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 8835074 | 34391042 | 2 | 2 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 5.465 | 1735.664 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.455 | 1735.840 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.433 | 1735.605 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 19.447 | 1736.082 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 19.416 | 1736.172 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 19.386 | 1736.297 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 13.769 | 1712.859 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 13.830 | 1710.730 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 13.780 | 1713.297 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 23.257 | 1736.047 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 23.216 | 1736.227 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 23.175 | 1736.422 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 23.693 | 1736.242 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 23.719 | 1736.047 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 23.702 | 1736.223 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 28.561 | 1736.055 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 28.549 | 1736.180 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 28.533 | 1735.973 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 22.665 | 1735.098 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 22.697 | 1734.430 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 22.838 | 1734.598 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 22.072 | 1736.227 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 22.092 | 1735.961 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 21.950 | 1736.359 | - | - | - | - | 5859377:31: failed to allocate the successor list |
-
-</details>
-
-<details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=3_invariantly_infinitely_many_reachable_taus.gm · 22288897 vertices / 80830465 edges · 6 timeout · 18 out of memory</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 22288897 | 80830465 | 2 | 2 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 9.787 | 1782.031 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 9.784 | 1779.359 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.784 | 1771.469 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.120 | 1320.086 | - | - | - | - | deadline exceeded |
-| lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.121 | 1319.852 | - | - | - | - | deadline exceeded |
-| lifting-adaptive+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.119 | 1311.859 | - | - | - | - | deadline exceeded |
-| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.734 | 1804.977 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.755 | 1797.344 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 9.953 | 1781.484 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting-sym+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.124 | 1374.363 | - | - | - | - | deadline exceeded |
-| lifting-sym+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.125 | 1389.109 | - | - | - | - | deadline exceeded |
-| lifting-sym+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.113 | 1485.457 | - | - | - | - | deadline exceeded |
-| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 15.802 | 1422.367 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 15.799 | 1407.363 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 15.589 | 1425.492 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 20.279 | 1696.973 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 20.301 | 1720.055 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 20.255 | 1740.281 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 25.945 | 1587.973 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 26.088 | 1559.984 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 26.357 | 1455.352 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 24.218 | 1539.984 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 24.087 | 1532.859 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 23.507 | 1556.477 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-
-</details>
-
-<details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=3_no_generation_of_messages.gm · 6690605 vertices / 29413398 edges · 24 out of memory</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 6690605 | 29413398 | 1 | 0 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 4.859 | 1613.172 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.879 | 1613.039 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.868 | 1612.961 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 14.733 | 1612.711 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 14.732 | 1612.980 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 14.703 | 1613.047 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.459 | 1613.215 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.382 | 1613.215 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 6.411 | 1612.977 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 7.473 | 1613.105 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.383 | 1613.098 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.386 | 1613.109 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 4.958 | 1613.172 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.922 | 1613.098 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.881 | 1612.902 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.015 | 1612.988 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 4.983 | 1612.906 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.979 | 1613.172 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.507 | 1613.098 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.528 | 1613.180 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 6.360 | 1613.215 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.499 | 1613.215 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 4.567 | 1612.961 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.565 | 1613.234 | - | - | - | - | 5178827:67: failed to allocate the successor list |
-
-</details>
-
-<details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=3_nodeadlock.gm · 7429633 vertices / 32985601 edges · 24 out of memory</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 7429633 | 32985601 | 1 | 0 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 4.762 | 1635.328 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.796 | 1635.457 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.794 | 1635.527 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 11.930 | 1626.215 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 11.867 | 1631.098 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 11.885 | 1631.086 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 16.259 | 1619.484 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 16.270 | 1605.789 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 16.299 | 1608.598 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 9.695 | 1635.387 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.624 | 1635.406 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.624 | 1635.293 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 11.411 | 1635.156 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 11.374 | 1635.348 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 11.396 | 1635.348 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 10.252 | 1635.234 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 10.270 | 1635.238 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 10.268 | 1635.555 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 16.624 | 1635.238 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 16.603 | 1635.238 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 16.418 | 1635.344 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.855 | 1635.336 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 5.680 | 1635.523 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.648 | 1635.605 | - | - | - | - | 4960968:13: failed to allocate the successor list |
-
-</details>
-
-<details>
-<summary>modelchecking/games/SWPdatasize=4_windowsize=3_read_then_eventually_send_if_fair.gm · 24565250 vertices / 73675010 edges · 11 timeout · 13 out of memory</summary>
-
-| Vertices | Edges | Distinct priorities | Maximum priority |
-| --- | --- | --- | --- |
-| 24565250 | 73675010 | 3 | 2 |
-
-| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 9.037 | 1776.504 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 9.145 | 1741.043 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.142 | 1762.273 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.157 | 1675.422 | - | - | - | - | deadline exceeded |
-| lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.178 | 1722.336 | - | - | - | - | deadline exceeded |
-| lifting-adaptive+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.182 | 1709.855 | - | - | - | - | deadline exceeded |
-| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 16.453 | 1668.145 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 16.191 | 1693.031 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 16.207 | 1683.469 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 17.308 | 1683.090 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 17.288 | 1684.785 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 17.234 | 1676.078 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-strahler | timeout | - / - | - / - | - / - | - / - | - / - | 30.179 | 1752.488 | - | - | - | - | deadline exceeded |
-| pm-strahler+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.181 | 1730.055 | - | - | - | - | deadline exceeded |
-| pm-strahler+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.170 | 1749.789 | - | - | - | - | deadline exceeded |
-| pm-strahler+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 34.063 | 1794.410 | - | - | - | - | deadline exceeded |
-| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 34.060 | 1792.789 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 34.011 | 1783.164 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| pm-succinct+iter | timeout | - / - | - / - | - / - | - / - | - / - | 33.973 | 1793.738 | - | - | - | - | deadline exceeded |
-| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 33.973 | 1781.980 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 33.973 | 1780.898 | - | - | - | - | 4194304:1: failed to allocate the declaration list |
-| zielonka+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.220 | 812.547 | - | - | - | - | deadline exceeded |
-| zielonka-sym | timeout | - / - | - / - | - / - | - / - | - / - | 30.079 | 814.594 | - | - | - | - | deadline exceeded |
-| zielonka-sym+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.177 | 808.660 | - | - | - | - | deadline exceeded |
-
-</details>
-
-<details>
 <summary>modelchecking/games/SWPdatasize=8_windowsize=1_infinitely_often_enabled_then_infinitely_often_taken.gm · 147458 vertices / 406665 edges · 16 complete · 8 timeout</summary>
 
 | Vertices | Edges | Distinct priorities | Maximum priority |
@@ -2300,6 +1769,789 @@ No disagreements in winner counts or start winners, and no recorded reference mi
 | zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
 | zielonka-sym | 1 / 0 | 1 / 1 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 1 | 2.000 / 1.000 | 1 / 1 |
 | zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+
+</details>
+
+<details>
+<summary>modelchecking/games/Hesselinkdatasize=3_nodeadlock.gm · 13834801 vertices / 29028241 edges · 9 complete · 7 timeout · 8 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 13834801 | 29028241 | 1 | 0 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | complete | 13834801 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=23 / H=1, K=1, t=23 | 17.729 | 1657.484 | even | - | - | false | - |
+| lifting+pre | complete | 13834801 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 13.922 | 1607.340 | even | - | - | false | - |
+| lifting+iter | complete | 13834801 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=23 / H=1, K=1, t=23 | 18.264 | 1597.227 | even | - | - | false | - |
+| lifting+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.083 | 816.234 | - | - | - | - | deadline exceeded |
+| lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.252 | 914.461 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.303 | 933.859 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+iter | complete | 13834801 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=0 / H=1, K=1, t=0 | 24.729 | 1700.965 | even | - | - | false | - |
+| lifting-adaptive+pre+iter | complete | 13834801 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 8.377 | 1700.965 | even | - | - | false | - |
+| lifting-sym | complete | 13834801 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=23 / H=1, K=1, t=23 | 27.578 | 1936.305 | even | - | - | false | - |
+| lifting-sym+pre | complete | 13834801 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 12.355 | 1700.980 | even | - | - | false | - |
+| lifting-sym+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.146 | 1938.012 | - | - | - | - | deadline exceeded |
+| lifting-sym+pre+iter | complete | 13834801 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 23.109 | 1700.715 | even | - | - | false | - |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 14.346 | 1700.680 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 27.501 | 1700.789 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 26.066 | 1696.672 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 19.196 | 1684.422 | - | - | - | - | Failed to allocate memory |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 21.303 | 1700.738 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 21.257 | 1700.848 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 21.256 | 1700.789 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 23.512 | 1700.672 | - | - | - | - | Failed to allocate memory |
+| zielonka | timeout | - / - | - / - | - / - | - / - | - / - | 30.004 | 1700.781 | - | - | - | - | metrics: deadline exceeded |
+| zielonka+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.002 | 1700.777 | - | - | - | - | metrics: deadline exceeded |
+| zielonka-sym | timeout | - / - | - / - | - / - | - / - | - / - | 30.151 | 1825.617 | - | - | - | - | deadline exceeded |
+| zielonka-sym+pre | complete | 13834801 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 21.632 | 1700.789 | even | - | - | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+
+</details>
+
+<details>
+<summary>modelchecking/games/Hesselinkdatasize=3_property2.gm · 27876961 vertices / 58309201 edges · 24 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 27876961 | 58309201 | 1 | 0 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 4.439 | 1294.543 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.448 | 1294.348 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.438 | 1294.473 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 14.119 | 1294.422 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 14.088 | 1294.484 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 14.078 | 1294.484 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.451 | 1294.297 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.543 | 1294.293 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 8.492 | 1294.297 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.344 | 1294.594 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.198 | 1294.609 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.177 | 1294.480 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 4.576 | 1294.473 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.586 | 1294.281 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.498 | 1294.484 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.540 | 1294.484 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 5.625 | 1294.473 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.525 | 1294.473 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.572 | 1294.430 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.580 | 1294.430 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 4.482 | 1294.609 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.411 | 1294.590 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 4.431 | 1294.609 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.463 | 1294.477 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=2_windowsize=4_infinitely_often_enabled_then_infinitely_often_taken.gm · 20712450 vertices / 70290691 edges · 24 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 20712450 | 70290691 | 3 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 6.889 | 1380.453 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.940 | 1380.508 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.940 | 1380.770 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.166 | 1380.637 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 8.446 | 1380.387 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 8.114 | 1380.641 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.667 | 1380.379 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.421 | 1380.652 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 6.325 | 1380.512 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 8.173 | 1380.633 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.927 | 1380.641 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.916 | 1380.512 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 6.800 | 1380.688 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.790 | 1380.324 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.780 | 1380.445 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.350 | 1380.551 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 7.352 | 1380.652 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 7.339 | 1380.281 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.903 | 1380.367 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.882 | 1380.430 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 6.879 | 1380.523 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.935 | 1380.523 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 6.914 | 1380.551 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.918 | 1380.508 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=2_windowsize=4_infinitely_often_lost.gm · 8964338 vertices / 51952370 edges · 10 complete · 2 timeout · 12 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 8964338 | 51952370 | 3 | 3 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 9.233 | 1576.223 | - | - | - | - | Failed to allocate memory |
+| lifting+pre | complete | 6449793 / 2514545 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 11.237 | 1529.051 | even | - | - | false | - |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.264 | 1577.504 | - | - | - | - | Failed to allocate memory |
+| lifting+pre+iter | complete | 6449793 / 2514545 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 17.327 | 1528.875 | even | - | - | false | - |
+| lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.115 | 1710.102 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+pre | complete | 6449793 / 2514545 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 15.322 | 1528.809 | even | - | - | false | - |
+| lifting-adaptive+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.122 | 1711.027 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+pre+iter | complete | 6449793 / 2514545 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 23.209 | 1528.969 | even | - | - | false | - |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 8.812 | 1576.398 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+pre | complete | 6449793 / 2514545 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 16.017 | 1528.703 | even | - | - | false | - |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 11.920 | 1577.512 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+pre+iter | complete | 6449793 / 2514545 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 10.515 | 1528.750 | even | - | - | false | - |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 10.767 | 1355.473 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 10.872 | 1529.121 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.688 | 1355.695 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 10.656 | 1529.000 | - | - | - | - | Failed to allocate memory |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 8.321 | 1355.488 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 10.430 | 1528.984 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.814 | 1355.629 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 12.109 | 1528.875 | - | - | - | - | Failed to allocate memory |
+| zielonka | complete | 6449793 / 2514545 | 2 / 2 | 1 / 1 | 2 / 2 | — / — | 13.868 | 1355.695 | even | - | - | false | - |
+| zielonka+pre | complete | 6449793 / 2514545 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 10.382 | 1529.000 | even | - | - | false | - |
+| zielonka-sym | complete | 6449793 / 2514545 | 2 / 2 | 1 / 1 | 2 / 2 | — / — | 21.419 | 1779.891 | even | - | - | false | - |
+| zielonka-sym+pre | complete | 6449793 / 2514545 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 10.260 | 1529.039 | even | - | - | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka | 1 / 1 | 1 / 1 | 1 / 1 | 1.000 / 1.000 | 0 / 0 | 2 / 2 | 2.000 / 2.000 | 1 / 1 |
+| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka-sym | 1 / 1 | 1 / 1 | 1 / 1 | 1.000 / 1.000 | 0 / 0 | 2 / 2 | 2.000 / 2.000 | 1 / 1 |
+| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=2_windowsize=4_infinitely_often_receive_for_all_d.gm · 6974724 vertices / 24927749 edges · 6 complete · 18 timeout</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 6974724 | 24927749 | 2 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | timeout | - / - | - / - | - / - | - / - | - / - | 36.238 | 1674.516 | - | - | - | - | deadline exceeded |
+| lifting+pre | timeout | - / - | - / - | - / - | - / - | - / - | 35.976 | 1674.914 | - | - | - | - | deadline exceeded |
+| lifting+iter | timeout | - / - | - / - | - / - | - / - | - / - | 36.237 | 1675.824 | - | - | - | - | deadline exceeded |
+| lifting+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.159 | 1675.734 | - | - | - | - | deadline exceeded |
+| lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.085 | 1079.379 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.086 | 1079.469 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+iter | complete | 6974724 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 22.318 | 1080.211 | even | - | - | false | - |
+| lifting-adaptive+pre+iter | complete | 6974724 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 22.495 | 1080.305 | even | - | - | false | - |
+| lifting-sym | timeout | - / - | - / - | - / - | - / - | - / - | 30.145 | 1677.684 | - | - | - | - | deadline exceeded |
+| lifting-sym+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.430 | 1674.988 | - | - | - | - | deadline exceeded |
+| lifting-sym+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.214 | 1675.762 | - | - | - | - | deadline exceeded |
+| lifting-sym+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.204 | 1678.496 | - | - | - | - | deadline exceeded |
+| pm-strahler | timeout | - / - | - / - | - / - | - / - | - / - | 30.141 | 1612.969 | - | - | - | - | deadline exceeded |
+| pm-strahler+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.138 | 1612.891 | - | - | - | - | deadline exceeded |
+| pm-strahler+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.112 | 1616.422 | - | - | - | - | deadline exceeded |
+| pm-strahler+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.147 | 1616.523 | - | - | - | - | deadline exceeded |
+| pm-succinct | timeout | - / - | - / - | - / - | - / - | - / - | 30.116 | 1546.414 | - | - | - | - | deadline exceeded |
+| pm-succinct+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.117 | 1546.301 | - | - | - | - | deadline exceeded |
+| pm-succinct+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.133 | 1548.648 | - | - | - | - | deadline exceeded |
+| pm-succinct+pre+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.134 | 1548.516 | - | - | - | - | deadline exceeded |
+| zielonka | complete | 6974724 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 6.618 | 936.961 | even | - | - | false | - |
+| zielonka+pre | complete | 6974724 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 7.102 | 936.945 | even | - | - | false | - |
+| zielonka-sym | complete | 6974724 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 9.715 | 1133.289 | even | - | - | false | - |
+| zielonka-sym+pre | complete | 6974724 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 9.475 | 1133.426 | even | - | - | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| zielonka+pre | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| zielonka-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| zielonka-sym+pre | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=2_windowsize=4_invariantly_infinitely_many_reachable_taus.gm · 7767169 vertices / 28309249 edges · 10 complete · 6 timeout · 8 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 7767169 | 28309249 | 2 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 13.767 | 1704.090 | - | - | - | - | Failed to allocate memory |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 14.606 | 1709.875 | - | - | - | - | Failed to allocate memory |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 14.606 | 1711.168 | - | - | - | - | Failed to allocate memory |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 28.355 | 1759.320 | - | - | - | - | Failed to allocate memory |
+| lifting-adaptive | timeout | - / - | - / - | - / - | - / - | - / - | 30.101 | 1150.863 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.101 | 1150.922 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+iter | complete | 0 / 7767169 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=1, t=0 / H=2, K=1, t=0 | 18.839 | 1192.293 | odd | - | - | false | - |
+| lifting-adaptive+pre+iter | complete | 0 / 7767169 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=1, t=0 / H=2, K=1, t=0 | 19.213 | 1192.418 | odd | - | - | false | - |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 8.617 | 1758.508 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 8.672 | 1758.523 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.188 | 1759.566 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.568 | 1759.566 | - | - | - | - | Failed to allocate memory |
+| pm-strahler | timeout | - / - | - / - | - / - | - / - | - / - | 30.146 | 1784.094 | - | - | - | - | deadline exceeded |
+| pm-strahler+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.188 | 1784.125 | - | - | - | - | deadline exceeded |
+| pm-strahler+iter | complete | 0 / 7767169 | 0 / 3 | 0 / 1 | 0 / 3 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 17.450 | 1724.168 | odd | - | - | false | - |
+| pm-strahler+pre+iter | complete | 0 / 7767169 | 0 / 3 | 0 / 1 | 0 / 3 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 14.342 | 1724.180 | odd | - | - | false | - |
+| pm-succinct | timeout | - / - | - / - | - / - | - / - | - / - | 30.150 | 1722.582 | - | - | - | - | deadline exceeded |
+| pm-succinct+pre | timeout | - / - | - / - | - / - | - / - | - / - | 30.155 | 1721.781 | - | - | - | - | deadline exceeded |
+| pm-succinct+iter | complete | 0 / 7767169 | 0 / 7 | 0 / 3 | 0 / 3 | bits=1, depth=1 / bits=1, depth=2 | 29.775 | 1724.078 | odd | - | - | false | - |
+| pm-succinct+pre+iter | complete | 0 / 7767169 | 0 / 7 | 0 / 3 | 0 / 3 | bits=1, depth=1 / bits=1, depth=2 | 28.754 | 1724.426 | odd | - | - | false | - |
+| zielonka | complete | 0 / 7767169 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 10.073 | 1047.609 | odd | - | - | false | - |
+| zielonka+pre | complete | 0 / 7767169 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 7.781 | 1047.609 | odd | - | - | false | - |
+| zielonka-sym | complete | 0 / 7767169 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 11.183 | 1315.027 | odd | - | - | false | - |
+| zielonka-sym+pre | complete | 0 / 7767169 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 11.382 | 1314.992 | odd | - | - | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+iter | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
+| lifting-adaptive+pre+iter | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
+| lifting-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+iter | 0 / 2 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 3 | 0.000 / 3.000 | 0 / 1 |
+| pm-strahler+pre+iter | 0 / 2 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 3 | 0.000 / 3.000 | 0 / 1 |
+| pm-succinct | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+iter | 0 / 4 | 0 / 3 | 0 / 3 | 0.000 / 1.500 | 0 / 1 | 0 / 3 | 0.000 / 3.000 | 0 / 2 |
+| pm-succinct+pre+iter | 0 / 4 | 0 / 3 | 0 / 3 | 0.000 / 1.500 | 0 / 1 | 0 / 3 | 0.000 / 3.000 | 0 / 2 |
+| zielonka | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
+| zielonka+pre | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
+| zielonka-sym | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
+| zielonka-sym+pre | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=2_windowsize=4_no_duplication_of_messages.gm · 11488274 vertices / 45840722 edges · 24 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 11488274 | 45840722 | 2 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 4.404 | 1052.789 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.404 | 1052.730 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.444 | 1052.793 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.474 | 1052.777 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 4.370 | 1052.789 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.445 | 1052.789 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.358 | 1052.793 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.387 | 1052.781 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 4.398 | 1052.898 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.372 | 1052.906 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.443 | 1052.859 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.380 | 1052.855 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 4.602 | 1052.668 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.438 | 1052.801 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.408 | 1052.797 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.430 | 1052.656 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 4.430 | 1052.738 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.442 | 1052.668 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.428 | 1052.863 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.365 | 1052.781 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 4.447 | 1052.918 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.450 | 1052.922 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 4.418 | 1052.902 | - | - | - | - | 1:1: failed to allocate the graph edges |
+| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.387 | 1052.902 | - | - | - | - | 1:1: failed to allocate the graph edges |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=2_windowsize=4_read_then_eventually_send.gm · 10782593 vertices / 39508737 edges · 3 complete · 1 timeout · 20 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 10782593 | 39508737 | 2 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 8.690 | 1470.109 | - | - | - | - | Failed to allocate memory |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 7.853 | 1449.520 | - | - | - | - | Failed to allocate memory |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.659 | 1471.375 | - | - | - | - | Failed to allocate memory |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 11.568 | 1454.898 | - | - | - | - | Failed to allocate memory |
+| lifting-adaptive | complete | 0 / 10782593 | 0 / 2 | 0 / 1 | 0 / 2 | H=2, K=1, t=0 / H=2, K=1, t=0 | 29.964 | 1687.266 | odd | - | - | false | - |
+| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 10.690 | 1454.848 | - | - | - | - | Failed to allocate memory |
+| lifting-adaptive+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.102 | 1688.719 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 10.977 | 1454.887 | - | - | - | - | Failed to allocate memory |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 9.555 | 1470.074 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 7.234 | 1454.914 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.913 | 1471.227 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.851 | 1455.020 | - | - | - | - | Failed to allocate memory |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 7.188 | 1455.086 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.864 | 1454.953 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.928 | 1454.887 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.927 | 1455.086 | - | - | - | - | Failed to allocate memory |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 6.977 | 1455.086 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.896 | 1454.961 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.160 | 1454.961 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.905 | 1454.984 | - | - | - | - | Failed to allocate memory |
+| zielonka | complete | 0 / 10782593 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 10.253 | 1455.012 | odd | - | - | false | - |
+| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 7.209 | 1455.121 | - | - | - | - | Failed to allocate memory |
+| zielonka-sym | complete | 0 / 10782593 | 0 / 2 | 0 / 1 | 0 / 2 | — / — | 19.680 | 1686.359 | odd | - | - | false | - |
+| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.658 | 1455.121 | - | - | - | - | Failed to allocate memory |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
+| lifting-adaptive+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
+| zielonka+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka-sym | 0 / 1 | 0 / 1 | 0 / 1 | 0.000 / 1.000 | 0 / 0 | 0 / 2 | 0.000 / 2.000 | 0 / 1 |
+| zielonka-sym+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=2_windowsize=4_read_then_eventually_send_if_fair.gm · 7310722 vertices / 22667778 edges · 17 complete · 7 timeout</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 7310722 | 22667778 | 3 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | timeout | - / - | - / - | - / - | - / - | - / - | 30.166 | 1658.617 | - | - | - | - | deadline exceeded |
+| lifting+pre | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.861 | 955.719 | even | - | - | false | - |
+| lifting+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.167 | 1659.266 | - | - | - | - | deadline exceeded |
+| lifting+pre+iter | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.988 | 955.594 | even | - | - | false | - |
+| lifting-adaptive | complete | 7310722 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 29.453 | 1097.328 | even | - | - | false | - |
+| lifting-adaptive+pre | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 7.423 | 955.426 | even | - | - | false | - |
+| lifting-adaptive+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.070 | 1098.086 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+pre+iter | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.464 | 955.602 | even | - | - | false | - |
+| lifting-sym | timeout | - / - | - / - | - / - | - / - | - / - | 30.176 | 1658.605 | - | - | - | - | deadline exceeded |
+| lifting-sym+pre | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.617 | 955.734 | even | - | - | false | - |
+| lifting-sym+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.169 | 1659.473 | - | - | - | - | deadline exceeded |
+| lifting-sym+pre+iter | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 6.064 | 955.715 | even | - | - | false | - |
+| pm-strahler | timeout | - / - | - / - | - / - | - / - | - / - | 30.160 | 1612.047 | - | - | - | - | deadline exceeded |
+| pm-strahler+pre | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 8.616 | 1472.047 | even | - | - | false | - |
+| pm-strahler+iter | complete | 7310722 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | k=2, t=1, depth=1 / k=2, t=1, depth=2 | 16.170 | 1529.637 | even | - | - | false | - |
+| pm-strahler+pre+iter | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=1 / k=1, t=1, depth=2 | 8.089 | 1474.320 | even | - | - | false | - |
+| pm-succinct | timeout | - / - | - / - | - / - | - / - | - / - | 30.168 | 1613.566 | - | - | - | - | deadline exceeded |
+| pm-succinct+pre | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=1 / bits=0, depth=2 | 8.003 | 1472.090 | even | - | - | false | - |
+| pm-succinct+iter | complete | 7310722 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | bits=1, depth=1 / bits=1, depth=2 | 17.611 | 1531.242 | even | - | - | false | - |
+| pm-succinct+pre+iter | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=1 / bits=0, depth=2 | 8.356 | 1474.438 | even | - | - | false | - |
+| zielonka | complete | 7310722 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | — / — | 6.254 | 955.461 | even | - | - | false | - |
+| zielonka+pre | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.457 | 955.461 | even | - | - | false | - |
+| zielonka-sym | complete | 7310722 / 0 | 2 / 0 | 1 / 0 | 2 / 0 | — / — | 10.806 | 1161.641 | even | - | - | false | - |
+| zielonka-sym+pre | complete | 7310722 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.476 | 955.664 | even | - | - | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| pm-strahler+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct+iter | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka-sym | 1 / 0 | 1 / 0 | 1 / 0 | 1.000 / 0.000 | 0 / 0 | 2 / 0 | 2.000 / 0.000 | 1 / 0 |
+| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=4_windowsize=3_infinitely_often_read_write.gm · 19550209 vertices / 45106177 edges · 24 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 19550209 | 45106177 | 3 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 4.443 | 1279.340 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.338 | 1279.336 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.401 | 1279.195 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.333 | 1279.336 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 4.372 | 1279.277 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.393 | 1279.215 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.290 | 1279.211 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.394 | 1279.062 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 4.331 | 1279.062 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.308 | 1279.320 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.360 | 1279.207 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.360 | 1279.266 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 4.380 | 1279.082 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.349 | 1279.148 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.349 | 1279.199 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.315 | 1279.215 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 4.295 | 1279.074 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.397 | 1279.020 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.302 | 1279.215 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 4.281 | 1279.219 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 4.292 | 1279.195 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.303 | 1279.336 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 4.269 | 1279.270 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 4.259 | 1279.340 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=4_windowsize=3_infinitely_often_receive_d1.gm · 8835074 vertices / 34391042 edges · 11 complete · 1 timeout · 12 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 8835074 | 34391042 | 2 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 7.795 | 1501.676 | - | - | - | - | Failed to allocate memory |
+| lifting+pre | complete | 8835074 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 9.494 | 1305.137 | even | - | - | false | - |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.862 | 1502.559 | - | - | - | - | Failed to allocate memory |
+| lifting+pre+iter | complete | 8835074 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 9.604 | 1305.254 | even | - | - | false | - |
+| lifting-adaptive | complete | 8835074 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=2, K=1, t=0 / H=2, K=1, t=0 | 29.940 | 1409.723 | even | - | - | false | - |
+| lifting-adaptive+pre | complete | 8835074 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 9.187 | 1305.234 | even | - | - | false | - |
+| lifting-adaptive+iter | timeout | - / - | - / - | - / - | - / - | - / - | 30.091 | 1410.836 | - | - | - | - | deadline exceeded |
+| lifting-adaptive+pre+iter | complete | 8835074 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 9.419 | 1305.094 | even | - | - | false | - |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 7.464 | 1501.492 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+pre | complete | 8835074 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 9.498 | 1305.059 | even | - | - | false | - |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.424 | 1502.734 | - | - | - | - | Failed to allocate memory |
+| lifting-sym+pre+iter | complete | 8835074 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 9.119 | 1305.188 | even | - | - | false | - |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 13.694 | 1710.871 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 13.752 | 1673.125 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 14.195 | 1710.680 | - | - | - | - | Failed to allocate memory |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 14.226 | 1673.059 | - | - | - | - | Failed to allocate memory |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 23.920 | 1709.766 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 13.934 | 1671.805 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 24.603 | 1710.629 | - | - | - | - | Failed to allocate memory |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 15.864 | 1673.043 | - | - | - | - | Failed to allocate memory |
+| zielonka | complete | 8835074 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 8.694 | 1208.027 | even | - | - | false | - |
+| zielonka+pre | complete | 8835074 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 9.024 | 1305.133 | even | - | - | false | - |
+| zielonka-sym | complete | 8835074 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 13.013 | 1477.934 | even | - | - | false | - |
+| zielonka-sym+pre | complete | 8835074 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 9.012 | 1305.258 | even | - | - | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-strahler+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| pm-succinct+pre+iter | - / - | - / - | - / - | - / - | - / - | - / - | - / - | - / - |
+| zielonka | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=4_windowsize=3_invariantly_infinitely_many_reachable_taus.gm · 22288897 vertices / 80830465 edges · 24 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 22288897 | 80830465 | 2 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 8.046 | 1457.770 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 8.056 | 1457.703 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.054 | 1458.027 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.910 | 1457.863 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 8.913 | 1457.910 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 8.892 | 1457.801 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.138 | 1457.773 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.243 | 1457.973 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 9.157 | 1457.898 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.662 | 1457.773 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.590 | 1458.023 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.518 | 1457.770 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 8.733 | 1457.773 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 8.795 | 1457.781 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.723 | 1457.777 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.584 | 1457.570 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 6.572 | 1457.652 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.531 | 1457.742 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.105 | 1457.902 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.727 | 1457.766 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 6.724 | 1457.836 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.804 | 1458.141 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 5.846 | 1457.992 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.688 | 1458.047 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=4_windowsize=3_no_generation_of_messages.gm · 6690605 vertices / 29413398 edges · 24 complete</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 6690605 | 29413398 | 1 | 0 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=22 / H=1, K=1, t=22 | 10.215 | 967.930 | even | - | - | false | - |
+| lifting+pre | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.301 | 940.699 | even | - | - | false | - |
+| lifting+iter | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=22 / H=1, K=1, t=22 | 10.549 | 968.715 | even | - | - | false | - |
+| lifting+pre+iter | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.058 | 940.699 | even | - | - | false | - |
+| lifting-adaptive | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=0 / H=1, K=1, t=0 | 10.381 | 967.934 | even | - | - | false | - |
+| lifting-adaptive+pre | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.370 | 940.844 | even | - | - | false | - |
+| lifting-adaptive+iter | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=0 / H=1, K=1, t=0 | 10.564 | 968.758 | even | - | - | false | - |
+| lifting-adaptive+pre+iter | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.063 | 940.781 | even | - | - | false | - |
+| lifting-sym | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=22 / H=1, K=1, t=22 | 9.608 | 1221.336 | even | - | - | false | - |
+| lifting-sym+pre | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.243 | 940.844 | even | - | - | false | - |
+| lifting-sym+iter | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=22 / H=1, K=1, t=22 | 9.937 | 1222.086 | even | - | - | false | - |
+| lifting-sym+pre+iter | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 4.932 | 940.973 | even | - | - | false | - |
+| pm-strahler | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | k=1, t=1, depth=0 / k=1, t=1, depth=1 | 12.390 | 1578.086 | even | - | - | false | - |
+| pm-strahler+pre | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=0 / k=1, t=1, depth=1 | 7.640 | 1545.703 | even | - | - | false | - |
+| pm-strahler+iter | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | k=1, t=1, depth=0 / k=1, t=1, depth=1 | 10.426 | 1547.559 | even | - | - | false | - |
+| pm-strahler+pre+iter | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=0 / k=1, t=1, depth=1 | 7.355 | 1547.891 | even | - | - | false | - |
+| pm-succinct | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | bits=1, depth=0 / bits=1, depth=1 | 17.382 | 1578.184 | even | - | - | false | - |
+| pm-succinct+pre | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=0 / bits=0, depth=1 | 7.354 | 1545.828 | even | - | - | false | - |
+| pm-succinct+iter | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | bits=1, depth=0 / bits=1, depth=1 | 11.037 | 1547.695 | even | - | - | false | - |
+| pm-succinct+pre+iter | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=0 / bits=0, depth=1 | 7.223 | 1547.961 | even | - | - | false | - |
+| zielonka | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 5.560 | 940.973 | even | - | - | false | - |
+| zielonka+pre | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 4.997 | 940.969 | even | - | - | false | - |
+| zielonka-sym | complete | 6690605 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 7.610 | 1169.883 | even | - | - | false | - |
+| zielonka-sym+pre | complete | 6690605 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 4.916 | 940.785 | even | - | - | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| pm-strahler+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| pm-strahler+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=4_windowsize=3_nodeadlock.gm · 7429633 vertices / 32985601 edges · 24 complete</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 7429633 | 32985601 | 1 | 0 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=22 / H=1, K=1, t=22 | 11.228 | 1079.508 | even | - | - | false | - |
+| lifting+pre | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.884 | 1047.102 | even | - | - | false | - |
+| lifting+iter | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=22 / H=1, K=1, t=22 | 11.679 | 1080.516 | even | - | - | false | - |
+| lifting+pre+iter | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.520 | 1046.891 | even | - | - | false | - |
+| lifting-adaptive | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=0 / H=1, K=1, t=0 | 11.190 | 1079.602 | even | - | - | false | - |
+| lifting-adaptive+pre | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.851 | 1047.148 | even | - | - | false | - |
+| lifting-adaptive+iter | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=0 / H=1, K=1, t=0 | 11.515 | 1080.512 | even | - | - | false | - |
+| lifting-adaptive+pre+iter | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.512 | 1047.031 | even | - | - | false | - |
+| lifting-sym | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=22 / H=1, K=1, t=22 | 10.592 | 1360.820 | even | - | - | false | - |
+| lifting-sym+pre | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.767 | 1047.145 | even | - | - | false | - |
+| lifting-sym+iter | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | H=1, K=1, t=22 / H=1, K=1, t=22 | 10.916 | 1361.703 | even | - | - | false | - |
+| lifting-sym+pre+iter | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.464 | 1047.145 | even | - | - | false | - |
+| pm-strahler | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | k=1, t=1, depth=0 / k=1, t=1, depth=1 | 13.103 | 1759.688 | even | - | - | false | - |
+| pm-strahler+pre | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=0 / k=1, t=1, depth=1 | 9.381 | 1723.809 | even | - | - | false | - |
+| pm-strahler+iter | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | k=1, t=1, depth=0 / k=1, t=1, depth=1 | 11.505 | 1726.078 | even | - | - | false | - |
+| pm-strahler+pre+iter | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | k=1, t=1, depth=0 / k=1, t=1, depth=1 | 8.282 | 1725.969 | even | - | - | false | - |
+| pm-succinct | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | bits=1, depth=0 / bits=1, depth=1 | 25.105 | 1759.488 | even | - | - | false | - |
+| pm-succinct+pre | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=0 / bits=0, depth=1 | 8.309 | 1723.750 | even | - | - | false | - |
+| pm-succinct+iter | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | bits=1, depth=0 / bits=1, depth=1 | 19.059 | 1697.684 | even | - | - | false | - |
+| pm-succinct+pre+iter | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | bits=0, depth=0 / bits=0, depth=1 | 16.295 | 1726.008 | even | - | - | false | - |
+| zielonka | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 6.654 | 1047.035 | even | - | - | false | - |
+| zielonka+pre | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 6.167 | 1047.035 | even | - | - | false | - |
+| zielonka-sym | complete | 7429633 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | — / — | 9.123 | 1303.723 | even | - | - | false | - |
+| zielonka-sym+pre | complete | 7429633 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | — / — | 5.341 | 1047.098 | even | - | - | false | - |
+
+| Backend | internal_nodes E / O | width E / O | max_arity E / O | mean_internal_arity E / O | branching_nodes E / O | min_leaf_depth E / O | mean_leaf_depth E / O | strahler E / O |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-adaptive+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-adaptive+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| lifting-sym+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| lifting-sym+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| pm-strahler+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-strahler+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| pm-strahler+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| pm-succinct+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| pm-succinct+iter | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| pm-succinct+pre+iter | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| zielonka+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+| zielonka-sym | 0 / 0 | 1 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 1 / 0 | 1.000 / 0.000 | 1 / 0 |
+| zielonka-sym+pre | 0 / 0 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 | 0 / 0 | 0.000 / 0.000 | 0 / 0 |
+
+</details>
+
+<details>
+<summary>modelchecking/games/SWPdatasize=4_windowsize=3_read_then_eventually_send_if_fair.gm · 24565250 vertices / 73675010 edges · 24 out of memory</summary>
+
+| Vertices | Edges | Distinct priorities | Maximum priority |
+| --- | --- | --- | --- |
+| 24565250 | 73675010 | 3 | 2 |
+
+| Backend | Outcome | Won E / O | Nodes E / O | Leaves E / O | Height E / O | Parameters E / O | Seconds | Peak RSS MiB | Start winner | Reference | Agrees | Winner disagreement | Detail |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lifting | out of memory | - / - | - / - | - / - | - / - | - / - | 5.680 | 1438.098 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 5.680 | 1438.047 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 5.680 | 1438.160 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 9.177 | 1437.977 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive | out of memory | - / - | - / - | - / - | - / - | - / - | 9.156 | 1437.984 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 9.166 | 1438.094 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.912 | 1438.109 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-adaptive+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.922 | 1438.090 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 8.943 | 1437.859 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.273 | 1437.984 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.242 | 1437.973 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| lifting-sym+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 6.211 | 1438.090 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler | out of memory | - / - | - / - | - / - | - / - | - / - | 7.547 | 1437.855 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 7.588 | 1437.914 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 7.557 | 1437.988 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-strahler+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.726 | 1437.973 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct | out of memory | - / - | - / - | - / - | - / - | - / - | 8.734 | 1438.105 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 8.714 | 1437.922 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.724 | 1437.992 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| pm-succinct+pre+iter | out of memory | - / - | - / - | - / - | - / - | - / - | 8.727 | 1438.055 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka | out of memory | - / - | - / - | - / - | - / - | - / - | 8.616 | 1437.848 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.949 | 1438.234 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym | out of memory | - / - | - / - | - / - | - / - | - / - | 6.879 | 1437.844 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
+| zielonka-sym+pre | out of memory | - / - | - / - | - / - | - / - | - / - | 6.848 | 1438.164 | - | - | - | - | 16777216:1: failed to allocate the declaration list |
 
 </details>
 
