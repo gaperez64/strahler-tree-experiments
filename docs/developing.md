@@ -113,13 +113,18 @@ with auditwheel on Linux and delocate on macOS, checks their tags and license
 metadata, and smoke-tests each installed wheel in a fresh environment outside
 the checkout. Nothing is uploaded to PyPI.
 
-Before creating a release tag `v<version>`, set `version : '<version>'` in the
-root `meson.build`, without the `v`. Rebuild and run
-`meson test -C <build-dir> --print-errorlogs`, then commit the version bump and
-tag that commit. The generated version header and test expectations follow
-Meson automatically. The regular suite checks every built command's version;
-the release workflow rejects tags that differ from the Meson project version
-before building.
+To release, push a tag `vX.Y.Z` (next: `v0.4.0`). No version file edits are needed.
+CI creates the GitHub release and uploads its assets. Run
+`meson test -C <build-dir> --print-errorlogs` before tagging.
+
+Meson reads the version from `ci/version.py`: a canonical PEP 440
+`STRAHLER_VERSION` override, then Git tags, then a frozen sdist `VERSION`, then
+Git archive metadata. A tag `v0.3.1` gives `0.3.1`; N commits later gives
+`0.3.2.devN+gHASH`. Dirty builds add `+dirty` or `.dirty` to the local part.
+Fetch tags when cloning. Source archives carry their version; source copies
+without metadata need `STRAHLER_VERSION`. Missing versions fail configuration.
+CLI versions, Python metadata and `strahler_version()` follow Meson. The shared
+library filename uses ABI version 0. CI checks the derived version against the tag.
 
 ## Regenerating example trees
 

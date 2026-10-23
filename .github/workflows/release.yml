@@ -1,8 +1,8 @@
 name: release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ["v[0-9]*"]
   workflow_dispatch:
     inputs:
       tag:
@@ -17,19 +17,20 @@ jobs:
   wheels:
     uses: ./.github/workflows/wheels.yml
     with:
-      tag: ${{ github.event.release.tag_name || inputs.tag }}
+      tag: ${{ inputs.tag || github.ref_name }}
 
   notebooks:
     name: Release wheels and notebooks
     needs: wheels
     runs-on: ubuntu-24.04
     env:
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ env.RELEASE_TAG }}
+          fetch-depth: 0
 
       - uses: actions/download-artifact@v8
         with:
@@ -39,18 +40,17 @@ jobs:
 
       - name: Check version, package notebooks and upload
         run: |
-          python3 -m venv "$RUNNER_TEMP/notebooks-tools"
-          "$RUNNER_TEMP/notebooks-tools/bin/pip" install meson==1.8.5
-          project_version=$("$RUNNER_TEMP/notebooks-tools/bin/meson" introspect --projectinfo meson.build | python3 -c 'import json, sys; print(json.load(sys.stdin)["version"])')
+          project_version=$(python3 ci/version.py)
           if [[ "$project_version" != "${RELEASE_TAG#v}" ]]; then
-            echo "::error::Meson project version $project_version does not match release tag $RELEASE_TAG. Update meson.build before tagging."
+            echo "::error::Derived version $project_version does not match release tag $RELEASE_TAG. Check the checkout, fetched tags and STRAHLER_VERSION."
             exit 1
           fi
-          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
           ci/build-notebooks-zip.sh "$project_version" wheelhouse dist
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" || gh release create "$RELEASE_TAG" --verify-tag --generate-notes --repo "$GITHUB_REPOSITORY"
           gh release upload "$RELEASE_TAG" wheelhouse/*.whl dist/*.zip --clobber --repo "$GITHUB_REPOSITORY"
 
   package:
+    needs: notebooks
     name: Release ${{ matrix.platform }}
     strategy:
       fail-fast: false
@@ -68,7 +68,7 @@ jobs:
             cxx: clang++
     runs-on: ${{ matrix.os }}
     env:
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
@@ -99,9 +99,9 @@ jobs:
 
       - name: Check release version
         run: |
-          project_version=$(meson introspect --projectinfo meson.build | python3 -c 'import json, sys; print(json.load(sys.stdin)["version"])')
+          project_version=$(python3 ci/version.py)
           if [[ "$project_version" != "${RELEASE_TAG#v}" ]]; then
-            echo "::error::Meson project version $project_version does not match release tag $RELEASE_TAG. Update meson.build before tagging."
+            echo "::error::Derived version $project_version does not match release tag $RELEASE_TAG. Check the checkout, fetched tags and STRAHLER_VERSION."
             exit 1
           fi
 

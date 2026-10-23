@@ -197,7 +197,8 @@ def test_game_and_generators():
         assert game.names == {42: 'a', 99: None}
     with pytest.raises(ValueError, match='closed'):
         strahler.decompose(game)
-    assert strahler.version()
+    project = json.loads((BUILD / 'meson-info/intro-projectinfo.json').read_text())
+    assert strahler.version() == project['version']
     actual = strahler.genstree(2, 3, 1)
     expected = cli('genstree', ['--json', '--strahler=2', '--height=3', '--log-leaves=1'], '')
     assert actual == json.loads(expected.stdout)
@@ -273,7 +274,7 @@ def test_versioned_library_loader(tmp_path):
         assert completed.returncode == 0, completed.stderr
 
 
-@pytest.mark.parametrize('version', [b'999.0.0', b'0.4.0', b'0.3', b'0.3.bad', None])
+@pytest.mark.parametrize('version', [b'999.0.0', b'0.5.0', b'0.3', b'0.3.bad', None])
 def test_incompatible_library_rejected(version, monkeypatch):
     from unittest.mock import Mock
 
@@ -287,11 +288,12 @@ def test_incompatible_library_rejected(version, monkeypatch):
     lib.strahler_version.assert_called_once_with()
 
 
-def test_missing_abi_symbol_rejected(monkeypatch):
+@pytest.mark.parametrize('version', [None, b'0.4.0', b'0.4.1.dev2+g1234567.dirty'])
+def test_missing_abi_symbol_rejected(version, monkeypatch):
     from types import SimpleNamespace
     from unittest.mock import Mock
 
-    lib = SimpleNamespace(strahler_version=Mock(return_value=b'0.3.1'))
+    lib = SimpleNamespace(strahler_version=Mock(return_value=version or strahler.version().encode()))
     monkeypatch.setattr(_native, '_library', None)
     monkeypatch.setattr(_native.C, 'CDLL', lambda path: lib)
     with pytest.raises(ImportError, match='missing.*strahler_game_parse'):

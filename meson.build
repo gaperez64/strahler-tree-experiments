@@ -2,7 +2,7 @@ project(
   'strahler-tree-experiments',
   'c',
   'cpp',
-  version : '0.3.1',
+  version : run_command('python3', files('ci/version.py'), check : true).stdout().strip(),
   meson_version : '>=1.4.0',
   default_options : [
     'warning_level=3',
@@ -339,6 +339,9 @@ test('test_ad_lift', test_ad_lift_exe, timeout : 120,
   workdir : meson.project_source_root())
 
 python = find_program('python3')
+meson.add_dist_script(python, files('ci/version.py'), '--dist', meson.project_version())
+test('test_version', python,
+  args : files('tests/test_version.py'), suite : 'python')
 test('test_pg_game_property', python,
   args : [files('tests/test_pg_game_property.py'), pgfilt], suite : 'python')
 test('test_pg_game_memory', python,
@@ -486,7 +489,7 @@ foreach program : cli_programs
     suite : 'python')
 endforeach
 test('source_version', python,
-  args : [files('tests/test_source_version.py'), meson.project_version(), find_program('meson')],
+  args : [files('tests/test_source_version.py'), meson.project_version(), find_program('meson').full_path()],
   suite : 'python', timeout : 120)
 
 run_with_input = find_program('tests/run-with-input.sh')
@@ -1604,7 +1607,8 @@ strahler_dependencies = [ad_lift_dep, zielonka_dep, ad_tree_dot_dep,
   pm_tree_dot_dep, pg_preprocess_dep, cli_version_dep]
 libstrahler = shared_library('strahler', strahler_sources,
   dependencies : strahler_dependencies,
-  version : meson.project_version(), soversion : '0',
+  # Meson requires a numeric library filename version; the API reports the full version.
+  soversion : '0',
   gnu_symbol_visibility : 'hidden',
   # Compiler runtimes such as libgcov can otherwise add public symbols.
   link_args : meson.get_compiler('c').get_supported_link_arguments('-Wl,--exclude-libs,ALL'),

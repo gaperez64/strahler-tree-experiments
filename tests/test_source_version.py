@@ -23,6 +23,7 @@ with tempfile.TemporaryDirectory(prefix="source version ") as directory:
     for name in ("src", "tests", "ci", "scripts"):
         shutil.copytree(source / name, copied / name,
                         ignore=shutil.ignore_patterns("actual", "__pycache__"))
+    (copied / "VERSION").write_text(version + "\n", encoding="utf-8")
 
     def run(*command):
         return subprocess.run(command, check=True, text=True, timeout=90)
@@ -31,7 +32,7 @@ with tempfile.TemporaryDirectory(prefix="source version ") as directory:
     run("git", "-C", str(parent), "-c", "user.name=Version test",
         "-c", "user.email=version@example.invalid", "-c", "commit.gpgsign=false",
         "commit", "--allow-empty", "-m", "Unrelated repository")
-    run("git", "-C", str(parent), "tag", "unrelated-version")
+    run("git", "-C", str(parent), "tag", "v99.0.0")
     build = parent / "build"
     run(meson, "setup", str(build), str(copied), "-Dlenstree=disabled")
     run(meson, "compile", "-C", str(build), "-j1", "genstree")

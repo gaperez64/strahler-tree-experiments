@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - uses: actions/download-artifact@v8
         with:
@@ -31,9 +33,7 @@ jobs:
       - name: Build and check notebooks zip
         run: |
           python3 tests/test_notebooks_zip.py
-          python3 -m venv "$RUNNER_TEMP/notebooks-tools"
-          "$RUNNER_TEMP/notebooks-tools/bin/pip" install meson==1.8.5
-          version=$("$RUNNER_TEMP/notebooks-tools/bin/meson" introspect --projectinfo meson.build | python3 -c 'import json, sys; print(json.load(sys.stdin)["version"])')
+          version=$(python3 ci/version.py)
           ci/build-notebooks-zip.sh "$version" wheelhouse dist
           unzip -q "dist/strahler-notebooks-$version.zip" -d "$RUNNER_TEMP/notebooks"
           cd "$RUNNER_TEMP/notebooks/strahler-notebooks-$version"
@@ -75,7 +75,7 @@ jobs:
           "$RUNNER_TEMP/actionlint" .github/workflows/*.yml
 
       - name: Check Python syntax
-        run: python3 -m py_compile src/convert_out.py scripts/compare_oink.py scripts/gen_decomp.py scripts/make_trees.py scripts/gen_keiren.py tests/test_gen_decomp.py tests/test_make_trees.py tests/test_gen_keiren.py tests/test_pg_game_property.py tests/test_pg_game_memory.py tests/test_cli.py tests/test_source_version.py
+        run: python3 -m py_compile src/convert_out.py scripts/compare_oink.py scripts/gen_decomp.py scripts/make_trees.py scripts/gen_keiren.py tests/test_gen_decomp.py tests/test_make_trees.py tests/test_gen_keiren.py tests/test_pg_game_property.py tests/test_pg_game_memory.py tests/test_cli.py tests/test_source_version.py ci/version.py tests/test_version.py
 
   decomp:
     name: Tracked decompositions
@@ -95,6 +95,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -150,6 +152,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -191,6 +195,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -216,6 +222,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -241,6 +249,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -266,6 +276,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -317,6 +329,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -345,6 +359,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -373,6 +389,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6

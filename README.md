@@ -19,6 +19,10 @@ meson test -C build --print-errorlogs
 Executables go in `build/`. Release binaries for `linux-x86_64` and
 `macos-arm64` are attached to [GitHub releases](https://github.com/vfluegel/strahler-tree-experiments/releases).
 
+To release, push a tag such as `v0.4.0`; no version file edits are needed.
+Builds take their version from Git tags. See [developing](docs/developing.md#releases)
+for source archives and version overrides.
+
 ## Python and notebooks
 
 Download `strahler-notebooks-<version>.zip` from

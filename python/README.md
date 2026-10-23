@@ -33,7 +33,7 @@ is excluded from the wheel. Meson-python bundles `libstrahler` in
 `.strahler.mesonpy.libs` beside the package and tags the wheel
 `py3-none-<platform>`. Regular Meson installs use the system shared-library
 search path. `STRAHLER_LIB` may instead name a library file or a Meson build
-directory during development. The loader requires the compatible 0.3.x ABI
+directory during development. The loader requires the compatible 0.3.x/0.4.x ABI
 and rejects other library versions with `ImportError` before binding functions.
 
 ## Load, solve, and inspect
