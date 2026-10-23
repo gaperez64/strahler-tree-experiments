@@ -283,16 +283,18 @@ def limits(binary, directory):
         assert not any(event['event'] == 'result' for event in events)
         assert events[-1] == {'event': 'incomplete', 'step': len(events) - 1,
                               'reason': reason, 'exit_status': status}
-    with open('/dev/full', 'wb') as output:
-        result = subprocess.run([str(binary), f'--trace={trace}', str(game)],
-                                stdout=output, stderr=subprocess.PIPE, timeout=30)
-    assert result.returncode == 5
-    events = [json.loads(line) for line in trace.read_text().splitlines()]
-    assert events[-2]['event'] == 'result'
-    assert events[-1] == {'event': 'incomplete', 'step': events[-2]['step'] + 1,
-                          'reason': 'cannot flush output streams', 'exit_status': 5}
-    result = subprocess.run([str(binary), '--trace=/dev/full', str(game)], capture_output=True)
-    assert result.returncode == 1
+    # macOS has no /dev/full; these write-failure checks are Linux-only.
+    if Path('/dev/full').exists():
+        with open('/dev/full', 'wb') as output:
+            result = subprocess.run([str(binary), f'--trace={trace}', str(game)],
+                                    stdout=output, stderr=subprocess.PIPE, timeout=30)
+        assert result.returncode == 5
+        events = [json.loads(line) for line in trace.read_text().splitlines()]
+        assert events[-2]['event'] == 'result'
+        assert events[-1] == {'event': 'incomplete', 'step': events[-2]['step'] + 1,
+                              'reason': 'cannot flush output streams', 'exit_status': 5}
+        result = subprocess.run([str(binary), '--trace=/dev/full', str(game)], capture_output=True)
+        assert result.returncode == 1
     result = subprocess.run([str(binary), f'--trace={directory / "missing/file"}', str(game)],
                             capture_output=True, timeout=30)
     assert result.returncode == 1
