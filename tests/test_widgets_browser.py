@@ -13,7 +13,7 @@ except ImportError:
 from otj22 import hk
 
 ROOT = Path(__file__).resolve().parents[1]
-FIELDS = ('kind', 'data', 'hovered', 'highlights', 'selected', 'mode', 'next_kind')
+FIELDS = ('kind', 'data', 'hovered', 'highlights', 'selected', 'mode', 'next_kind', 'edges', 'hovered_path', 'owner_styles')
 
 
 @pytest.fixture(scope='module')
@@ -111,15 +111,15 @@ def test_game_render_and_selection(page, text):
         mount(page, view)
         assert page.locator('svg').count() == 1
         assert page.locator('[data-vertex]').count() == len(game.vertices)
-        assert page.locator('g > circle').count() == sum(p == 0 for p in game.owner.values())
-        assert page.locator('g > rect').count() == sum(p == 1 for p in game.owner.values())
+        assert page.locator('g[data-vertex] > rect').count() == sum(p == 0 for p in game.owner.values())
+        assert page.locator('g[data-vertex] > polygon').count() == sum(p == 1 for p in game.owner.values())
         assert page.locator('path[marker-end]').count() == len(game.edges)
         vertex = game.vertices[-1]
         page.locator(f'[data-vertex="{vertex}"]').click()
         page.evaluate('window.pending')
         assert view.selected == vertex
         assert page.evaluate('models[0].get("selected")') == vertex
-        assert page.locator(f'[data-vertex="{vertex}"] > :first-child').get_attribute('stroke') == '#dc2626'
+        assert page.locator(f'#widget-0 [data-vertex="{vertex}"] > :first-child').get_attribute('stroke') == '#dc2626'
         page.locator(f'[data-vertex="{game.vertices[0]}"]').focus()
         page.keyboard.press('Enter')
         page.evaluate('window.pending')
@@ -130,7 +130,7 @@ def nodes(root):
     return [] if root is None else [root] + [n for child in root['children'] for n in nodes(child)]
 
 
-@pytest.mark.parametrize('mode', ['boxes', 'tree'])
+@pytest.mark.parametrize('mode', ['squares', 'tree'])
 @pytest.mark.parametrize('kind', ['decomposition', 'strahler', 'prefix', 'measures', 'empty'])
 def test_tree_render_and_interaction(page, mode, kind):
     from strahler.widgets import GameView, TreeView
@@ -147,28 +147,28 @@ def test_tree_render_and_interaction(page, mode, kind):
         assert len(expected) == dict(decomposition=5, strahler=17, prefix=5, measures=7, empty=0)[kind]
 
         def counts():
-            boxes = view.mode == 'boxes'
-            assert tree.locator('svg').count() == (1 if expected and not boxes else 0)
-            assert tree.locator('svg g[role="button"]').count() == (0 if boxes else len(expected))
-            assert tree.locator('svg line').count() == (0 if boxes else max(0, len(expected)-1))
+            squares = view.mode == 'squares'
+            assert tree.locator('svg').count() == (1 if expected else 0)
+            assert tree.locator('svg g[role="button"]').count() == len(expected)
+            assert tree.locator('svg line').count() == (0 if squares else max(0, len(expected)-1))
             for part in 'HTS':
-                assert tree.locator(f'.part-{part}').count() == (len(expected) if boxes else 0)
+                assert tree.locator(f'.part-{part}').count() == (len(expected) if squares else 0)
 
         counts()
         if not expected:
             assert 'empty tree' in tree.inner_text()
             return
-        # Select a child to catch bubbling through nested parent boxes.
+        # Select a child to catch bubbling through nested parent regions.
         child = expected[1]
         target = tree.locator('[data-path="' + str(child['path']).replace(' ', '') + '"]')
         # Hit the node center; SVG group corners can be outside its rounded rectangle.
-        position = {'x': 2, 'y': 2} if mode == 'boxes' else None
+        position = {'x': 10, 'y': 10} if mode == 'squares' else None
         target.hover(position=position)
         page.evaluate('window.pending')
         assert view.hovered == game_view.hovered == child['vertices']
         assert page.evaluate('models[1].get("hovered")') == child['vertices']
         for vertex in child['vertices']:
-            assert page.locator(f'[data-vertex="{vertex}"] > :first-child').get_attribute('stroke') == '#c026d3'
+            assert page.locator(f'#widget-0 [data-vertex="{vertex}"] > :first-child').get_attribute('stroke') == '#c026d3'
         target.click(position=position)
         page.evaluate('window.pending')
         assert view.selected == child['path']
@@ -180,7 +180,7 @@ def test_tree_render_and_interaction(page, mode, kind):
         tree.get_by_role('combobox').focus()
         page.evaluate('window.pending')
         assert game_view.hovered == []
-        tree.get_by_role('combobox').select_option('tree' if mode == 'boxes' else 'boxes')
+        tree.get_by_role('combobox').select_option('tree' if mode == 'squares' else 'squares')
         page.evaluate('window.pending')
         counts()
 
@@ -202,7 +202,7 @@ def test_stepper_render_and_navigation(page, algorithm):
             assert controls.locator('.timeline line').count() == len(stepper.cursor.ticks) + 1
             for i, view in enumerate(stepper.tree_views, 2):
                 for part in 'HTS':
-                    assert page.locator(f'#widget-{i} .part-{part}').count() == len(nodes(view.data))
+                    assert page.locator(f'#widget-{i} .part-{part}').count() == (len(nodes(view.data)) if view.mode == 'squares' else 0)
             for player, badge in enumerate(stepper.badges):
                 text = controls.locator('.badge').nth(player).inner_text()
                 assert badge['status'] in text
@@ -241,3 +241,48 @@ def test_stepper_render_and_navigation(page, algorithm):
             page.evaluate('window.pending')
             assert stepper.index == stepper.cursor.calls[0]['index']
             check_state()
+
+
+def test_squares_link_to_game_and_tree(page):
+    import runpy
+    from strahler.widgets import GameView, TreeView
+    paper = runpy.run_path(str(ROOT / 'jupyter-examples/otj22.py'))['PAPER_FIG1']
+    with strahler.Game.from_file(ROOT / 'tests/games/otj22-fig1.gm') as game:
+        graph = GameView(game)
+        squares = TreeView(paper, graph, mode='squares')
+        tree = squares.link(TreeView(paper, graph, mode='tree'))
+        graph.highlight([0], '#abc', 'target')
+        mount(page, graph, squares, tree)
+        assert page.locator('#widget-1 .part-S').count() == 6
+        assert page.locator('#widget-1 g[data-vertex] > polygon').count() == sum(
+            owner == 1 for owner in game.owner.values())
+        assert page.locator('#widget-1 path[marker-end]').count() == len(game.edges)
+        assert page.locator('#widget-1 [data-vertex="0"] > polygon').get_attribute('fill') == '#abc'
+
+        def check(path, vertices):
+            page.evaluate('window.pending')
+            assert squares.hovered_path == tree.hovered_path == path
+            assert graph.hovered == squares.hovered == tree.hovered == vertices
+            key = str(path).replace(' ', '')
+            for index in (1, 2):
+                assert page.locator(f'#widget-{index} [data-node-outline="{key}"]').get_attribute('stroke') == '#c026d3'
+            for v in vertices:
+                for index in (0, 1):
+                    assert page.locator(f'#widget-{index} [data-vertex="{v}"] > :first-child').get_attribute('stroke') == '#c026d3'
+
+        # Hover S, H, and T of the same node, then an empty descendant.
+        for part in 'SHT':
+            page.locator(f'#widget-1 [data-path="[0]"] > .part-{part}').hover(position={'x': 10, 'y': 10})
+            check([0], [0, 1, 2])
+        page.locator('#widget-1 [data-path="[0,0]"] > .part-H').hover(position={'x': 10, 'y': 10})
+        check([0, 0], [])
+        page.locator('#widget-2 [data-path="[1]"]').hover()
+        check([1], [3, 4, 5, 6, 7, 8, 9])
+        page.locator('#widget-2 [data-path="[1]"]').click()
+        page.evaluate('window.pending')
+        assert squares.selected == tree.selected == [1]
+        page.mouse.move(0, 0)
+        page.locator('#widget-2 select').focus()
+        page.evaluate('window.pending')
+        assert tree.hovered_path is squares.hovered_path is None
+        assert graph.hovered == []

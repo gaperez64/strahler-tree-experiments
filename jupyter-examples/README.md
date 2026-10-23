@@ -1,8 +1,8 @@
 # Offline Jupyter examples
 
-Six notebooks for the public `strahler` Python API. Run every notebook from top
-to bottom; each first cell prints the package and library versions and stops if
-they differ. Keep this directory as the notebook working directory so its game
+Six notebooks for the public `strahler` Python API. Run each notebook from top
+to bottom. Its first cell prints the package and library versions and stops if
+they differ. Use this directory as the notebook working directory so its game
 and Python helpers are importable. Rendering uses inline ESM/CSS and SVG, with no
 CDN, Graphviz, or runtime network access. Installation may need internet access
 for Jupyter and the optional Python dependencies.
@@ -14,7 +14,7 @@ for Jupyter and the optional Python dependencies.
 | [03-otj22-mcnaughton-zielonka](03-otj22-mcnaughton-zielonka.ipynb) | Figure 1, Hₖ, both recursive algorithms, call trees, live k=2…16 counts |
 | [04-step-through-lifting](04-step-through-lifting.ipynb) | Strahler/adaptive hosts, +iter, lifts/rounds/phases, partial candidates |
 | [05-compare-backends](05-compare-backends.ipynb) | +pre/+iter metrics, generated and progress-measure prefix trees |
-| [06-check-your-own-tree](06-check-your-own-tree.ipynb) | Handwritten trees, located failures, repair |
+| [06-check-your-own-tree](06-check-your-own-tree.ipynb) | Handwritten trees, failure locations, repair |
 
 ## Release zip
 
@@ -60,6 +60,11 @@ Editable imports can rebuild native code; keep this venv activated so Meson is
 available. `STRAHLER_LIB` may select an existing development build instead of the
 library beside the package, but its version must match package metadata.
 
+After changing a notebook or the library, run `python scripts/execute_notebooks.py`
+from the repository root in that venv. It saves executed outputs for GitHub,
+including static game and tree views, and removes widget state and timing data.
+Rerun the cells in Jupyter to use the interactive controls.
+
 ## Checkout (uv)
 
 ```sh
@@ -91,40 +96,50 @@ display(view, stepper, stepper.call_tree())
 ```
 
 - `GameView(game, coordinates={id: (x, y), ...})` scales caller coordinates.
-  Circles are Even, squares Odd; labels show priority and name. `selected` is
+  Squares are Even, regular pentagons Odd; labels show priority and name. `selected` is
   the clicked external ID. Named highlight layers are replaced independently.
   IDs above JavaScript's exact integer range (2⁵³−1) are rejected; renumber them
   before displaying the game.
-- `TreeView(tree, game_view=view, mode='boxes')` accepts a Node, H/T/S dictionary,
+- `TreeView(tree, game_view=view)` accepts a Node, H/T/S dictionary,
   JSON text, `genstree` document, or a PR #31 prefix tree. Set `tree` to update;
-  switch `mode` between `boxes` and `tree`. Hover highlights its vertices.
-  `None` and documents with `tree: null` display an explicit empty placeholder.
+  switch `mode` between `squares` and `tree`. Decompositions with at most 40
+  vertices and depth at most 4 (root depth 0) start in squares; others use a tree.
+  Squares have a full-height S column on the right, H above T on the left, and
+  ordered children below. Empty regions stay visible. Pass `game_view` or
+  `game=game` for shapes, priorities, and game edges; otherwise vertices show IDs.
+  Light grey edges run behind vertices. `edges=False` hides them; more than 200
+  edges among displayed vertices suppresses all arrows. Hover highlights the
+  node's vertices. `view.link(other)` shares hover and selection between two
+  TreeViews of the same tree. `boxes` is a deprecated alias for one release.
+  `None` and documents with `tree: null` display an empty placeholder.
 - `Stepper(run)` exposes `state`, `index`, `badges`, `game_view`, `tree_views`,
   `seek(i)`, `step()`, `back()`, `next(kind)`, `end()`, and `verify(player)`.
   `call_tree()` creates a linked call tree. The slider sends on release, not
   during dragging. State and checkpoints are computed lazily; the default
   interval caches about 128 prefixes for large recordings. Timeline ticks are
   sampled to at most 1,000. No full trace is sent to the frontend.
+  Tree views follow the same size/depth rule as the algorithm runs, until you
+  choose a mode explicitly.
 
-Collection is synchronous, and the trace's event limit still applies. A limit
-failure is an exception, never a solved game. `end()` jumps to the end of the
-recording. Badges keep an algorithm's latest **recorded** check, with its step
-and original subgame, separate from a fresh `check()` verdict on the **current**
-candidate, including its `Condition` name (for example, `PRIORITY`). Failed
-Definition 1 checks display “decomposition candidate”; this
+Collection is synchronous, and the trace's event limit still applies. Exceeding
+the limit raises an exception and does not return a solved game. `end()` jumps
+to the end of the recording. Badges show the algorithm's latest recorded check
+with its step and original subgame. They also show a separate, fresh `check()`
+verdict on the current candidate, including its `Condition` name (for example,
+`PRIORITY`). Failed Definition 1 checks display "decomposition candidate"; this
 does not independently certify Definition 3. Lifting candidates pass through
 `materialize_partial`; structural diagnostics remain visible beside verdicts.
 
-The paper notebook cites [Thejaswini–Ohlmann–Jurdziński, FSTTCS 2022](https://doi.org/10.4230/LIPIcs.FSTTCS.2022.44).
+The paper notebook cites [Thejaswini, Ohlmann, and Jurdziński, FSTTCS 2022](https://doi.org/10.4230/LIPIcs.FSTTCS.2022.44).
 Its handwritten Figure 1 tree includes the empty ε₁₁ child; solver trees prune
 it. The generator is copied from the checked repository fixture. Its streaming
 call counter uses the documented C ABI, retaining no event list, and frees all
 native handles even on error. It reuses the package's ABI-checked loader and C
-signatures through `strahler._native`. All k=2…16 counts are recomputed and asserted in
-the notebook. `zielonka-sym` follows the corrected entry invariant and trap
+signatures through `strahler._native`. The notebook recomputes and asserts all
+k=2…16 counts. `zielonka-sym` follows the corrected entry invariant and trap
 closure documented in `docs/symmetric.md`; the notebook and widget identify
 that difference from printed pseudocode. Pseudocode highlighting maps recorded
-events to abbreviated semantic blocks, rather than claiming exact C lines.
+events to abbreviated semantic blocks; it does not identify exact C lines.
 
 ## Tests
 
@@ -148,8 +163,9 @@ PYTHONPATH=python python -m pytest tests/test_widget_state.py \
 
 `nbclient` starts the kernel from the test interpreter, executes every notebook,
 prints each runtime, and rejects error outputs, including those captured in
-Output widgets. Source notebooks must have empty outputs, no execution counts,
-and no saved widget state. Never save executed outputs in the checkout. Node
+Output widgets. Saved notebooks have outputs and execution counts, static
+fallbacks for widgets, and no saved widget state. A version check reminds you to
+rerun them after a release bump. The execution test runs a copy. Node
 checks inline ESM syntax when available locally and is required for that check
 in CI. The package CI runs the same tests on Linux and macOS. Browser rendering
 and pointer/keyboard interactions are tested with Playwright's Chromium headless
