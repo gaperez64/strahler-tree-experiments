@@ -422,5 +422,9 @@ jobs:
         if: runner.os == 'Linux'
         run: meson test -C "$RUNNER_TEMP/py-build" test_widgets_browser --print-errorlogs
 
+      - name: Install the package for notebook kernels
+        # The notebooks' first cell compares the installed package metadata with the library.
+        run: python -m pip install --no-build-isolation --config-settings=build-dir="$RUNNER_TEMP/py-wheel" .
+
       - name: Execute notebooks with the test interpreter
         run: meson test -C "$RUNNER_TEMP/py-build" test_notebooks --print-errorlogs
