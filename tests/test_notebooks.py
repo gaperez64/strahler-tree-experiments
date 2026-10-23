@@ -120,7 +120,7 @@ def test_six_notebooks_and_version_mismatch(monkeypatch, capsys):
     setup = ''.join(json.loads(NOTEBOOKS[0].read_text())['cells'][0]['source'])
     with pytest.raises(RuntimeError, match='version mismatch'):
         exec(compile(setup, str(NOTEBOOKS[0]), 'exec'), {})
-    assert 'package 0.0.2; libstrahler 0.0.1' in capsys.readouterr().out
+    assert not capsys.readouterr().out
 
 
 @pytest.mark.parametrize('path', NOTEBOOKS, ids=lambda path: path.name)
@@ -150,13 +150,14 @@ def test_saved_outputs(path):
 
 
 @pytest.mark.parametrize('path', NOTEBOOKS, ids=lambda path: path.name)
-def test_saved_version_is_current(path):
-    meson = (EXAMPLES.parent / 'meson.build').read_text(encoding='utf-8')
-    version = re.search(r"version\s*:\s*'([^']+)'", meson)[1]
-    first = json.loads(path.read_text(encoding='utf-8'))['cells'][0]
+def test_saved_outputs_hide_versions(path):
+    notebook = json.loads(path.read_text(encoding='utf-8'))
+    for cell in notebook['cells']:
+        text = json.dumps(cell.get('outputs', []))
+        assert not re.search(r'(?:strahler(?: package)?|libstrahler)\s+[0-9]+\.[0-9]+', text), path
+    first = notebook['cells'][0]
     text = ''.join(''.join(output.get('text', [])) for output in first['outputs'])
-    assert f'strahler package {version}; libstrahler {version}\n' in text, (
-        f'{path}: saved version is stale; rerun scripts/execute_notebooks.py')
+    assert text == 'strahler package and library versions match\n'
 
 
 def errors(value):

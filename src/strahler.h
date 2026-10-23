@@ -60,7 +60,7 @@ STRAHLER_API int strahler_pms_tree(char const *text, size_t length,
                                    char const *const argv[], int argc,
                                    char **json, char **error);
 STRAHLER_API void strahler_free(void *value);
-/* ABI compatibility is guaranteed within the 0.3.x release series only. */
+/* ABI compatibility is guaranteed across the 0.3.x and 0.4.x release series. */
 STRAHLER_API char const *strahler_version(void);
 
 #ifdef __cplusplus

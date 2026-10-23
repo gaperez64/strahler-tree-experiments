@@ -53,10 +53,12 @@ def library():
             lib.strahler_version.restype = C.c_char_p
             native_version = lib.strahler_version()
         except AttributeError as error:
-            raise ImportError('libstrahler is missing strahler_version (expected ABI 0.3.x)') from error
-        # The pre-1.0 ABI is compatible only within the 0.3 release series.
-        if re.fullmatch(rb'0\.3\.[0-9]+', native_version or b'') is None:
-            raise ImportError(f'Unsupported libstrahler ABI {native_version!r}; expected 0.3.x')
+            raise ImportError('libstrahler is missing strahler_version (expected ABI 0.3.x/0.4.x)') from error
+        # The C ABI is unchanged between the 0.3 and 0.4 release series.
+        if re.fullmatch(rb'0\.[34]\.[0-9]+(?:(?:a|b|rc)[0-9]+)?(?:\.post[0-9]+)?'
+                        rb'(?:\.dev[0-9]+)?(?:\+[a-z0-9]+(?:\.[a-z0-9]+)*)?',
+                        native_version or b'') is None:
+            raise ImportError(f'Unsupported libstrahler ABI {native_version!r}; expected 0.3.x/0.4.x')
         pointer = C.c_void_p
         output = C.POINTER(pointer)
         args = C.POINTER(C.c_char_p)
@@ -80,7 +82,7 @@ def library():
                 function.argtypes = [pointer]
                 function.restype = None
         except AttributeError as error:
-            raise ImportError(f'libstrahler ABI 0.3.x is missing a required symbol: {error}') from error
+            raise ImportError(f'libstrahler ABI 0.3.x/0.4.x is missing a required symbol: {error}') from error
         _library = lib
     return _library
 

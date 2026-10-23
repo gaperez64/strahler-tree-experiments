@@ -31,6 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           ref: ${{ inputs.tag != '' && format('refs/tags/{0}', inputs.tag) || '' }}
 
       - uses: actions/setup-python@v6
@@ -45,14 +46,17 @@ jobs:
           EXPECTED_ARCH: ${{ matrix.arch }}
         run: |
           test "$(uname -m)" = "$EXPECTED_ARCH"
-          project_version=$(meson introspect --projectinfo meson.build | python -c 'import json, sys; print(json.load(sys.stdin)["version"])')
+          project_version=$(python ci/version.py)
           if [[ -n "$RELEASE_TAG" && "$project_version" != "${RELEASE_TAG#v}" ]]; then
-            echo "::error::Meson project version $project_version does not match release tag $RELEASE_TAG. Update meson.build before tagging."
+            echo "::error::Derived version $project_version does not match release tag $RELEASE_TAG. Check the checkout, fetched tags and STRAHLER_VERSION."
             exit 1
           fi
           echo "PROJECT_VERSION=$project_version" >> "$GITHUB_ENV"
 
       - name: Build and repair wheel
+        env:
+          STRAHLER_VERSION: ${{ env.PROJECT_VERSION }}
+          CIBW_ENVIRONMENT_LINUX: STRAHLER_VERSION=${{ env.PROJECT_VERSION }}
         run: python -m cibuildwheel --output-dir wheelhouse
 
       - name: Check repaired wheel tag and licenses
