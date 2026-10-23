@@ -38,9 +38,9 @@ def test_inline_esm_syntax(tmp_path):
     subprocess.run([node, '--check', str(source)], check=True, capture_output=True, text=True)
 
 
-@pytest.mark.parametrize('kind', ['game', 'boxes', 'tree'])
-@pytest.mark.parametrize('fixture', ['fig1', 'h4'])
-def test_svg_geometry_matches_frontend(tmp_path, kind, fixture):
+@pytest.mark.parametrize('kind,edges', [('game', True), ('squares', True), ('squares', False), ('tree', True)])
+@pytest.mark.parametrize('fixture', ['fig1', 'h4', 'dense'])
+def test_svg_geometry_matches_frontend(tmp_path, kind, fixture, edges):
     node = shutil.which('node')
     if not node:
         if os.environ.get('CI'):
@@ -52,15 +52,25 @@ def test_svg_geometry_matches_frontend(tmp_path, kind, fixture):
     from otj22 import hk
 
     root = SOURCE.parents[2]
-    text = (root / 'tests/games/otj22-fig1.gm').read_text() if fixture == 'fig1' else hk(4)
+    text = ((root / 'tests/games/otj22-fig1.gm').read_text() if fixture == 'fig1' else hk(4)
+            if fixture == 'h4' else '\n'.join(
+                f'{v} 2 {v % 2} ' + ','.join(map(str, range(15))) + ';' for v in range(15)))
     with strahler.Game.from_text(text) as game:
-        view = (GameView(game) if kind == 'game' else
-                TreeView(strahler.decompose(game, 'zielonka').trees[0], mode=kind))
+        import runpy
+        tree = (runpy.run_path(str(root / 'jupyter-examples/otj22.py'))['PAPER_FIG1']
+                if fixture == 'fig1' else strahler.decompose(game, 'zielonka').trees[0])
+        view = GameView(game) if kind == 'game' else TreeView(tree, game=game, mode=kind, edges=edges)
         if kind == 'game':
             view.highlight(game.vertices[:2], '#abc', 'layer')
             view.selected = game.vertices[0]
             view.hovered = [game.vertices[-1]]
-        fields = ('kind', 'data', 'highlights', 'hovered', 'selected', 'mode')
+        else:
+            view.highlights = [dict(name='layer', vertices=game.vertices[:2], colour='#abc')]
+            child = view.data['children'][0] if view.data['children'] else view.data
+            view.hovered_path = child['path']
+            view.hovered = child['vertices']
+            view.selected = [1]
+        fields = ('kind', 'data', 'highlights', 'hovered', 'selected', 'mode', 'edges', 'hovered_path', 'owner_styles')
         state = {key: getattr(view, key) for key in fields}
         source = tmp_path / 'widgets.mjs'
         source.write_text(frontend(), encoding='utf-8')
@@ -70,7 +80,7 @@ import renderer from './widgets.mjs';
 class Element {
   constructor(tag) { this.tag=tag; this.attrs={}; this.children=[]; this.style={}; this.classList={add(){}}; }
   set textContent(value) { this.text=String(value); }
-  get textContent() { return this.text??''; }
+  get textContent() { return (this.text??'')+this.children.map(c=>c.textContent).join(''); }
   setAttribute(k,v) { this.attrs[k]=String(v); }
   append(child) { this.children.push(child); }
   replaceChildren() { this.children=[]; }
@@ -79,29 +89,31 @@ class Element {
 globalThis.document={createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag)};
 const state=JSON.parse(process.argv[2]), el=new Element('div');
 renderer.render({model:{model_id:'fixture',get:key=>state[key],on(){}},el});
-const groups=[], edges=[];
+const groups=[], edges=[]; let viewBox;
 function visit(e) {
+  if(e.tag==='svg') viewBox=e.attrs.viewBox;
   if(e.attrs['data-vertex']!==undefined || e.attrs['data-path']!==undefined) {
     const id=e.attrs['data-vertex'] ?? e.attrs['data-path'];
-    groups.push([id,e.children.filter(c=>['rect','circle','text'].includes(c.tag)).map(c=>[c.tag,c.attrs,c.textContent??''])]);
+    groups.push([id,e.children.filter(c=>['rect','polygon','text'].includes(c.tag)).map(c=>[c.tag,c.attrs,c.textContent??''])]);
   }
   if(e.tag==='line' || e.tag==='path' && e.attrs['marker-end']) edges.push([e.tag,e.attrs]);
   e.children.forEach(visit);
 }
 visit(el);
-console.log(JSON.stringify({groups,edges}));
+console.log(JSON.stringify({groups,edges,viewBox}));
 ''', encoding='utf-8')
         result = subprocess.run([node, str(runner), json.dumps(state)], check=True,
                                 capture_output=True, text=True)
         actual = json.loads(result.stdout)
         svg = ET.fromstring(view._static_svg())
+        assert list(map(float, actual['viewBox'].split())) == list(map(float, svg.get('viewBox').split()))
         groups, edges = [], []
         for element in svg.iter():
             tag = element.tag.split('}')[-1]
             key = element.get('data-vertex', element.get('data-path'))
             if key is not None:
-                groups.append([key, [[e.tag.split('}')[-1], e.attrib, e.text or ''] for e in element
-                                     if e.tag.split('}')[-1] in ('rect', 'circle', 'text')]])
+                groups.append([key, [[e.tag.split('}')[-1], e.attrib, ''.join(e.itertext())] for e in element
+                                     if e.tag.split('}')[-1] in ('rect', 'polygon', 'text')]])
             if tag == 'line' or tag == 'path' and 'marker-end' in element.attrib:
                 edges.append([tag, element.attrib])
 
@@ -111,13 +123,17 @@ console.log(JSON.stringify({groups,edges}));
             def attributes(attrs):
                 return {key: ([float(n) for n in re.findall(r'-?\d+(?:\.\d+)?(?:e[+-]?\d+)?', value)]
                               if key in ('d', 'x', 'y', 'x1', 'x2', 'y1', 'y2', 'cx', 'cy',
-                                         'r', 'rx', 'width', 'height', 'stroke-width') else
-                              value.replace('arrow-fixture', 'strahler-arrow')) for key, value in attrs.items()}
+                                         'r', 'rx', 'width', 'height', 'stroke-width', 'transform', 'points') else
+                              value.replace('arrow-fixture', 'strahler-arrow-' + ('game' if kind == 'game' else 'squares'))) for key, value in attrs.items()}
             return [[row[0], attributes(row[1]), *row[2:]] for row in rows]
 
         for expected_group, actual_group in zip(sorted(groups), sorted(actual['groups']), strict=True):
             assert expected_group[0] == actual_group[0]
-            assert normalized(expected_group[1]) == normalized(actual_group[1])
+            for expected, observed in zip(normalized(expected_group[1]), normalized(actual_group[1]), strict=True):
+                assert expected[0] == observed[0] and expected[2:] == observed[2:]
+                assert expected[1].keys() == observed[1].keys()
+                for key, value in expected[1].items():
+                    assert observed[1][key] == (pytest.approx(value) if isinstance(value, list) else value)
         expected_edges = sorted(normalized(edges), key=str)
         actual_edges = sorted(normalized(actual['edges']), key=str)
         for expected, observed in zip(expected_edges, actual_edges, strict=True):

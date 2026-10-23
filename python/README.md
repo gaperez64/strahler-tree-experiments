@@ -199,8 +199,23 @@ print(stepper.verify(stepper.state.event['player']))
 ```
 
 `TreeView` also accepts `genstree` and progress-measure prefix-tree JSON.
-`mode='boxes'|'tree'` selects nested H/T/S boxes or node links. Hover links to
-the game; `GameView.selected` is the clicked external vertex ID.
+`mode='squares'|'tree'` selects nested squares or node links. Squares put S in
+a full-height right column, with H above T and the children below, from left
+to right. Regions grow with their vertex counts; empty regions keep a labelled
+band. The default is squares for decompositions with at most 40 vertices and
+depth at most 4 (root depth 0), and a tree otherwise. Stepper views choose again
+as their decompositions change, until you select a mode explicitly.
+
+Pass `game_view=view` or `game=game` to draw vertices with their priorities and
+game edges. Without game metadata, squares show vertex IDs. Even vertices are
+squares; Odd vertices are regular pentagons. Both views use the same colours.
+Game edges are light grey, behind the vertices; `edges=False` hides them, and
+squares omit arrows when more than 200 edges join the displayed vertices.
+Hover highlights the node's vertices in the linked game.
+`tree.link(other_tree)` shares hover and selection between views of the same
+tree, including empty nodes. `mode='boxes'` remains an alias for `squares` for
+one release and emits `DeprecationWarning`.
+`GameView.selected` is the clicked external vertex ID.
 `Stepper` supports `seek(index)`, `step()`, `back()`, `next(kind)`, `end()`,
 and a clickable `call_tree()`. Recorded claims are labelled with their event
 index and domain, separately from the current independent checker verdict.

@@ -96,13 +96,21 @@ display(view, stepper, stepper.call_tree())
 ```
 
 - `GameView(game, coordinates={id: (x, y), ...})` scales caller coordinates.
-  Circles are Even, squares Odd; labels show priority and name. `selected` is
+  Squares are Even, regular pentagons Odd; labels show priority and name. `selected` is
   the clicked external ID. Named highlight layers are replaced independently.
   IDs above JavaScript's exact integer range (2⁵³−1) are rejected; renumber them
   before displaying the game.
-- `TreeView(tree, game_view=view, mode='boxes')` accepts a Node, H/T/S dictionary,
+- `TreeView(tree, game_view=view)` accepts a Node, H/T/S dictionary,
   JSON text, `genstree` document, or a PR #31 prefix tree. Set `tree` to update;
-  switch `mode` between `boxes` and `tree`. Hover highlights its vertices.
+  switch `mode` between `squares` and `tree`. Decompositions with at most 40
+  vertices and depth at most 4 (root depth 0) start in squares; others use a tree.
+  Squares have a full-height S column on the right, H above T on the left, and
+  ordered children below. Empty regions stay visible. Pass `game_view` or
+  `game=game` for shapes, priorities, and game edges; otherwise vertices show IDs.
+  Light grey edges run behind vertices. `edges=False` hides them; more than 200
+  edges among displayed vertices suppresses all arrows. Hover highlights the
+  node's vertices. `view.link(other)` shares hover and selection between two
+  TreeViews of the same tree. `boxes` is a deprecated alias for one release.
   `None` and documents with `tree: null` display an empty placeholder.
 - `Stepper(run)` exposes `state`, `index`, `badges`, `game_view`, `tree_views`,
   `seek(i)`, `step()`, `back()`, `next(kind)`, `end()`, and `verify(player)`.
@@ -110,6 +118,8 @@ display(view, stepper, stepper.call_tree())
   during dragging. State and checkpoints are computed lazily; the default
   interval caches about 128 prefixes for large recordings. Timeline ticks are
   sampled to at most 1,000. No full trace is sent to the frontend.
+  Tree views follow the same size/depth rule as the algorithm runs, until you
+  choose a mode explicitly.
 
 Collection is synchronous, and the trace's event limit still applies. Exceeding
 the limit raises an exception and does not return a solved game. `end()` jumps
