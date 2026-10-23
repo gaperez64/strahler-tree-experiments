@@ -13,6 +13,8 @@ project(
   ],
 )
 
+add_project_arguments('-fvisibility=hidden', language : 'c')
+
 lenstree_option = get_option('lenstree')
 boost_dep = dependency('boost', required : false)
 if lenstree_option.disabled()
@@ -41,7 +43,7 @@ version_header = vcs_tag(
 )
 cli_version_lib = static_library(
   'cli_version',
-  ['src/cli_version.c', version_header],
+  ['src/cli_version.c', 'src/cli_commands.c', version_header],
 )
 cli_version_dep = declare_dependency(
   sources : version_header,
@@ -189,7 +191,7 @@ pm_lift_dep = declare_dependency(
 
 # Executables
 genstree = executable('genstree',
-  'src/genstree.c',
+  ['src/genstree.c', 'src/genstree_command.c'],
   dependencies : [stree_dep, ordered_tree_dep, cli_version_dep],
   install : true
 )
@@ -201,14 +203,14 @@ pgfilt = executable('pgfilt',
 )
 
 pms2dot = executable('pms2dot',
-  'src/pms2dot.c',
+  ['src/pms2dot.c', 'src/pms2dot_command.c'],
   dependencies : [ordered_tree_dep, cli_version_dep],
   install : true
 )
 
 pg2adot = executable(
   'pg2adot',
-  'src/pg2adot.c',
+  ['src/pg2adot.c', 'src/pg2adot_command.c'],
   dependencies : [ad_lift_dep, zielonka_dep, ad_tree_dot_dep, cli_version_dep, pg_preprocess_dep],
   install : true,
 )
@@ -220,7 +222,7 @@ pm_tree_dot_dep = declare_dependency(
   include_directories : source_includes,
   link_with : pm_tree_dot_lib,
 )
-pg2pmdot = executable('pg2pmdot', 'src/pg2pmdot.c',
+pg2pmdot = executable('pg2pmdot', ['src/pg2pmdot.c', 'src/pg2pmdot_command.c'],
   dependencies : [pm_tree_dot_dep, pg_preprocess_dep, cli_version_dep],
   install : true)
 
@@ -1477,7 +1479,7 @@ endif
 
 trace_check = executable('trace_check', 'tests/trace_check.c',
   dependencies : [ad_tree_dep, pg_preprocess_dep], c_args : ['-UNDEBUG'])
-trace_count_pg2adot = executable('trace_count_pg2adot', 'src/pg2adot.c',
+trace_count_pg2adot = executable('trace_count_pg2adot', ['src/pg2adot.c', 'src/pg2adot_command.c'],
   dependencies : [ad_lift_dep, zielonka_dep, ad_tree_dot_dep, cli_version_dep, pg_preprocess_dep],
   c_args : ['-UNDEBUG', '-DAD_TRACE_COUNT_ONLY'])
 add_test_setup('default', exclude_suites : ['slow'], is_default : true)
@@ -1524,7 +1526,7 @@ test_ad_trace_alloc = executable('test_ad_trace_alloc',
    'src/pg_set.c', 'src/pg_attractor.c', 'src/zielonka.c', 'src/ad_lift.c',
    'src/ad_sym.c', 'src/ad_lift_solve.c'],
   dependencies : [ad_lift_tree_dep, stree_dep, pg_game_dep],
-  c_args : ['-UNDEBUG', '-include', meson.project_source_root() / 'tests/trace_allocator.h'])
+  c_args : ['-UNDEBUG', '-D_POSIX_C_SOURCE=200809L', '-include', meson.project_source_root() / 'tests/trace_allocator.h'])
 test('test_ad_trace_alloc', test_ad_trace_alloc, timeout : 120)
 
 foreach mode : ['tools', 'limits', 'goldens']
@@ -1584,3 +1586,61 @@ foreach backend : ['lifting', 'lifting-adaptive', 'lifting-sym', 'zielonka', 'zi
     endforeach
   endforeach
 endforeach
+
+# The CLIs retain static linkage. The shared ABI links the same implementations.
+python_option = get_option('python')
+if python_option.enabled()
+  python_module = import('python').find_installation(pure : true)
+  python_module.install_sources(
+    'python/strahler/__init__.py', 'python/strahler/_native.py',
+    'python/strahler/_replay.py', subdir : 'strahler',
+    install_tag : 'python-runtime')
+endif
+strahler_sources = files('src/strahler.c', 'src/json_input.c',
+  'src/pg2adot_command.c', 'src/pg2pmdot_command.c',
+  'src/genstree_command.c', 'src/pms2dot_command.c')
+strahler_dependencies = [ad_lift_dep, zielonka_dep, ad_tree_dot_dep,
+  pm_tree_dot_dep, pg_preprocess_dep, cli_version_dep]
+libstrahler = shared_library('strahler', strahler_sources,
+  dependencies : strahler_dependencies,
+  version : meson.project_version(), soversion : '0',
+  gnu_symbol_visibility : 'hidden',
+  # Compiler runtimes such as libgcov can otherwise add public symbols.
+  link_args : meson.get_compiler('c').get_supported_link_arguments('-Wl,--exclude-libs,ALL'),
+  install : true,
+  install_tag : 'python-runtime')
+install_headers('src/strahler.h')
+
+api_test = executable('test_strahler', 'tests/test_strahler.c',
+  include_directories : source_includes, link_with : libstrahler,
+  c_args : ['-UNDEBUG'])
+test('test_strahler', api_test)
+# Inject into every implementation reached by the ABI, as in trace/json tests.
+api_alloc_sources = files('src/cli_version.c', 'src/cli_commands.c',
+  'src/stree.c', 'src/ordered_tree.c', 'src/dot_utils.c', 'src/json_utils.c',
+  'src/pg_game.c', 'src/pg_set.c', 'src/pg_attractor.c', 'src/pg_preprocess.c',
+  'src/ad_tree.c', 'src/ad_tree_json.c', 'src/ad_trace.c', 'src/zielonka.c',
+  'src/ad_lift_tree.c', 'src/ad_lift.c', 'src/ad_lift_solve.c', 'src/ad_sym.c',
+  'src/ad_tree_dot.c', 'src/pg_dot.c', 'src/pm_lift.c', 'src/pm_solve.c',
+  'src/strpm.c', 'src/sspm.c', 'src/pm_tree_dot.c')
+api_alloc_test = executable('test_strahler_alloc',
+  ['tests/test_strahler_alloc.c', strahler_sources, api_alloc_sources, version_header],
+  include_directories : source_includes,
+  c_args : ['-UNDEBUG', '-D_POSIX_C_SOURCE=200809L', '-include',
+    meson.project_source_root() / 'tests/trace_allocator.h'])
+test('test_strahler_alloc', api_alloc_test, timeout : 120)
+
+if python_option.enabled()
+  python_test_env = environment()
+  python_test_env.prepend('PYTHONPATH', meson.project_source_root() / 'python')
+  python_test_env.set('STRAHLER_LIB', meson.current_build_dir())
+  python_test_env.set('STRAHLER_BUILD_DIR', meson.current_build_dir())
+  foreach slow : [false, true]
+    test(slow ? 'test_python_slow' : 'test_python', python_module,
+      args : ['-m', 'pytest', files('tests/test_python.py'), '-q', '-rs',
+        '-m', slow ? 'slow' : 'not slow', '--durations=12'],
+      env : python_test_env, suite : slow ? ['python', 'slow'] : ['python'],
+      timeout : slow ? 7200 : 600,
+      depends : [libstrahler, pg2adot, pg2pmdot, genstree, pms2dot])
+  endforeach
+endif

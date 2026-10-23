@@ -1,0 +1,16 @@
+[build-system]
+requires = ["meson-python>=0.18", "meson>=1.4", "ninja"]
+build-backend = "mesonpy"
+
+[project]
+name = "strahler"
+dynamic = ["version"]
+description = "Parity-game decompositions, progress measures, and algorithm traces"
+readme = "python/README.md"
+requires-python = ">=3.10"
+license = "MIT AND Apache-2.0"
+license-files = ["LICENSE", "LICENSE-APACHE-2.0"]
+
+[tool.meson-python.args]
+setup = ["-Dpython=enabled", "-Dlenstree=disabled"]
+install = ["--tags=python-runtime"]

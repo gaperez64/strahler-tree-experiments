@@ -1096,3 +1096,140 @@ and 9. Algorithm 8 uses lazy complete hosts; Algorithm 9 uses supplied hosts
 and `ad_lift_continue` to certify its final labels without resetting progress.
 [The thesis correspondence and corrected entry invariant](symmetric.md)
 cover errata, the added trap-closure operation, proofs and debug checks.
+
+## C API and Python package
+
+`src/strahler.h` is the public C ABI. Meson builds versioned `libstrahler`
+with hidden symbols except `strahler_*`; the version comes from the project.
+The pre-1.0 ABI is compatible within the 0.3.x series; the Python loader
+validates this version before binding native functions.
+The existing static libraries still link the CLIs. Each of `pg2adot`,
+`pg2pmdot`, `genstree`, and `pms2dot` has a small `main` and a shared
+`*_command.c` runner. Runners use explicit streams and a reentrant exact-long
+option parser. Native calls copy only vertex records before preprocessing,
+borrowing the immutable adjacency arrays and names. Separate calls, including
+calls sharing a game, can run concurrently. Free a game only after all its
+calls and callbacks return. The library changes no global getopt state,
+streams, process settings, or working directory, and never calls exit/abort.
+
+The C ABI contains:
+
+| Function | Input and output |
+| --- | --- |
+| `strahler_game_parse(text, length, &game, &error)` | PGSolver bytes → opaque immutable game |
+| `strahler_game_free(game)` | Release a game; NULL is allowed |
+| `strahler_game_summary(game, &json, &error)` | Input IDs, priorities, owners, successors, names and start ID |
+| `strahler_decompose(game, argv, argc, callback, context, &json, &error)` | pg2adot options → strahler-decomp/1 plus optional trace lines |
+| `strahler_progress_measures(game, argv, argc, &json, &error)` | pg2pmdot options → strahler-pm/1 |
+| `strahler_check(game, tree_json, player, subgame_json, compress, &json, &error)` | Definition 1 on a restricted subgame → located check result |
+| `strahler_materialize_partial(game, labels_json, compress, &json, &error)` | Compatible labels → candidate and structural problems |
+| `strahler_genstree(k, h, t, &json, &error)` | Universal ordered tree → strahler-tree/1 |
+| `strahler_pms_tree(text, length, argv, argc, &json, &error)` | Leaf stream/options → strahler-pm/1 prefix tree |
+| `strahler_free(pointer)` | Release any returned JSON/error string; NULL is allowed |
+| `strahler_version()` | Borrowed immutable Meson version string |
+
+Strings returned through output pointers belong to the caller. Outputs are
+cleared on entry; a failing call returns no JSON. `error` may be NULL; its
+message can also be NULL if allocating the message fails. `game`/`json`
+output pointers are required. Input buffers and options remain caller-owned.
+Text lengths are bytes, excluding a terminator; empty text and embedded NULs
+are rejected. Leaf streams passed to `strahler_pms_tree` and the label
+materializer are limited to 1025 components per path before recursive native
+operations. `argv` contains only CLI option strings, with no program name
+or filename. Output format is implicit; format/help/version/trace-file options
+are rejected. Option values use `--name=value`, just as in the CLIs. Positional
+input comes from the supplied game or leaf stream. Host tree files still use
+the CLI's `--tree-file=PATH` option.
+
+Statuses retain the CLI meanings: 0 success, 1 runtime/observer failure,
+2 invalid argument, 3 invalid game, 4 solver/verification failure, 5 I/O
+failure, with 6 added for allocation failure. No failure, resource error,
+truncation or partial result is promoted to a conclusive winning claim.
+A failed decomposition check is a successful API call with `ok:false`.
+Callbacks run synchronously once per serialized trace line (including the
+header and terminal record), borrow `(line,length)` until return, and return
+nonzero to continue. `--trace-limit=N` uses the existing truncation semantics;
+callback cancellation fails the call. Callback code must not unwind across C.
+
+JSON output keeps the schemas documented above. The added game-summary schema
+is necessary because result documents intentionally contain only counts:
+
+```json
+{"schema":"strahler-game/1","vertices":[{"id":42,"priority":2,"owner":0,"name":null,"successors":[42]}],"edges":1,"start":42}
+```
+
+Tree checking accepts `null` or `{h,H,T,S,children}`, with integer external
+vertex IDs in each set; `subgame_json` is an ID array, or NULL for all vertices.
+The decoder bounds nesting and rejects malformed JSON, duplicate keys, unknown
+IDs, duplicate IDs within a set, negative/fractional/overflowing integers,
+and invalid input shapes. Its string vocabulary is ASCII (including escaped
+ASCII); tree keys, part names, and host leaf streams need nothing else.
+Original game names are handled by the existing PGSolver reader and JSON writer.
+The game is normalized exactly as in the solvers; `compress` must be 0 or 1
+and must match the run that produced the tree. Restricting an empty subgame
+succeeds. For other subgames the checker requires totality, restricts the
+stored sets, runs `ad_tree_check`, and preserves paths before child pruning.
+Check JSON has this shape:
+
+```json
+{"ok":false,"condition":4,"path":[0],"vertex":42,"message":"a domain priority exceeds the node bound"}
+```
+
+Conditions use these stable numeric values:
+
+| Code | Condition | Code | Condition |
+| --- | --- | --- | --- |
+| 0 | OK | 12 | shaving certificate |
+| 1 | input | 13 | subgame totality |
+| 2 | allocation | 14 | winning region |
+| 3 | node | 15 | incompleteness |
+| 4 | priority bound | 16 | inactive vertex |
+| 5 | top attractor | 17 | host position |
+| 6 | child bound | 18 | label compatibility |
+| 7 | trap | 19 | dominion |
+| 8 | recursive child | 20 | regular label |
+| 9 | child attractor | 21 | lazy label |
+| 10 | partition | 22 | empty child core |
+| 11 | core | | |
+
+The label materializer accepts the following input. `tree` is the host's
+pms2dot leaf stream, `h` its normalized root bound, and `path` the child indices
+in that host. `H` selects REGULAR, `T` selects MINUS_INF, `S` selects PLUS
+(or TOP for the root). Omitted vertices are inactive; duplicates, invalid
+paths, and incompatible priorities are rejected. It calls
+`ad_lift_materialize_partial`, retaining even empty child cores and returning
+`{"tree":...,"problems":[...]}` with located condition records.
+
+```json
+{"player":0,"h":2,"tree":"0|1|","labels":[{"vertex":42,"path":[0],"part":"S"}]}
+```
+
+The materializer's problems are structural diagnostics, not a validity claim.
+Use `strahler_check` on the candidate and intended subgame to decide whether
+it is already an attractor decomposition.
+
+`python/strahler/` contains the dependency-free ctypes layer (`_native.py`),
+public objects/functions (`__init__.py`), and shared trace replay (`_replay.py`).
+`tests/trace_replay.py` imports that replay for the existing trace regressions.
+Public docstrings are the API reference; [python/README.md](../python/README.md)
+provides installation and runnable examples. Python checks expose the numeric
+condition codes as the `Condition` IntEnum, retaining `.name` and `int()`.
+Python `trace()` rejects single-player filtering to keep final replay trees
+equal to the result. `-Dpython=enabled` installs pure Python files and a
+shared library in the normal `libdir`. `pyproject.toml` selects
+meson-python and the `python-runtime` install tag, leaving CLI installation
+out of the `py3-none-<platform>` wheel. Meson-python relocates the library into
+`.strahler.mesonpy.libs`; the loader checks there before the system library
+search path. The wheel declares `MIT AND Apache-2.0` and includes both license
+files in `dist-info/licenses`. Ordinary CLI builds keep the Python
+installation disabled. `STRAHLER_LIB` accepts a development library/build dir.
+
+`test_strahler` exercises the shared ABI; `test_strahler_alloc` recompiles its
+reachable implementations with the existing allocation injector and sweeps
+failing allocation positions. Both are normal Meson tests covered by the
+sanitizer, coverage, and Valgrind jobs. With `-Dpython=enabled`, `test_python`
+runs pytest, including exact CLI JSON comparisons, all host modes, forward
+and reverse replay, located checks, paper H_k call counts, concurrent calls,
+and repeated-call RSS. Measured slow corpus pairs remain explicitly selectable
+in the `slow` suite. CI builds and tests a meson-python wheel on Ubuntu 24.04
+x86_64 and macOS 14 arm64 using Python 3.10; no release/publishing step is added.

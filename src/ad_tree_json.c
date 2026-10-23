@@ -28,8 +28,8 @@ static void relative_set(JSONWriter const *writer, PGSet const *outer,
   fputc(']', stream);
 }
 
-static bool tree(JSONWriter const *writer, PGSet const *outer,
-                 PGSet const *core, ADNode const *root) {
+bool ad_json_tree(JSONWriter const *writer, PGSet const *outer,
+                  PGSet const *core, ADNode const *root) {
   FILE *stream = writer->stream;
   if (root == nullptr) {
     fputs("null", stream);
@@ -47,7 +47,8 @@ static bool tree(JSONWriter const *writer, PGSet const *outer,
     if (index != 0) {
       fputc(',', stream);
     }
-    if (!tree(writer, &child->attractor, &child->trap, child->subtree)) {
+    if (!ad_json_tree(writer, &child->attractor, &child->trap,
+                      child->subtree)) {
       return false;
     }
   }
@@ -70,11 +71,12 @@ bool ad_json_result_fields(JSONWriter const *writer, ADResult const *value,
     if (player != 0) {
       fputc(',', stream);
     }
-    if (!tree(writer, value->region + player, value->region + player,
-              (selected == AD_DOT_PLAYER_EVEN && player != PG_EVEN) ||
-                      (selected == AD_DOT_PLAYER_ODD && player != PG_ODD)
-                  ? nullptr
-                  : value->decomposition[player])) {
+    if (!ad_json_tree(
+            writer, value->region + player, value->region + player,
+            (selected == AD_DOT_PLAYER_EVEN && player != PG_EVEN) ||
+                    (selected == AD_DOT_PLAYER_ODD && player != PG_ODD)
+                ? nullptr
+                : value->decomposition[player])) {
       return false;
     }
   }

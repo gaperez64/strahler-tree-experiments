@@ -323,3 +323,67 @@ jobs:
 
       - name: Check memory and leaks
         run: ci/check-valgrind.sh build-valgrind
+
+  python-package:
+    name: Python package (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+
+      - name: Install Linux compiler
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-14 g++-14
+          echo 'CC=gcc-14' >> "$GITHUB_ENV"
+          echo 'CXX=g++-14' >> "$GITHUB_ENV"
+
+      - name: Check target architecture
+        run: |
+          python -c "import platform; assert platform.machine() == ('arm64' if platform.system() == 'Darwin' else 'x86_64')"
+
+      - name: Install build and test tools
+        run: python -m pip install meson==1.8.5 meson-python ninja pytest build
+
+      - name: Build native API and run package tests through Meson
+        run: |
+          meson setup "$RUNNER_TEMP/py-build" --buildtype=debug -Dpython=enabled -Dlenstree=disabled -Dwerror=true
+          meson compile -C "$RUNNER_TEMP/py-build"
+          meson test -C "$RUNNER_TEMP/py-build" test_strahler test_strahler_alloc test_python --print-errorlogs
+
+      - name: Build and install the wheel
+        run: |
+          python -m build --wheel --outdir "$RUNNER_TEMP/wheels" --config-setting=build-dir="$RUNNER_TEMP/py-wheel"
+          python - <<'PY'
+          from email import message_from_bytes
+          from pathlib import Path
+          import os
+          from zipfile import ZipFile
+          p, = (Path(os.environ['RUNNER_TEMP']) / 'wheels').glob('*.whl')
+          assert '-py3-none-' in p.name, p
+          with ZipFile(p) as wheel:
+              metadata_path, = (n for n in wheel.namelist() if n.endswith('.dist-info/METADATA'))
+              metadata = message_from_bytes(wheel.read(metadata_path))
+              assert metadata['License-Expression'] == 'MIT AND Apache-2.0'
+              for name in ('LICENSE', 'LICENSE-APACHE-2.0'):
+                  assert wheel.read(metadata_path.removesuffix('METADATA') + 'licenses/' + name) == Path(name).read_bytes()
+          PY
+          python -m pip install "$RUNNER_TEMP"/wheels/*.whl
+
+      - name: Test installed wheel
+        env:
+          STRAHLER_BUILD_DIR: ${{ runner.temp }}/py-build
+        run: |
+          cd "$RUNNER_TEMP"
+          python -c "import strahler; print(strahler.__file__); print(strahler.version())"
+          python -m pytest "$GITHUB_WORKSPACE/tests/test_python.py" -q -rs -m 'not slow' --durations=12

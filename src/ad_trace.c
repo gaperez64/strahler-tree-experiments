@@ -1,4 +1,7 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <inttypes.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "ad_trace.h"
@@ -101,9 +104,35 @@ static void path(FILE *stream, ADTracePath const value) {
   fputc(']', stream);
 }
 
+static bool deliver_line(ADTraceJSON *writer, ADTraceJSON *copy,
+                         char *const *line, size_t const *length,
+                         bool written) {
+  bool const closed = fclose(copy->stream) == 0;
+  writer->truncated = copy->truncated;
+  bool const delivered = closed && (written || copy->truncated) &&
+                         writer->callback(writer->context, *line, *length);
+  free(*line);
+  return written && delivered;
+}
+
 bool ad_trace_json_header(ADTraceJSON *writer, char const *version,
                           char const *algorithm, int const argc,
                           char *const argv[]) {
+  if (writer->callback != nullptr) {
+    char *line = nullptr;
+    size_t length = 0;
+    ADTraceJSON copy = *writer;
+    copy.callback = nullptr;
+    copy.stream = open_memstream(&line, &length);
+    if (copy.stream == nullptr) {
+      return false;
+    }
+    bool const written =
+        ad_trace_json_header(&copy, version, algorithm, argc, argv);
+    // Flush before reading open_memstream's buffer and length.
+    bool const flushed = fflush(copy.stream) == 0;
+    return deliver_line(writer, &copy, &line, &length, written && flushed);
+  }
   FILE *stream = writer->stream;
   fputs("{\"event\":\"header\",", stream);
   json_header(stream, "strahler-trace/1", version, algorithm, argc, argv);
@@ -113,6 +142,19 @@ bool ad_trace_json_header(ADTraceJSON *writer, char const *version,
 
 bool ad_trace_json_incomplete(ADTraceJSON *writer, size_t const step,
                               char const *reason, int const status) {
+  if (writer->callback != nullptr) {
+    char *line = nullptr;
+    size_t length = 0;
+    ADTraceJSON copy = *writer;
+    copy.callback = nullptr;
+    copy.stream = open_memstream(&line, &length);
+    if (copy.stream == nullptr) {
+      return false;
+    }
+    bool const written = ad_trace_json_incomplete(&copy, step, reason, status);
+    bool const flushed = fflush(copy.stream) == 0;
+    return deliver_line(writer, &copy, &line, &length, written && flushed);
+  }
   fprintf(writer->stream,
           "{\"event\":\"incomplete\",\"step\":%zu,\"reason\":", step);
   json_string(writer->stream, reason);
@@ -122,6 +164,19 @@ bool ad_trace_json_incomplete(ADTraceJSON *writer, size_t const step,
 
 bool ad_trace_json_event(void *context, ADTraceEvent const *event) {
   ADTraceJSON *writer = context;
+  if (writer->callback != nullptr) {
+    char *line = nullptr;
+    size_t length = 0;
+    ADTraceJSON copy = *writer;
+    copy.callback = nullptr;
+    copy.stream = open_memstream(&line, &length);
+    if (copy.stream == nullptr) {
+      return false;
+    }
+    bool const written = ad_trace_json_event(&copy, event);
+    bool const flushed = fflush(copy.stream) == 0;
+    return deliver_line(writer, &copy, &line, &length, written && flushed);
+  }
   FILE *stream = writer->stream;
   if (event->step > writer->limit) {
     fprintf(stream,

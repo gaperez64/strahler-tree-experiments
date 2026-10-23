@@ -4,3 +4,6 @@ option(
   value : 'auto',
   description : 'Build the Boost-based lenstree utility',
 )
+
+option('python', type : 'feature', value : 'disabled',
+  description : 'Install the ctypes Python package for libstrahler')

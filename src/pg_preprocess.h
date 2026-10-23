@@ -47,4 +47,7 @@ void pg_preprocess_destroy(PGPreprocessResult *result);
 [[nodiscard]] bool pg_preprocess_verify(PGGame const *game,
                                         PGPreprocessResult const *result);
 
+bool pg_preprocess_priority_map(PGGame const *game, bool compress,
+                                PGPriorityMap *map);
+
 #endif
