@@ -1,4 +1,4 @@
-"""Shared, offline presentation helpers; examples use the public strahler API."""
+"""Offline presentation helpers for examples using the public strahler API."""
 
 from html import escape
 from pathlib import Path
@@ -30,7 +30,7 @@ def table(headers, rows):
 
 
 def comparison(text, coordinates=None):
-    """Both recursive algorithms, linked views, and clickable call trees."""
+    """Show both recursive algorithms with linked views and clickable call trees."""
     game = strahler.Game.from_text(text)
     steppers = [Stepper(strahler.trace(game, algorithm), coordinates) for algorithm in BACKENDS[:2]]
     for stepper in steppers:
@@ -46,7 +46,7 @@ def close_views(widget):
 
 
 def editor(text, solve=comparison):
-    """Paste PGSolver text and rerun; keep parser diagnostics visible."""
+    """Parse and solve PGSolver text; keep parser diagnostics visible."""
     field = Textarea(value=text, description='PGSolver', layout={'width': '100%', 'height': '200px'})
     button = Button(description='Parse and solve', button_style='primary')
     output = Output()
@@ -69,7 +69,7 @@ def editor(text, solve=comparison):
 
 
 def call_count_plot(counts):
-    """A self-contained SVG with a logarithmic call-count axis."""
+    """Draw a self-contained SVG plot with a logarithmic call-count axis."""
     from math import log10
     colours = {'zielonka': '#1d4ed8', 'zielonka-sym': '#b45309'}
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 340" role="img" '

@@ -1,4 +1,4 @@
-"""FSTTCS 2022 Section 2 H_k family; supplied paper transcription."""
+"""H_k from Section 2 of the FSTTCS 2022 paper, using the supplied transcription."""
 
 def hk(k):
     # Thejaswini, Ohlmann, Jurdzinski (FSTTCS 2022), Section 2: layers L_i = {u,v,w,x,y}, i = 1..k
@@ -19,12 +19,12 @@ def hk(k):
 
 
 def hk_coordinates(k):
-    """Figure 2: one row per layer, columns u/v/w/x/y, w raised."""
+    """Figure 2 layout: one row per layer, columns u/v/w/x/y, with w raised."""
     return {5 * (i - 1) + j: (j, k - i - (0.3 if j == 2 else 0))
             for i in range(1, k + 1) for j in range(5)}
 
 
-# Figure 1, transcribed independently of the solver; ε11 is the empty child.
+# Figure 1, transcribed independently of the solver; ε₁₁ is the empty child.
 # Bounds are the package's normalized solver priorities (input minus two here).
 PAPER_FIG1 = dict(h=4, H=[], T=[], S=[], children=[
     dict(h=2, H=[0, 1], T=[], S=[2], children=[
@@ -40,10 +40,10 @@ EXPECTED_CALLS = {
 
 
 def count_calls(text, algorithm):
-    """Count through the documented C ABI, without retaining millions of events.
+    """Count calls through the documented C ABI without storing millions of events.
 
-    The regular Python trace deliberately retains its entire event list. This
-    counting observer keeps the live H_16 table small without changing the solver.
+    Python trace() keeps its entire event list. The counting observer keeps the
+    live H_16 table small without changing the solver.
     """
     import ctypes as C
     import strahler
