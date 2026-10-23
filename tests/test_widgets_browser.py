@@ -148,8 +148,8 @@ def test_tree_render_and_interaction(page, mode, kind):
 
         def counts():
             boxes = view.mode == 'boxes'
-            assert tree.locator('svg').count() == (1 if expected and not boxes else 0)
-            assert tree.locator('svg g[role="button"]').count() == (0 if boxes else len(expected))
+            assert tree.locator('svg').count() == (1 if expected else 0)
+            assert tree.locator('svg g[role="button"]').count() == len(expected)
             assert tree.locator('svg line').count() == (0 if boxes else max(0, len(expected)-1))
             for part in 'HTS':
                 assert tree.locator(f'.part-{part}').count() == (len(expected) if boxes else 0)

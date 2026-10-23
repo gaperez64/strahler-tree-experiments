@@ -60,6 +60,11 @@ Editable imports can rebuild native code; keep this venv activated so Meson is
 available. `STRAHLER_LIB` may select an existing development build instead of the
 library beside the package, but its version must match package metadata.
 
+After changing a notebook or the library, run `python scripts/execute_notebooks.py`
+from the repository root in that venv. It saves executed outputs for GitHub,
+including static game and tree views, and removes widget state and timing data.
+Rerun the cells in Jupyter to use the interactive controls.
+
 ## Checkout (uv)
 
 ```sh
@@ -148,8 +153,9 @@ PYTHONPATH=python python -m pytest tests/test_widget_state.py \
 
 `nbclient` starts the kernel from the test interpreter, executes every notebook,
 prints each runtime, and rejects error outputs, including those captured in
-Output widgets. Source notebooks must have empty outputs, no execution counts,
-and no saved widget state. Never save executed outputs in the checkout. Node
+Output widgets. Saved notebooks have outputs and execution counts, static
+fallbacks for widgets, and no saved widget state. A version check reminds you to
+rerun them after a release bump. The execution test runs a copy. Node
 checks inline ESM syntax when available locally and is required for that check
 in CI. The package CI runs the same tests on Linux and macOS. Browser rendering
 and pointer/keyboard interactions are tested with Playwright's Chromium headless

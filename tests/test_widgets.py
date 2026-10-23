@@ -1,6 +1,7 @@
 """Python widget/comm behaviour; frontend rendering is a separate browser check."""
 
 from pathlib import Path
+from xml.etree import ElementTree as ET
 import pytest
 import strahler
 
@@ -9,6 +10,79 @@ from strahler.widgets import GameView, TreeView, Stepper
 from otj22 import hk
 
 ROOT = Path(__file__).resolve().parents[1]
+NS = {'s': 'http://www.w3.org/2000/svg'}
+WIDGET_MIME = 'application/vnd.jupyter.widget-view+json'
+
+
+def bundle(view):
+    result = view._repr_mimebundle_()
+    return result[0] if isinstance(result, tuple) else result
+
+
+def test_game_svg_fallback():
+    with strahler.Game.from_text('10 2 0 10,42 "<a&b>";42 1 1 42;') as game:
+        view = GameView(game)
+        view.highlight([10, 42], '#abc', '<layer>')
+        view.highlight([42], '#def', 'last')
+        view.selected = 10
+        view.hovered = [42]
+        data = bundle(view)
+        assert WIDGET_MIME in data and data['text/plain'] == 'Parity game'
+        svg = ET.fromstring(data['image/svg+xml'])
+        groups = svg.findall('s:g', NS)
+        assert len(groups) == len(game.vertices)
+        assert [g[0].tag for g in groups] == ['{' + NS['s'] + '}' + tag for tag in ('circle', 'rect')]
+        assert [g[0].get('fill') for g in groups] == ['#abc', '#def']
+        assert [g[0].get('stroke') for g in groups] == ['#dc2626', '#c026d3']
+        assert all(g[0].get('stroke-width') == '4' for g in groups)
+        assert len(svg.findall('s:path', NS)) == len(game.edges)
+        assert '<a&b>' in ''.join(svg.itertext())
+        assert '&lt;a&amp;b&gt;' in data['image/svg+xml']
+        assert data['image/svg+xml'] == bundle(GameView(game, highlights=view.highlights,
+                                                       selected=10, hovered=[42]))['image/svg+xml']
+        view.highlight([10], 'url(https://example.com/paint)', 'external')
+        assert 'https://' not in bundle(view)['image/svg+xml']
+
+
+@pytest.mark.parametrize('mode', ['boxes', 'tree'])
+def test_tree_svg_fallback(mode):
+    view = TreeView(dict(label='<a&b>', H=[10], T=[42], S=[], children=[
+        dict(label='child', H=[42], children=[])]), mode=mode)
+    data = bundle(view)
+    assert WIDGET_MIME in data and data['text/plain'] == 'Ordered tree'
+    svg = ET.fromstring(data['image/svg+xml'])
+    assert len(svg.findall('.//s:g[@data-path]', NS)) == 2
+    assert '<a&b>' in ''.join(svg.itertext())
+    assert '&lt;a&amp;b&gt;' in data['image/svg+xml']
+    if mode == 'boxes':
+        for part, colour in [('H', '#dbeafe'), ('T', '#dcfce7'), ('S', '#ffedd5')]:
+            shapes = svg.findall(f'.//s:rect[@class="part-{part}"]', NS)
+            assert len(shapes) == 2 and all(s.get('fill') == colour for s in shapes)
+    else:
+        assert len(svg.findall('.//s:rect', NS)) == 2
+        assert len(svg.findall('s:line', NS)) == 1
+        assert view.data['xy'] == [130.0, 35]
+        assert view.data['children'][0]['xy'] == [130, 120]
+    view.tree = None
+    assert '∅ — empty tree' in ''.join(ET.fromstring(bundle(view)['image/svg+xml']).itertext())
+
+
+def test_stepper_static_fallback_and_call_tree():
+    with strahler.Game.from_text(hk(2)) as game:
+        view = Stepper(strahler.trace(game, 'zielonka-sym'))
+        view.next('check')
+        data = bundle(view)
+        assert WIDGET_MIME in data
+        html = ET.fromstring('<div>' + data['text/html'] + '</div>')
+        assert len(html.findall('s:svg', NS)) == 3
+        text = ''.join(html.itertext())
+        assert f'{view.index} / {len(view.run)-1}: check' in text
+        for badge in view.badges:
+            assert badge['condition'] in text and badge['status'] in text
+        calls = view.call_tree()
+        assert ET.fromstring(bundle(calls)['image/svg+xml']).findall('.//s:g', NS)
+        view.end()
+        assert data['text/html'] != bundle(view)['text/html']
 
 
 def test_game_state_sync_and_coordinates():

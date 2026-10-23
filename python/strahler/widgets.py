@@ -4,8 +4,11 @@ GameView(game, coordinates=None), TreeView(tree, game_view=None, mode='boxes'),
 and Stepper(trace, coordinates=None). No frontend dependencies or remote URLs.
 """
 
+from html import escape
 import json
-from math import isfinite
+from math import hypot, isfinite
+import re
+from xml.etree import ElementTree as ET
 
 try:
     import anywidget
@@ -27,10 +30,7 @@ _CSS = """
 .strahler [tabindex]:focus-visible { outline: 3px solid #2563eb; }
 .strahler svg { min-width: 300px; max-width: 100%; }
 .strahler text { fill: #182538; font: 12px system-ui, sans-serif; }
-.strahler .box { border: 1px solid #64748b; margin: 5px; padding: 5px; }
-.strahler .children { display: flex; align-items: flex-start; gap: 3px; }
-.strahler .part-H { background: #dbeafe; } .strahler .part-T { background: #dcfce7; }
-.strahler .part-S { background: #ffedd5; } .strahler pre { white-space: pre-wrap; max-height: 240px; overflow: auto; }
+.strahler pre { white-space: pre-wrap; max-height: 240px; overflow: auto; }
 .strahler .current { background: #fef08a; } .strahler .badge { padding: 6px; border-left: 5px solid #b45309; }
 .strahler .ok { border-color: #15803d; } .strahler .timeline { width: 100%; height: 36px; }
 """
@@ -105,32 +105,34 @@ function tree(model, el) {
     });
   };
   if (select.value === 'boxes') {
+    const [width, height] = root.extent.boxes;
+    const svg = svgElement('svg', {viewBox:`0 0 ${width} ${height}`, role:'group', 'aria-label':'H/T/S boxes'}, el);
     const visit = (n, parent) => {
-      const outer = element('div', null, parent); outer.className = 'box'; hover(outer, n);
-      element('strong', n.label, outer);
-      let parentBox = outer;
+      const [x,y,w,h] = n.box;
+      const outer = svgElement('g', {}, parent); hover(outer, n);
+      svgElement('rect', {x,y,width:w,height:h,fill:'#fff',stroke:'#64748b'}, outer);
+      svgElement('text', {x:x+6,y:y+18,style:'font-weight:bold'}, outer).textContent=n.label;
+      const offsets = {S:[6,28,w-12,h-34],T:[12,56,w-24,h-68],H:[18,h-46,w-36,28]};
+      const colours = {S:'#ffedd5',T:'#dcfce7',H:'#dbeafe'};
       for (const part of ['S', 'T', 'H']) {
-        const box = element('div', `${part}: ${(n[part] || []).join(', ') || '∅'}`, parentBox);
-        box.className = `box part-${part}`;
-        parentBox = box;
-        if (part === 'T') {
-          const children = element('div', null, box); children.className = 'children';
-          for (const child of n.children) visit(child, children);
-        }
+        const [dx,dy,width,height]=offsets[part];
+        svgElement('rect', {x:x+dx,y:y+dy,width,height,fill:colours[part],stroke:'#64748b',class:`part-${part}`}, outer);
+        svgElement('text', {x:x+dx+6,y:y+dy+18}, outer).textContent=`${part}: ${n[part].join(', ') || '∅'}`;
       }
+      for (const child of n.children) visit(child, outer);
     };
-    visit(root, el);
+    visit(root, svg);
   } else {
-    let leaf = 0, depth = 0; const nodes = [], edges = [];
-    const layout = (n, level) => {
-      const children = n.children.map(child => layout(child, level+1));
-      const x = children.length ? children.reduce((a,c) => a+c.x, 0)/children.length : ++leaf*130;
-      const row = {n, x, y:35+level*85}; nodes.push(row); depth = Math.max(depth, level);
-      for (const c of children) edges.push([row,c]);
-      return row;
+    const nodes = [], edges = [];
+    const visit = n => {
+      for (const child of n.children) visit(child);
+      const [x,y]=n.xy;
+      const row={n,x,y}; nodes.push(row);
+      for (const c of n.children) edges.push([row,{x:c.xy[0],y:c.xy[1]}]);
     };
-    layout(root, 0);
-    const svg = svgElement('svg', {viewBox:`0 0 ${Math.max(300,(leaf+1)*130)} ${100+depth*85}`, role:'group', 'aria-label':'Ordered tree'}, el);
+    visit(root);
+    const [width,height]=root.extent.tree;
+    const svg = svgElement('svg', {viewBox:`0 0 ${width} ${height}`, role:'group', 'aria-label':'Ordered tree'}, el);
     for (const [a,b] of edges) svgElement('line', {x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#94a3b8'}, svg);
     for (const {n,x,y} of nodes) {
       const g = svgElement('g', {}, svg); hover(g,n);
@@ -200,6 +202,64 @@ export default { render({model,el}) {
 """
 
 
+def _svg(parent, tag, attrs=None, text=None):
+    element = ET.SubElement(parent, tag, {k: str(v) for k, v in (attrs or {}).items()})
+    if text is not None:
+        element.text = str(text)
+    return element
+
+
+def _svg_root(width, height, label):
+    return ET.Element('svg', xmlns='http://www.w3.org/2000/svg',
+                      viewBox=f'0 0 {width} {height}', width=str(width), height=str(height),
+                      role='img', attrib={'aria-label': label, 'fill': '#182538',
+                      'style': 'max-width:100%;height:auto;background:white;font:12px system-ui,sans-serif'})
+
+
+def _svg_colour(colour):
+    # SVG paint URLs could fetch external content; accept only plain colours.
+    return colour if isinstance(colour, str) and re.fullmatch(
+        r'#[\da-fA-F]{3,8}|[a-zA-Z]+|(?:rgb|hsl)a?\([\d.% ,+-]+\)', colour) else '#fff'
+
+
+def _tree_layout(tree):
+    root = _tree_data(tree)
+    if root is None:
+        return None
+    leaf = depth = 0
+
+    def measure(n, level):
+        nonlocal leaf, depth
+        sizes = [measure(c, level + 1) for c in n['children']]
+        if sizes:
+            x = sum(c['xy'][0] for c in n['children']) / len(sizes)
+        else:
+            leaf += 1
+            x = leaf * 130
+        n['xy'] = [x, 35 + level * 85]
+        depth = max(depth, level)
+        # Reserve eight pixels per character for the nested box labels.
+        labels = [len(str(n['label'])) * 8 + 12] + [
+            len(f"{p}: {', '.join(map(str, n[p])) or '∅'}") * 8 + inset
+            for p, inset in [('S', 24), ('T', 36), ('H', 48)]]
+        width = max(150, *labels, sum(w for w, h in sizes) + max(0, len(sizes)-1)*8 + 36)
+        height = 130 + (max(h for w, h in sizes) + 8 if sizes else 0)
+        n['box'] = [0, 0, width, height]
+        return width, height
+
+    def place(n, x, y):
+        n['box'][:2] = [x, y]
+        for child in n['children']:
+            place(child, x + 18, y + 84)
+            x += child['box'][2] + 8
+
+    width, height = measure(root, 0)
+    place(root, 5, 5)
+    root['extent'] = dict(boxes=[width + 10, height + 10],
+                          tree=[max(300, (leaf + 1)*130), 100 + depth*85])
+    return root
+
+
 class _View(anywidget.AnyWidget):
     _esm = _ESM
     _css = _CSS
@@ -210,6 +270,16 @@ class _View(anywidget.AnyWidget):
     selected = t.Any(allow_none=True).tag(sync=True)
     mode = t.Enum(['boxes', 'tree'], default_value='boxes').tag(sync=True)
     next_kind = t.Unicode('call').tag(sync=True)
+
+    def _repr_mimebundle_(self, **kwargs):
+        bundle = super()._repr_mimebundle_(**kwargs)
+        if bundle is None:
+            return None
+        data = bundle[0] if isinstance(bundle, tuple) else bundle
+        if self.kind in ('game', 'tree'):
+            data.update({'image/svg+xml': self._static_svg(),
+                         'text/plain': 'Parity game' if self.kind == 'game' else 'Ordered tree'})
+        return bundle
 
 
 class GameView(_View):
@@ -254,6 +324,51 @@ class GameView(_View):
         self.highlights = [s for s in self.highlights if s['name'] != name] + [
             dict(name=name, vertices=vertices, colour=colour)]
 
+    def _static_svg(self):
+        svg = _svg_root(800, 520, 'Parity game. Circles Even, squares Odd.')
+        marker = _svg(_svg(svg, 'defs'), 'marker', dict(
+            id='strahler-arrow', viewBox='0 0 10 10', refX=9, refY=5,
+            markerWidth=6, markerHeight=6, orient='auto-start-reverse'))
+        _svg(marker, 'path', dict(d='M 0 0 L 10 5 L 0 10 z', fill='#64748b'))
+        points = {v['id']: v['xy'] for v in self.data['vertices']}
+        for a, b in self.data['edges']:
+            x, y = points[a]
+            u, v = points[b]
+            dx, dy = u-x, v-y
+            length = hypot(dx, dy) or 1
+            path = (f'M {x-10} {y-18} C {x-65} {y-85} {x+65} {y-85} {x+10} {y-18}'
+                    if a == b else f'M {x+dx*23/length} {y+dy*23/length} '
+                    f'Q {(x+u)/2-dy*.12} {(y+v)/2+dx*.12} {u-dx*23/length} {v-dy*23/length}')
+            _svg(svg, 'path', {'d': path, 'fill': 'none', 'stroke': '#64748b',
+                              'marker-end': 'url(#strahler-arrow)'})
+        for vertex in self.data['vertices']:
+            x, y = vertex['xy']
+            group = _svg(svg, 'g', {'data-vertex': vertex['id']})
+            fill = '#fff'
+            for layer in self.highlights:
+                if vertex['id'] in layer['vertices']:
+                    fill = layer['colour']
+            hot = vertex['id'] in self.hovered
+            selected = self.selected == vertex['id']
+            attrs = dict(fill=_svg_colour(fill), stroke='#c026d3' if hot else '#dc2626' if selected else '#182538')
+            attrs['stroke-width'] = 4 if hot or selected else 1.5
+            if vertex['owner'] == 0:
+                _svg(group, 'circle', dict(attrs, cx=x, cy=y, r=20))
+            else:
+                _svg(group, 'rect', dict(attrs, x=x-20, y=y-20, width=40, height=40))
+            name = vertex['name'] or str(vertex['id'])
+            _svg(group, 'text', {'x': x, 'y': y+4, 'text-anchor': 'middle'}, vertex['priority'])
+            _svg(group, 'text', {'x': x, 'y': y+37, 'text-anchor': 'middle'}, name)
+            _svg(group, 'title', text=f"{name}: priority {vertex['priority']}, {'Even' if vertex['owner'] == 0 else 'Odd'}")
+        _svg(svg, 'text', dict(x=8, y=490), 'Circle: Even · Square: Odd')
+        x = 8
+        for layer in self.highlights:
+            width = len(layer['name']) * 8 + 12
+            _svg(svg, 'rect', dict(x=x, y=496, width=width, height=20, fill=_svg_colour(layer['colour'])))
+            _svg(svg, 'text', dict(x=x+4, y=510), layer['name'])
+            x += width + 4
+        return ET.tostring(svg, encoding='unicode')
+
 
 def _tree_data(tree, path=(), label=None):
     if isinstance(tree, Node):
@@ -295,7 +410,7 @@ class TreeView(_View):
 
     def __init__(self, tree=None, game_view=None, mode='boxes', **kwargs):
         self.game_view = game_view
-        super().__init__(kind='tree', data=_tree_data(tree), mode=mode, **kwargs)
+        super().__init__(kind='tree', data=_tree_layout(tree), mode=mode, **kwargs)
         self.observe(self._hover, names='hovered')
 
     @property
@@ -304,11 +419,50 @@ class TreeView(_View):
 
     @tree.setter
     def tree(self, value):
-        self.data = _tree_data(value)
+        self.data = _tree_layout(value)
 
     def _hover(self, change):
         if self.game_view is not None:
             self.game_view.hovered = change['new']
+
+    def _static_svg(self):
+        if self.data is None:
+            svg = _svg_root(300, 40, 'Empty tree')
+            _svg(svg, 'text', dict(x=8, y=24), '∅ — empty tree')
+        else:
+            svg = _svg_root(*self.data['extent'][self.mode],
+                            'H/T/S boxes' if self.mode == 'boxes' else 'Ordered tree')
+
+            def visit(n, parent):
+                if self.mode == 'boxes':
+                    x, y, w, h = n['box']
+                    group = _svg(parent, 'g', {'data-path': json.dumps(n['path'], separators=(',', ':'))})
+                    _svg(group, 'rect', dict(x=x, y=y, width=w, height=h, fill='#fff', stroke='#64748b'))
+                    _svg(group, 'text', dict(x=x+6, y=y+18, style='font-weight:bold'), n['label'])
+                    for part, dx, dy, width, height, colour in [
+                        ('S', 6, 28, w-12, h-34, '#ffedd5'),
+                        ('T', 12, 56, w-24, h-68, '#dcfce7'),
+                        ('H', 18, h-46, w-36, 28, '#dbeafe')]:
+                        _svg(group, 'rect', dict(x=x+dx, y=y+dy, width=width, height=height,
+                                                fill=colour, stroke='#64748b', **{'class': f'part-{part}'}))
+                        _svg(group, 'text', dict(x=x+dx+6, y=y+dy+18),
+                             f"{part}: {', '.join(map(str, n[part])) or '∅'}")
+                    for child in n['children']:
+                        visit(child, group)
+                else:
+                    x, y = n['xy']
+                    for child in n['children']:
+                        u, v = child['xy']
+                        _svg(svg, 'line', dict(x1=x, y1=y, x2=u, y2=v, stroke='#94a3b8'))
+                        visit(child, svg)
+                    group = _svg(svg, 'g', {'data-path': json.dumps(n['path'], separators=(',', ':'))})
+                    _svg(group, 'rect', dict(x=x-58, y=y-17, width=116, height=34, rx=5,
+                                            fill='#dbeafe', stroke='#64748b'))
+                    _svg(group, 'text', {'x': x, 'y': y+4, 'text-anchor': 'middle'}, n['label'])
+                    _svg(group, 'title', text=f"{n['label']}: {', '.join(map(str, n['vertices']))}")
+
+            visit(self.data, svg)
+        return ET.tostring(svg, encoding='unicode')
 
 
 _PLAIN = [
@@ -357,6 +511,25 @@ _LIFTING = [
 ]
 
 
+def _controls_html(data):
+    def paragraph(text):
+        return '<p>' + escape(text) + '</p>'
+    html = paragraph(f"{data['index']} / {data['length']-1}: {data['event']['event']}")
+    for badge in data['badges']:
+        claim = badge['claim']
+        player = 'Even' if badge['player'] == 0 else 'Odd'
+        text = (f"{claim['event']['is_attractor_decomposition']} at step {claim['index']}, "
+                f"path {claim['event']['path']}, G={claim['event']['subgame']}"
+                if claim else 'no check event yet')
+        html += paragraph(f'{player} — algorithm claim: {text}')
+        html += paragraph(f"Independent: {'✔' if badge['ok'] else '✘'} {badge['status']} "
+                          f"on G={badge['domain']}; condition {badge['condition']}; "
+                          f"path {badge['path']}; vertex {badge['vertex']}. {badge['message']}")
+        if badge['problems']:
+            html += paragraph('Materializer: ' + json.dumps(badge['problems']))
+    return html
+
+
 class Stepper(VBox):
     """Recorded trace with step/back/next/end/seek and independent badges.
 
@@ -377,6 +550,13 @@ class Stepper(VBox):
         super().__init__(children=[self.controls, self.game_view, HBox(self.tree_views,
                          layout=Layout(overflow='auto'))], **kwargs)
         self.seek(0)
+
+    def _repr_mimebundle_(self, **kwargs):
+        bundle = super()._repr_mimebundle_(**kwargs)
+        bundle['text/plain'] = f"Step {self.index}: {self.state.event['event']}"
+        bundle['text/html'] = (_controls_html(self.controls.data) + self.game_view._static_svg() +
+                               ''.join(view._static_svg() for view in self.tree_views))
+        return bundle
 
     @property
     def index(self):
