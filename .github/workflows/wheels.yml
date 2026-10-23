@@ -1,0 +1,94 @@
+name: Build wheels
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag; empty for a CI build
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Wheel (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+            arch: x86_64
+          - os: macos-15
+            platform: macos-arm64
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag != '' && format('refs/tags/{0}', inputs.tag) || '' }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install wheel tools
+        run: python -m pip install cibuildwheel==3.2.1 meson==1.8.5
+
+      - name: Check architecture and release version
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          test "$(uname -m)" = "$EXPECTED_ARCH"
+          project_version=$(meson introspect --projectinfo meson.build | python -c 'import json, sys; print(json.load(sys.stdin)["version"])')
+          if [[ -n "$RELEASE_TAG" && "$project_version" != "${RELEASE_TAG#v}" ]]; then
+            echo "::error::Meson project version $project_version does not match release tag $RELEASE_TAG. Update meson.build before tagging."
+            exit 1
+          fi
+          echo "PROJECT_VERSION=$project_version" >> "$GITHUB_ENV"
+
+      - name: Build and repair wheel
+        run: python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Check repaired wheel tag and licenses
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          if [[ "$PLATFORM" == linux-x86_64 ]]; then
+            wheel_platform=manylinux_2_28_x86_64
+          else
+            wheel_platform=macosx_11_0_arm64
+          fi
+          test -f "wheelhouse/strahler-$PROJECT_VERSION-py3-none-$wheel_platform.whl"
+          python - <<'PY'
+          from email import message_from_bytes
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          path, = Path('wheelhouse').glob('*.whl')
+          with ZipFile(path) as wheel:
+              metadata_path, = (n for n in wheel.namelist() if n.endswith('.dist-info/METADATA'))
+              metadata = message_from_bytes(wheel.read(metadata_path))
+              assert metadata['License-Expression'] == 'MIT AND Apache-2.0'
+              for name in ('LICENSE', 'LICENSE-APACHE-2.0'):
+                  assert wheel.read(metadata_path.removesuffix('METADATA') + 'licenses/' + name) == Path(name).read_bytes()
+          PY
+
+      - name: Smoke test in a fresh environment outside the checkout
+        run: |
+          python -m venv "$RUNNER_TEMP/wheel-smoke"
+          "$RUNNER_TEMP/wheel-smoke/bin/python" -m pip install --no-index wheelhouse/*.whl
+          cd "$RUNNER_TEMP"
+          unset STRAHLER_LIB PYTHONPATH
+          "$RUNNER_TEMP/wheel-smoke/bin/python" -I "$GITHUB_WORKSPACE/tests/smoke_wheel.py" "$PROJECT_VERSION"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheel-${{ matrix.platform }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error

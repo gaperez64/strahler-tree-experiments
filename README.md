@@ -19,6 +19,17 @@ meson test -C build --print-errorlogs
 Executables go in `build/`. Release binaries for `linux-x86_64` and
 `macos-arm64` are attached to [GitHub releases](https://github.com/vfluegel/strahler-tree-experiments/releases).
 
+## Python and notebooks
+
+Download `strahler-notebooks-<version>.zip` from
+[GitHub releases](https://github.com/vfluegel/strahler-tree-experiments/releases)
+for Python wheels on Linux x86_64 and macOS Apple silicon (11.0+), plus
+installation instructions for pip and uv. The zip includes everything in
+`jupyter-examples/` at the release tag; this checkout has no notebooks yet.
+Wheels are also available separately on each release; they are not published
+to PyPI. See [python/README.md](python/README.md) for the
+Python API and installation from a checkout (Python 3.10+).
+
 ## Commands
 
 | Command | What it does |
