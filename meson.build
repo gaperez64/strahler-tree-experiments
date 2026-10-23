@@ -1593,7 +1593,8 @@ if python_option.enabled()
   python_module = import('python').find_installation(pure : true)
   python_module.install_sources(
     'python/strahler/__init__.py', 'python/strahler/_native.py',
-    'python/strahler/_replay.py', subdir : 'strahler',
+    'python/strahler/_replay.py', 'python/strahler/_widget_state.py',
+    'python/strahler/widgets.py', subdir : 'strahler',
     install_tag : 'python-runtime')
 endif
 strahler_sources = files('src/strahler.c', 'src/json_input.c',
@@ -1635,6 +1636,16 @@ if python_option.enabled()
   python_test_env.prepend('PYTHONPATH', meson.project_source_root() / 'python')
   python_test_env.set('STRAHLER_LIB', meson.current_build_dir())
   python_test_env.set('STRAHLER_BUILD_DIR', meson.current_build_dir())
+  test('test_widgets', python_module,
+    args : ['-m', 'pytest', files('tests/test_widget_state.py'), files('tests/test_widgets.py'),
+      files('tests/test_widgets_js.py'), '-q'],
+    env : python_test_env, suite : 'python', timeout : 120, depends : libstrahler)
+  test('test_widgets_browser', python_module,
+    args : ['-m', 'pytest', files('tests/test_widgets_browser.py'), '-q', '-s'],
+    env : python_test_env, suite : 'python', timeout : 180, depends : libstrahler)
+  test('test_notebooks', python_module,
+    args : ['-m', 'pytest', files('tests/test_notebooks.py'), '-q', '-s'],
+    env : python_test_env, suite : 'python', timeout : 480, depends : libstrahler)
   foreach slow : [false, true]
     test(slow ? 'test_python_slow' : 'test_python', python_module,
       args : ['-m', 'pytest', files('tests/test_python.py'), '-q', '-rs',

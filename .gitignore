@@ -22,3 +22,6 @@ keiren/*.lock
 .vscode/
 visualizations/
 .DS_Store
+build-*/
+dist/
+.venv/

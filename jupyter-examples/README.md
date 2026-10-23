@@ -1,114 +1,161 @@
-# Strahler tree notebooks
+# Offline Jupyter examples
 
-Setup instructions for exploring parity games with the Python API and
-JupyterLab. This checkout currently has no `.ipynb` notebooks, data, or helpers.
+Six notebooks for the public `strahler` Python API. Run every notebook from top
+to bottom; each first cell prints the package and library versions and stops if
+they differ. Keep this directory as the notebook working directory so its game
+and Python helpers are importable. Rendering uses inline ESM/CSS and SVG, with no
+CDN, Graphviz, or runtime network access. Installation may need internet access
+for Jupyter and the optional Python dependencies.
 
-Prebuilt wheels exist for **Linux x86_64** (glibc 2.28+) and **macOS on Apple
-silicon (arm64, macOS 11.0+)**. On any other machine, follow
-[From a checkout](#from-a-checkout). You need Python 3.10 or newer.
+| Notebook | What it covers |
+| --- | --- |
+| [01-quickstart](01-quickstart.ipynb) | Every backend, linked game/tree views, metrics |
+| [02-build-a-game](02-build-a-game.ipynb) | Edit PGSolver text, solve again, inspect changed trees |
+| [03-otj22-mcnaughton-zielonka](03-otj22-mcnaughton-zielonka.ipynb) | Figure 1, Hₖ, both recursive algorithms, call trees, live k=2…16 counts |
+| [04-step-through-lifting](04-step-through-lifting.ipynb) | Strahler/adaptive hosts, +iter, lifts/rounds/phases, partial candidates |
+| [05-compare-backends](05-compare-backends.ipynb) | +pre/+iter metrics, generated and progress-measure prefix trees |
+| [06-check-your-own-tree](06-check-your-own-tree.ipynb) | Handwritten trees, located failures, repair |
 
-## From a release
+## Release zip
 
-Download `strahler-notebooks-<version>.zip` from the
-[releases page](https://github.com/vfluegel/strahler-tree-experiments/releases),
-replacing `<version>` in the commands below with its version (without `v`).
-The zip contains both wheels and everything in `jupyter-examples/` at the
-release tag, including any notebooks, data, and helpers present there.
-`requirements.txt` uses `--find-links ./wheels` to find the matching strahler
-wheel; notebook dependencies are downloaded from PyPI.
-
-Run these commands from the directory containing the download. After
-unzipping, run installation and JupyterLab from inside the unzipped directory
-so that `./wheels` resolves correctly.
-
-### With venv and pip
+From this directory in an extracted release containing `wheels/`:
 
 ```sh
-unzip strahler-notebooks-<version>.zip
-cd strahler-notebooks-<version>
 python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
+. .venv/bin/activate
 python -m pip install -r requirements.txt
-jupyter lab
+python -m jupyterlab .
 ```
 
-Use JupyterLab's file browser to open or create a notebook. Later sessions
-only need `source .venv/bin/activate` and `jupyter lab`. Run `deactivate` to
-leave the environment.
+The zip bundles the Linux x86_64 (glibc 2.28+) and macOS arm64 (11.0+) wheels;
+its `requirements.txt` pins the matching `strahler` wheel through
+`--find-links ./wheels`. You need Python 3.10+. The zip is
+self-contained for the game, generator, helpers, and frontend assets. JupyterLab,
+anywidget, and their dependencies must already be installed or available from
+a local wheel cache for a fully offline installation. Launching installed
+notebooks and using the views requires no network.
 
-### With uv
+For Colab or a single machine, each wheel is also attached to the release, e.g.
+`%pip install https://github.com/vfluegel/strahler-tree-experiments/releases/download/v<version>/strahler-<version>-py3-none-manylinux_2_28_x86_64.whl`.
+
+## Checkout (venv/pip)
+
+From the repository root, with the C23/C++20 toolchain described in
+[the package README](../python/README.md):
 
 ```sh
-unzip strahler-notebooks-<version>.zip
-cd strahler-notebooks-<version>
-uv venv
-uv pip install -r requirements.txt
-uv run --no-project jupyter lab
-```
-
-For a temporary environment, from the unzipped directory:
-
-```sh
-uv run --no-project --with-requirements requirements.txt jupyter lab
-```
-
-### Colab or a single wheel
-
-Each wheel is also attached to the release on its own. For Linux x86_64,
-replace both occurrences of `<version>` in this notebook cell:
-
-```python
-%pip install https://github.com/vfluegel/strahler-tree-experiments/releases/download/v<version>/strahler-<version>-py3-none-manylinux_2_28_x86_64.whl
-```
-
-For Apple silicon, download
-`strahler-<version>-py3-none-macosx_11_0_arm64.whl` instead.
-Use `strahler.version()` to read the loaded library's version and
-`strahler.check(game, tree, player)` to check a candidate decomposition.
-To check that the library matches the release you downloaded:
-
-```python
-import strahler
-assert strahler.version() == "<version>", "Install the wheel from this notebook release"
-```
-
-## From a checkout
-
-You need a C23 compiler (GCC 14+, Clang 18+, or recent Apple Clang), a C++20
-compiler, and the build dependencies listed in the
-[top-level README](https://github.com/vfluegel/strahler-tree-experiments#build).
-The package builds libstrahler through meson-python. An editable install
-rebuilds it on import after a C source changes.
-
-### With venv and pip
-
-```sh
-git clone https://github.com/vfluegel/strahler-tree-experiments.git
-cd strahler-tree-experiments
 python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
+. .venv/bin/activate
 python -m pip install meson-python meson ninja
-python -m pip install --no-build-isolation -e .
-python -m pip install -r jupyter-examples/requirements.txt
-jupyter lab jupyter-examples/
+python -m pip install --no-build-isolation -e '.[notebooks]' \
+  --config-settings=build-dir="$PWD/build-editable" \
+  --config-settings=setup-args=--buildtype=debug \
+  --config-settings=compile-args=-j2
+python -m pip install -r jupyter-examples/requirements-dev.txt
+cd jupyter-examples
+python -m jupyterlab .
 ```
 
-### With uv
+Editable imports can rebuild native code; keep this venv activated so Meson is
+available. `STRAHLER_LIB` may select an existing development build instead of the
+library beside the package, but its version must match package metadata.
+
+## Checkout (uv)
 
 ```sh
-git clone https://github.com/vfluegel/strahler-tree-experiments.git
-cd strahler-tree-experiments
-uv venv
+uv venv .venv --python 3.10
+. .venv/bin/activate
 uv pip install meson-python meson ninja
-uv pip install --no-build-isolation -e .
-uv pip install -r jupyter-examples/requirements.txt
-uv run --no-project jupyter lab jupyter-examples/
+uv pip install --no-build-isolation -e '.[notebooks]' \
+  --config-settings=build-dir="$PWD/build-editable" \
+  --config-settings=setup-args=--buildtype=debug \
+  --config-settings=compile-args=-j2
+uv pip install -r jupyter-examples/requirements-dev.txt
+cd jupyter-examples
+python -m jupyterlab .
 ```
 
-## Notebooks
+## Widget API
 
-Open or create an `.ipynb` file in JupyterLab. Each release zip includes
-everything in `jupyter-examples/` at release time, including any notebook
-data and helpers.
+```python
+from strahler import Game, trace
+from strahler.widgets import GameView, TreeView, Stepper
+
+game = Game.from_file('otj22-fig1.gm')
+view = GameView(game)  # deterministic priority layers
+view.highlight([0, 1], colour='#bbf7d0', name='target')
+stepper = Stepper(trace(game, 'zielonka-sym'))
+stepper.next('check')
+print(stepper.verify(stepper.state.event['player']))
+display(view, stepper, stepper.call_tree())
+```
+
+- `GameView(game, coordinates={id: (x, y), ...})` scales caller coordinates.
+  Circles are Even, squares Odd; labels show priority and name. `selected` is
+  the clicked external ID. Named highlight layers are replaced independently.
+  IDs above JavaScript's exact integer range (2⁵³−1) are rejected; renumber them
+  before displaying the game.
+- `TreeView(tree, game_view=view, mode='boxes')` accepts a Node, H/T/S dictionary,
+  JSON text, `genstree` document, or a PR #31 prefix tree. Set `tree` to update;
+  switch `mode` between `boxes` and `tree`. Hover highlights its vertices.
+  `None` and documents with `tree: null` display an explicit empty placeholder.
+- `Stepper(run)` exposes `state`, `index`, `badges`, `game_view`, `tree_views`,
+  `seek(i)`, `step()`, `back()`, `next(kind)`, `end()`, and `verify(player)`.
+  `call_tree()` creates a linked call tree. The slider sends on release, not
+  during dragging. State and checkpoints are computed lazily; the default
+  interval caches about 128 prefixes for large recordings. Timeline ticks are
+  sampled to at most 1,000. No full trace is sent to the frontend.
+
+Collection is synchronous, and the trace's event limit still applies. A limit
+failure is an exception, never a solved game. `end()` jumps to the end of the
+recording. Badges keep an algorithm's latest **recorded** check, with its step
+and original subgame, separate from a fresh `check()` verdict on the **current**
+candidate, including its `Condition` name (for example, `PRIORITY`). Failed
+Definition 1 checks display “decomposition candidate”; this
+does not independently certify Definition 3. Lifting candidates pass through
+`materialize_partial`; structural diagnostics remain visible beside verdicts.
+
+The paper notebook cites [Thejaswini–Ohlmann–Jurdziński, FSTTCS 2022](https://doi.org/10.4230/LIPIcs.FSTTCS.2022.44).
+Its handwritten Figure 1 tree includes the empty ε₁₁ child; solver trees prune
+it. The generator is copied from the checked repository fixture. Its streaming
+call counter uses the documented C ABI, retaining no event list, and frees all
+native handles even on error. It reuses the package's ABI-checked loader and C
+signatures through `strahler._native`. All k=2…16 counts are recomputed and asserted in
+the notebook. `zielonka-sym` follows the corrected entry invariant and trap
+closure documented in `docs/symmetric.md`; the notebook and widget identify
+that difference from printed pseudocode. Pseudocode highlighting maps recorded
+events to abbreviated semantic blocks, rather than claiming exact C lines.
+
+## Tests
+
+With the checkout venv activated and package installed, select the registered
+Meson tests (use the same build for all checks):
+
+```sh
+python -m playwright install --only-shell chromium
+meson test -C build-editable \
+  test_widgets test_widgets_browser test_notebooks --print-errorlogs
+```
+
+Or use an existing debug library:
+
+```sh
+STRAHLER_LIB="$PWD/build" \
+PYTHONPATH=python python -m pytest tests/test_widget_state.py \
+  tests/test_widgets.py tests/test_widgets_js.py tests/test_widgets_browser.py \
+  tests/test_notebooks.py -q -s
+```
+
+`nbclient` starts the kernel from the test interpreter, executes every notebook,
+prints each runtime, and rejects error outputs, including those captured in
+Output widgets. Source notebooks must have empty outputs, no execution counts,
+and no saved widget state. Never save executed outputs in the checkout. Node
+checks inline ESM syntax when available locally and is required for that check
+in CI. The package CI runs the same tests on Linux and macOS. Browser rendering
+and pointer/keyboard interactions are tested with Playwright's Chromium headless
+shell in the Linux package job, with a cached browser installation. The browser
+tests load inline ESM using a small anywidget model stub, round-trip changes to
+Python, and reject console errors, exceptions, and attempted network requests.
+They skip only when Playwright cannot be imported; missing browsers and launch
+failures fail the tests. Browser installation is a development step and may
+require network access; notebook use never downloads a browser.

@@ -14,8 +14,8 @@ Install a C23 compiler (GCC 14+, Clang 18+, or Apple Clang), a C++20 compiler,
 and Python 3.10+. Run from the repository root:
 
 ```sh
-python3 -m venv ~/.cache/strahler-sprint/py-venv
-. ~/.cache/strahler-sprint/py-venv/bin/activate
+python3 -m venv .venv
+. .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install .
 ```
@@ -23,9 +23,9 @@ python -m pip install .
 With uv:
 
 ```sh
-uv venv ~/.cache/strahler-sprint/py-venv --python 3.10
-uv pip install --python ~/.cache/strahler-sprint/py-venv/bin/python .
-~/.cache/strahler-sprint/py-venv/bin/python -c 'import strahler; print(strahler.version())'
+uv venv .venv --python 3.10
+uv pip install --python .venv/bin/python .
+.venv/bin/python -c 'import strahler; print(strahler.version())'
 ```
 
 Both commands use meson-python and enable `-Dpython=enabled`. CLI installation
@@ -114,8 +114,8 @@ with Game.from_file('tests/games/otj22-fig1.gm') as game:
 
 Collection is synchronous. `events` contains the `strahler-trace/1` records,
 including its header; `len(run)` counts all records. `state(i)` describes both
-players immediately after event i. Forward access advances a replay cursor;
-backward access replays stored events. Returned states remain independent of
+players immediately after event i. Seeks reuse lazily cached checkpoints
+(about 128 on large traces), replaying the intervening events. Returned states remain independent of
 later stepping. H/T/S come from set/move/label events, not the result trees.
 Unfinished children can be `None`. Root TOP labels remain visible in interim
 states; the final state's trees exclude TOP and match the result certificates.
@@ -179,14 +179,42 @@ materializer and returns a dict containing a candidate `tree` and structural
 a candidate or an empty-core problem is not a validity verdict. Use `check`
 for Definition 1.
 
+## Offline notebook views
+
+Install `strahler[notebooks]` to enable the optional `strahler.widgets` module.
+Ordinary `import strahler` does not import anywidget, traitlets, or Jupyter.
+The six notebooks and checkout/release setup commands are in
+[jupyter-examples](../jupyter-examples/README.md).
+
+```python
+from strahler.widgets import GameView, TreeView, Stepper
+
+game = Game.from_file('jupyter-examples/otj22-fig1.gm')
+view = GameView(game)  # or coordinates={external_id: (x, y), ...}
+view.highlight([0, 1], colour='#bbf7d0', name='target')
+tree = TreeView(decompose(game, 'zielonka').trees[0], game_view=view)
+stepper = Stepper(trace(game, 'zielonka-sym'))
+stepper.next('check')
+print(stepper.verify(stepper.state.event['player']))
+```
+
+`TreeView` also accepts `genstree` and progress-measure prefix-tree JSON.
+`mode='boxes'|'tree'` selects nested H/T/S boxes or node links. Hover links to
+the game; `GameView.selected` is the clicked external vertex ID.
+`Stepper` supports `seek(index)`, `step()`, `back()`, `next(kind)`, `end()`,
+and a clickable `call_tree()`. Recorded claims are labelled with their event
+index and domain, separately from the current independent checker verdict.
+Keep the native game open while interacting. All frontend code is inline ESM
+and CSS, without CDN imports or runtime network requests.
+
 ## Development checks
 
 ```sh
 python -m pip install meson-python meson ninja pytest build
-meson setup ~/.cache/strahler-sprint/py-dev -Dpython=enabled -Dlenstree=disabled
-meson compile -C ~/.cache/strahler-sprint/py-dev
-meson test -C ~/.cache/strahler-sprint/py-dev test_strahler test_strahler_alloc test_python --print-errorlogs
-python -m build --wheel --outdir ~/.cache/strahler-sprint/py-wheels
+meson setup build-py -Dpython=enabled -Dlenstree=disabled
+meson compile -C build-py
+meson test -C build-py test_strahler test_strahler_alloc test_python --print-errorlogs
+python -m build --wheel --outdir dist
 ```
 
 `test_python` runs pytest through Meson. Existing measured slow corpus pairs

@@ -1,1 +1,3 @@
 jupyterlab
+anywidget>=0.9
+traitlets>=5
